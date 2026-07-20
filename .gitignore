@@ -1,0 +1,50 @@
+# Byte-compiled / optimized / DLL support
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Caches and logs
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.eslintcache
+*.log
+
+# Environments
+.venv/
+venv/
+ENV/
+env/
+.env
+.env.local
+.env.*.local
+
+# Node/Vite build
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Python packaging
+build/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Sahayak Ingested Raw Data
+data/
+data/raw/
+
+# System Files
+.DS_Store
+Thumbs.db
