@@ -36,9 +36,9 @@ lint:
 ingest:
 	$(DC) --env-file .env -f infra/docker-compose.yml exec api python ingest/run.py
 
-# Run evaluation harness (Stubbed for Phase 0)
+# Run evaluation harness
 eval:
-	@echo "Evaluation harness is not implemented yet in Phase 0."
+	$(DC) --env-file .env -f infra/docker-compose.yml exec api python eval/run_eval.py
 
 # Run database migrations using Alembic
 db-migrate:

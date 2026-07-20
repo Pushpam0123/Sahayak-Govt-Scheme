@@ -111,7 +111,7 @@ async def ingest_scheme(db: AsyncSession, scheme_data: dict, force: bool = False
 
     # 8. Generate Embeddings in batch
     embedder = get_embedder()
-    texts = [c["text"] for c in chunks_data]
+    texts = [(c["heading_path"] or "") + " " + c["text"] for c in chunks_data]
     logger.info(f"Generating embeddings for {len(texts)} chunks of scheme '{scheme_id}'...")
     embeddings = embedder.embed_batch(texts)
 

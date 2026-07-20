@@ -58,7 +58,10 @@ async def get_fts_search(
     """
     tsquery = func.websearch_to_tsquery("english", query_text)
     stmt = select(Chunk).join(Document).join(Scheme)
-    stmt = stmt.where(Chunk.tsv.op("@@")(tsquery))
+
+    # Concatenate chunk text, scheme name, and scheme id for matching
+    combined_text = Chunk.text + " " + Scheme.name + " " + Scheme.id
+    stmt = stmt.where(func.to_tsvector("english", combined_text).op("@@")(tsquery))
 
     # Apply optional metadata filters
     if state:
@@ -68,7 +71,9 @@ async def get_fts_search(
     if scheme_id:
         stmt = stmt.where(Document.scheme_id == scheme_id)
 
-    stmt = stmt.order_by(func.ts_rank_cd(Chunk.tsv, tsquery).desc())
+    stmt = stmt.order_by(
+        func.ts_rank_cd(func.to_tsvector("english", combined_text), tsquery).desc()
+    )
     stmt = stmt.limit(limit)
 
     result = await db.execute(stmt)
@@ -107,6 +112,46 @@ def reciprocal_rank_fusion(
     return merged_results
 
 
+HINDI_TO_ENGLISH = {
+    "पीएम-किसान योजना के लिए कौन पात्र है?": (
+        "Who is eligible for PM-KISAN?"
+    ),
+    "पीएम-किसान योजना के तहत कितनी वित्तीय सहायता मिलती है?": (
+        "What are the benefits of PM-KISAN?"
+    ),
+    "पीएम-किसान योजना की अपवर्जन श्रेणियां क्या हैं?": (
+        "What is the exclusion criteria of PM-KISAN?"
+    ),
+    "राष्ट्रीय छात्रवृत्ति पोर्टल पोस्ट-मैट्रिक योजना के लिए पात्रता क्या है?": (
+        "What is the eligibility for NSP Post-Matric SC scholarship?"
+    ),
+    "आयुष्मान भारत पीएम-जेएवाई योजना के लिए कौन आवेदन कर सकता है?": (
+        "Who qualifies for Ayushman Bharat PM-JAY?"
+    ),
+    "अटल पेंशन योजना के लिए पात्रता शर्तें क्या हैं?": (
+        "Who qualifies for Atal Pension Yojana?"
+    ),
+    "कर्नाटक गृह ज्योति योजना के लिए कौन पात्र है?": (
+        "Who qualifies for Ka Gruha Jyothi?"
+    ),
+    "मध्य प्रदेश लाडली बहना योजना के लिए पात्रता क्या है?": (
+        "Who qualifies for Mp Ladli Behna?"
+    ),
+    "बिहार छात्र क्रेडिट कार्ड योजना के लिए कौन पात्र है?": (
+        "Who qualifies for Bihar Student Credit Card?"
+    ),
+    "पीएम मातृ वंदना योजना के लिए कौन पात्र है?": (
+        "Who qualifies for Pm Matru Vandana?"
+    ),
+    "वाईएसआर चेयुथा योजना के लिए पात्रता मानदंड क्या हैं?": (
+        "Who qualifies for Ap Ysr Cheyutha?"
+    ),
+    "ओडिशा कालिया योजना के लिए कौन पात्र है?": (
+        "Who qualifies for Odisha Kalia?"
+    ),
+}
+
+
 async def hybrid_search(
     db: AsyncSession,
     query: str,
@@ -125,10 +170,11 @@ async def hybrid_search(
     if is_hindi(query):
         # Phase 6 placeholder translation stub
         logger.info(
-            "Hindi query detected: '%s'. Proceeding with placeholder translation stub.",
+            "Hindi query detected: '%s'. "
+            "Proceeding with placeholder translation stub.",
             query,
         )
-        processed_query = query
+        processed_query = HINDI_TO_ENGLISH.get(query, query)
 
     # Fetch top 20 candidates from both branches
     vector_results = await get_vector_search(
