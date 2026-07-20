@@ -1,0 +1,16 @@
+FROM node:20-alpine
+
+WORKDIR /app/web
+
+# Copy package files relative to build context (monorepo root)
+COPY web/package*.json ./
+
+RUN npm install
+
+# Copy monorepo code
+COPY . /app
+
+EXPOSE 5173
+
+# Run Vite dev server, exposing to host
+CMD ["npm", "run", "dev", "--", "--host"]
