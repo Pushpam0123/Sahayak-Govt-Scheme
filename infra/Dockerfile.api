@@ -9,15 +9,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy pyproject.toml to install dependencies first (caching layer)
-COPY pyproject.toml /app/
+# Copy all source files so setuptools finds packages
+COPY . /app
 
 # Install dependencies in editable mode
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -e ".[dev]"
-
-# Copy all source files
-COPY . /app
 
 EXPOSE 8000
 

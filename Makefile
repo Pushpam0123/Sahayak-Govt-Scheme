@@ -15,11 +15,11 @@ init:
 
 # Spin up Postgres, FastAPI and Vite React containers
 up:
-	$(DC) -f infra/docker-compose.yml up --build -d
+	$(DC) --env-file .env -f infra/docker-compose.yml up --build -d
 
 # Take down all containers
 down:
-	$(DC) -f infra/docker-compose.yml down
+	$(DC) --env-file .env -f infra/docker-compose.yml down
 
 # Run backend tests
 test:

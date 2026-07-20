@@ -2,7 +2,7 @@ import os
 from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import DeclarativeBase
 
 # Read Database URL from environment
 DATABASE_URL = os.getenv(
@@ -20,7 +20,8 @@ AsyncSessionLocal = async_sessionmaker(
 )
 
 # Declarative Base for models
-Base = declarative_base()
+class Base(DeclarativeBase):
+    pass
 
 # Session dependency for FastAPI routes
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
