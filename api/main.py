@@ -3,12 +3,12 @@ from typing import Any, Dict
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routers import health
+from api.routers import health, search
 
 app = FastAPI(
     title="Sahayak API",
     description="Backend API for Sahayak Government Scheme RAG Assistant",
-    version="0.1.0"
+    version="0.1.0",
 )
 
 # CORS configurations
@@ -23,9 +23,9 @@ app.add_middleware(
 
 # Register endpoint routers
 app.include_router(health.router, prefix="/api/v1", tags=["system"])
+app.include_router(search.router, prefix="/api/v1", tags=["search"])
+
 
 @app.get("/")
 def read_root() -> Dict[str, Any]:
-    return {
-        "message": "Welcome to Sahayak API. Access health check at /api/v1/health"
-    }
+    return {"message": "Welcome to Sahayak API. Access health check at /api/v1/health"}

@@ -6,7 +6,7 @@ from sqlalchemy.orm import DeclarativeBase
 
 # Read Database URL from environment
 DATABASE_URL = os.getenv(
-    "DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost:5432/sahayak"
+    "DATABASE_URL", "postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/sahayak"
 )
 
 # Create async engine
@@ -19,9 +19,11 @@ AsyncSessionLocal = async_sessionmaker(
     expire_on_commit=False,
 )
 
+
 # Declarative Base for models
 class Base(DeclarativeBase):
     pass
+
 
 # Session dependency for FastAPI routes
 async def get_db() -> AsyncGenerator[AsyncSession, None]:

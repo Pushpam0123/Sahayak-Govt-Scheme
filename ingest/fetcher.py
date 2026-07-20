@@ -181,8 +181,16 @@ def fetch_scheme_guidelines(scheme_id: str, source_url: str) -> tuple[str, str, 
             response = client.get(source_url)
             if response.status_code == 200:
                 content = response.content
-                fetched_online = True
-                logger.info(f"Successfully downloaded {scheme_id} ({len(content)} bytes)")
+                if doc_type == "pdf" and not content.startswith(b"%PDF"):
+                    logger.warning(
+                        f"Downloaded PDF for {scheme_id} does not start with %PDF magic bytes. "
+                        "Treating as failed download to fall back."
+                    )
+                else:
+                    fetched_online = True
+                    logger.info(f"Successfully downloaded {scheme_id} ({len(content)} bytes)")
+                    with open(file_path, "wb") as f:
+                        f.write(content)
     except Exception as e:
         logger.warning(f"Failed to fetch {scheme_id} from web: {str(e)}. Attempting local fallback.")
         

@@ -32,9 +32,9 @@ lint:
 	# Web build lint check
 	npm run --prefix web lint || true
 
-# Run scheme ingestion CLI (Stubbed for Phase 0)
+# Run scheme ingestion CLI
 ingest:
-	@echo "Ingestion pipeline is not implemented yet in Phase 0."
+	$(DC) --env-file .env -f infra/docker-compose.yml exec api python ingest/run.py
 
 # Run evaluation harness (Stubbed for Phase 0)
 eval:
@@ -42,7 +42,7 @@ eval:
 
 # Run database migrations using Alembic
 db-migrate:
-	$(PYTHON_ENV)/alembic upgrade head
+	$(DC) --env-file .env -f infra/docker-compose.yml exec api alembic upgrade head
 
 # Check Alembic migration history
 db-history:
