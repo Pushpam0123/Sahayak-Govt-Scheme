@@ -1,12 +1,15 @@
+from typing import Any, Dict
+
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from api.db import get_db
 
 router = APIRouter()
 
 @router.get("/health")
-async def health_check(db: AsyncSession = Depends(get_db)):
+async def health_check(db: AsyncSession = Depends(get_db)) -> Dict[str, Any]:
     try:
         # Run a simple query to confirm database liveness
         await db.execute(text("SELECT 1"))

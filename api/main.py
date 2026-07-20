@@ -1,6 +1,8 @@
-import os
+from typing import Any, Dict
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from api.routers import health
 
 app = FastAPI(
@@ -12,7 +14,8 @@ app = FastAPI(
 # CORS configurations
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow React app (or any browser client) to communicate in dev
+    # Allow React app (or any browser client) to communicate in dev
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -22,7 +25,7 @@ app.add_middleware(
 app.include_router(health.router, prefix="/api/v1", tags=["system"])
 
 @app.get("/")
-def read_root():
+def read_root() -> Dict[str, Any]:
     return {
         "message": "Welcome to Sahayak API. Access health check at /api/v1/health"
     }
