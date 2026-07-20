@@ -24,7 +24,7 @@ class VoyageEmbedder(Embedder):
         key = api_key or os.getenv("VOYAGE_API_KEY")
         if not key:
             raise ValueError("Voyage API Key is missing. Set VOYAGE_API_KEY environment variable.")
-        self.client = voyageai.Client(api_key=key)
+        self.client = voyageai.Client(api_key=key)  # type: ignore
         self.model = "voyage-3.5"
         logger.info(f"Initialized VoyageEmbedder using model '{self.model}'")
 
@@ -32,23 +32,23 @@ class VoyageEmbedder(Embedder):
         # Clean text
         cleaned = text.replace("\n", " ")
         result = self.client.embed([cleaned], model=self.model)
-        return result.embeddings[0]
+        return list(result.embeddings[0])
 
     def embed_batch(self, texts: list[str]) -> list[list[float]]:
         cleaned = [t.replace("\n", " ") for t in texts]
         # Voyage handles batching internally, but let's call in batches of 128 to be safe
         batch_size = 128
-        embeddings = []
+        embeddings: list[list[float]] = []
         for i in range(0, len(cleaned), batch_size):
             batch = cleaned[i : i + batch_size]
             result = self.client.embed(batch, model=self.model)
-            embeddings.extend(result.embeddings)
+            embeddings.extend(result.embeddings)  # type: ignore
         return embeddings
 
 
 class MockEmbedder(Embedder):
     """Deterministic mock embedder generating 1024-dim vectors based on text hash."""
-    def __init__(self):
+    def __init__(self) -> None:
         self.dimension = 1024
         logger.info(f"Initialized MockEmbedder generating {self.dimension}-dimensional vectors")
 
