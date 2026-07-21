@@ -12,7 +12,7 @@ from api.models.chat import QALog
 from api.models.scheme import Document, Scheme
 from api.services.groundedness import verify_groundedness
 from api.services.retrieval import hybrid_search
-from api.services.translation import is_hindi
+from api.services.translation import is_hindi, translate_hindi_to_english
 
 logger = logging.getLogger("sahayak.api.services.chat")
 
@@ -68,9 +68,25 @@ async def get_grounded_answer(
 
     LLM, parses inline citations at sentence-level, and logs the Q&A run.
     """
-    # 1. Retrieve top 5 context chunks
+    # 1. Translate Hindi query if needed
+    is_query_hindi = is_hindi(query)
+    processed_query = query
+    translation_input_tokens = 0
+    translation_output_tokens = 0
+
+    if is_query_hindi:
+        processed_query = await translate_hindi_to_english(query)
+        translation_input_tokens = len(query.split()) + 30
+        translation_output_tokens = len(processed_query.split()) + 20
+
+    # 2. Retrieve top 5 context chunks using the processed (English) query
     chunks = await hybrid_search(
-        db, query, state=state, category=category, scheme_id=scheme_id, limit=5
+        db,
+        processed_query,
+        state=state,
+        category=category,
+        scheme_id=scheme_id,
+        limit=5,
     )
 
     # 2. Format context for system prompt
@@ -99,6 +115,15 @@ async def get_grounded_answer(
         f"{context_str}\n"
         f"--- END OF CONTEXTS ---"
     )
+
+    if is_query_hindi:
+        full_system_prompt += (
+            "\n\nIMPORTANT: The user has asked the question in Hindi. "
+            "You MUST translate the facts from contexts and write your "
+            "entire final response in Hindi (Devanagari script). "
+            "Maintain all inline citation references like [1], [2], etc., "
+            "correctly attached to your sentences."
+        )
 
     # 4. Invoke LLM client
     llm_client = get_llm_client()
@@ -155,7 +180,10 @@ async def get_grounded_answer(
             )
 
     # 7. Groundedness Verification Pass
-    groundedness_results = await verify_groundedness(parsed_sentences, chunks)
+    groundedness_usage: Dict[str, Any] = {}
+    groundedness_results = await verify_groundedness(
+        parsed_sentences, chunks, usage_collector=groundedness_usage
+    )
     for idx, s in enumerate(parsed_sentences):
         g_res = groundedness_results[idx]
         s["groundedness"] = {
@@ -163,18 +191,45 @@ async def get_grounded_answer(
             "reasoning": g_res["reasoning"],
         }
 
-    # 8. Log Q&A to database
+    # 8. Cost Accounting Calculation
+    chat_cost = (usage["input_tokens"] * 0.000003) + (
+        usage["output_tokens"] * 0.000015
+    )
+    groundedness_cost = (
+        groundedness_usage.get("input_tokens", 0) * 0.00000025
+        + groundedness_usage.get("output_tokens", 0) * 0.00000125
+    )
+    translation_cost = (
+        translation_input_tokens * 0.00000025
+        + translation_output_tokens * 0.00000125
+    )
+
+    total_cost = chat_cost + groundedness_cost + translation_cost
+
+    total_tokens_in = (
+        usage["input_tokens"]
+        + groundedness_usage.get("input_tokens", 0)
+        + translation_input_tokens
+    )
+    total_tokens_out = (
+        usage["output_tokens"]
+        + groundedness_usage.get("output_tokens", 0)
+        + translation_output_tokens
+    )
+
+    # 9. Log Q&A to database
     qa_log = QALog(
         session_id=session_id,
         question=query,
-        lang="hi" if is_hindi(query) else "en",
+        lang="hi" if is_query_hindi else "en",
         retrieved_chunk_ids=[chunk.id for chunk, _ in chunks],
         answer=raw_answer,
         citations_json=citations_metadata,
         groundedness_json=groundedness_results,
         latency_ms=latency_ms,
-        tokens_in=usage["input_tokens"],
-        tokens_out=usage["output_tokens"],
+        tokens_in=total_tokens_in,
+        tokens_out=total_tokens_out,
+        estimated_cost_usd=total_cost,
     )
     db.add(qa_log)
     await db.commit()
@@ -186,8 +241,8 @@ async def get_grounded_answer(
         "sentences": parsed_sentences,
         "citations": citations_metadata,
         "usage": {
-            "input_tokens": usage["input_tokens"],
-            "output_tokens": usage["output_tokens"],
+            "input_tokens": total_tokens_in,
+            "output_tokens": total_tokens_out,
         },
         "latency_ms": latency_ms,
     }

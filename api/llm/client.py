@@ -115,6 +115,22 @@ class MockClaudeClient(BaseLLMClient):
         temperature: float = 0.0,
     ) -> Dict[str, Any]:
 
+        # Check if this is a translation call
+        is_translate_call = (
+            "translate" in system_prompt.lower()
+            and "english" in system_prompt.lower()
+        )
+        if is_translate_call:
+            user_msg = messages[0]["content"] if messages else ""
+            clean_q = user_msg.replace("Document chunk text:\n\n", "").strip()
+            clean_q = clean_q.split("\n")[0].strip()
+            from api.services.translation import HINDI_TO_ENGLISH
+            translated = HINDI_TO_ENGLISH.get(clean_q, clean_q)
+            return {
+                "content": translated,
+                "usage": {"input_tokens": 100, "output_tokens": 20},
+            }
+
         # Check if this is a rules extraction prompt
         is_extract = (
             "rules extraction" in system_prompt.lower()

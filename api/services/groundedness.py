@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from api.llm.client import get_llm_client
 
@@ -12,6 +12,7 @@ logger = logging.getLogger("sahayak.api.services.groundedness")
 async def verify_groundedness(
     sentences: List[Dict[str, Any]],
     chunks: List[Any],
+    usage_collector: Optional[Dict[str, Any]] = None,
 ) -> List[Dict[str, Any]]:
     """Verifies whether each sentence in the answer is grounded in its cited chunks.
 
@@ -91,6 +92,8 @@ async def verify_groundedness(
             full_system_prompt, messages, temperature=0.0
         )
         content = response["content"]
+        if usage_collector is not None:
+            usage_collector.update(response.get("usage", {}))
 
         # Parse JSON array from response content
         match = re.search(r"(\[.*\])", content, re.DOTALL)
