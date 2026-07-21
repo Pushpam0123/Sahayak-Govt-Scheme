@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import os
 import re
@@ -73,9 +74,7 @@ class ClaudeClient(BaseLLMClient):
                     },
                 }
             except Exception as e:
-                logger.warning(
-                    f"LLM call attempt {attempt + 1} failed: {str(e)}"
-                )
+                logger.warning(f"LLM call attempt {attempt + 1} failed: {str(e)}")
                 if attempt == 2:
                     raise e
                 await asyncio.sleep(2**attempt)
@@ -92,9 +91,7 @@ class MockClaudeClient(BaseLLMClient):
         try:
             current_dir = os.path.dirname(os.path.abspath(__file__))
             root_dir = os.path.dirname(os.path.dirname(current_dir))
-            yaml_path = os.path.join(
-                root_dir, "eval", "golden", "golden_set.yaml"
-            )
+            yaml_path = os.path.join(root_dir, "eval", "golden", "golden_set.yaml")
             if os.path.exists(yaml_path):
                 with open(yaml_path, "r", encoding="utf-8") as f:
                     data = yaml.safe_load(f)
@@ -106,9 +103,7 @@ class MockClaudeClient(BaseLLMClient):
                     f"Loaded {len(self.golden_cases)} cases into MockClaudeClient."
                 )
         except Exception as e:
-            logger.error(
-                f"Failed to load golden set in MockClaudeClient: {str(e)}"
-            )
+            logger.error(f"Failed to load golden set in MockClaudeClient: {str(e)}")
 
     def _normalize(self, text: str) -> str:
         return "".join(c for c in text.lower() if c.isalnum())
@@ -119,6 +114,41 @@ class MockClaudeClient(BaseLLMClient):
         messages: List[Dict[str, str]],
         temperature: float = 0.0,
     ) -> Dict[str, Any]:
+
+        # Check if this is a groundedness evaluator prompt
+        is_grounded_check = (
+            "groundedness evaluator" in system_prompt.lower()
+            or "sentences to verify" in system_prompt.lower()
+        )
+        if is_grounded_check:
+            results = []
+            pattern = (
+                r"Sentence \[([0-9]+)\]:\s*(.*?)"
+                r"(?=\s*\(Cites|\n|Sentence \[[0-9]+\]:|$)"
+            )
+            sentences_matches = re.findall(pattern, system_prompt)
+            for idx_str, text in sentences_matches:
+                idx = int(idx_str)
+                is_bad = (
+                    "deliberately bad citation" in text.lower()
+                    or "unsupported claim" in text.lower()
+                )
+                status = "unsupported" if is_bad else "supported"
+                reasoning = (
+                    "Seeded bad citation regression match."
+                    if is_bad
+                    else "Grounded fully in context."
+                )
+                results.append(
+                    {"sentence_index": idx, "status": status, "reasoning": reasoning}
+                )
+
+            content = json.dumps(results)
+            return {
+                "content": content,
+                "usage": {"input_tokens": 600, "output_tokens": 100},
+            }
+
         is_judge = (
             "expert evaluator" in system_prompt.lower()
             or "faithfulness" in system_prompt.lower()
@@ -151,24 +181,21 @@ class MockClaudeClient(BaseLLMClient):
                 content = f"{gold_ans} [1]"
         else:
             # 2. Try to parse dynamic context chunks from the input prompt or messages
-            combined_input = system_prompt + "\n" + "\n".join(
-                m["content"] for m in messages
+            combined_input = (
+                system_prompt + "\n" + "\n".join(m["content"] for m in messages)
             )
 
             # Find context block 1
-            pattern = (
-                r"Context \[1\]:\n(?:Source:[^\n]*\n)?Text:\s*(.*?)(?=\n\n|\Z)"
-            )
+            pattern = r"Context \[1\]:\n(?:Source:[^\n]*\n)?Text:\s*(.*?)(?=\n\n|\Z)"
             match = re.search(pattern, combined_input, re.DOTALL | re.IGNORECASE)
             if match:
                 context_text = match.group(1).strip()
                 lines = [
-                    line.strip()
-                    for line in context_text.split("\n")
-                    if line.strip()
+                    line.strip() for line in context_text.split("\n") if line.strip()
                 ]
                 clean_lines = [
-                    line for line in lines
+                    line
+                    for line in lines
                     if not line.startswith("|") and not line.startswith("#")
                 ]
 
