@@ -115,6 +115,49 @@ class MockClaudeClient(BaseLLMClient):
         temperature: float = 0.0,
     ) -> Dict[str, Any]:
 
+        # Check if this is a rules extraction prompt
+        is_extract = (
+            "rules extraction" in system_prompt.lower()
+            or "min_age" in system_prompt.lower()
+        )
+        if is_extract:
+            # Combine messages text
+            combined_msg = "\n".join(m["content"] for m in messages)
+            if "kisan" in combined_msg.lower():
+                rules = {
+                    "min_age": 18,
+                    "max_age": None,
+                    "states": ["Any"],
+                    "genders": ["Any"],
+                    "castes": ["Any"],
+                    "max_income": None,
+                    "max_landholding_acres": 5.0,
+                }
+            elif "ladli" in combined_msg.lower() or "behna" in combined_msg.lower():
+                rules = {
+                    "min_age": 21,
+                    "max_age": 60,
+                    "states": ["Madhya Pradesh"],
+                    "genders": ["Female"],
+                    "castes": ["Any"],
+                    "max_income": 250000.0,
+                    "max_landholding_acres": 5.0,
+                }
+            else:
+                rules = {
+                    "min_age": None,
+                    "max_age": None,
+                    "states": ["Any"],
+                    "genders": ["Any"],
+                    "castes": ["Any"],
+                    "max_income": None,
+                    "max_landholding_acres": None,
+                }
+            return {
+                "content": json.dumps(rules),
+                "usage": {"input_tokens": 400, "output_tokens": 80},
+            }
+
         # Check if this is a groundedness evaluator prompt
         is_grounded_check = (
             "groundedness evaluator" in system_prompt.lower()
