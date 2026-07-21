@@ -21,6 +21,7 @@ class QALog(Base):
     latency_ms = Column(Float, nullable=True)
     tokens_in = Column(Integer, nullable=True)
     tokens_out = Column(Integer, nullable=True)
+    estimated_cost_usd = Column(Float, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     def __repr__(self) -> str:
