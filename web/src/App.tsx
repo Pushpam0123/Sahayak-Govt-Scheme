@@ -61,7 +61,118 @@ interface EligibilityStatus {
   failed_rules: string[];
 }
 
+const TRANSLATIONS = {
+  en: {
+    title: "Sahayak Government Scheme Assistant",
+    subtitle: "Sahayak Citizen Portal",
+    chatTab: "Grounded Q&A Chat",
+    dashboardTab: "Citizen Dashboard & Scheme Explorer",
+    focusScheme: "Focus Scheme",
+    stateFilter: "State Filter",
+    categoryFilter: "Category Filter",
+    allSchemes: "-- All Schemes --",
+    allStates: "-- All States --",
+    allCategories: "-- All Categories --",
+    chatPlaceholder: "Ask a question about government scheme criteria...",
+    ask: "Ask",
+    citationInspector: "Citation Inspector",
+    noCitation: "No Citation Selected",
+    noCitationDesc: "Click on any citation badge in an assistant message (e.g. [1]) to view official document excerpts and source links.",
+    citationIndex: "Citation Index:",
+    headingHierarchy: "Heading Hierarchy:",
+    sourceDoc: "Official Document Source:",
+    viewSource: "View Source Document",
+    sourceQuote: "Source Quote:",
+    auditingFilter: "Auditing Filter",
+    keywordMatch: "Keyword Match",
+    searchPlaceholder: "Search document text...",
+    search: "Search",
+    limit: "Limit:",
+    eligibilityProfile: "Eligibility Profile",
+    age: "Age (Years)",
+    state: "State",
+    gender: "Gender",
+    caste: "Caste Category",
+    income: "Annual Household Income (₹)",
+    landholding: "Agricultural Land owned (Acres)",
+    verifiedSchemes: "Verified Schemes",
+    noRules: "No Rules",
+    eligible: "Eligible",
+    ineligible: "Ineligible ⚠️",
+    failedCriteria: "Failed Criteria:",
+    auditedChunks: "Audited Chunks",
+    clearFilter: "Clear Filter",
+    noChunks: "No Chunks Found",
+    noChunksDesc: "Select a scheme on the left to load its text guidelines.",
+    chunkInspector: "Chunk Inspector",
+    selectChunkInspect: "Select a chunk above to inspect details",
+    female: "Female",
+    male: "Male",
+    other: "Other",
+    general: "General",
+    obc: "OBC",
+    sc: "SC",
+    st: "ST"
+  },
+  hi: {
+    title: "सहायक सरकारी योजना गाइड",
+    subtitle: "सहायक नागरिक पोर्टल",
+    chatTab: "आधारित प्रश्नोत्तर चैट",
+    dashboardTab: "नागरिक डैशबोर्ड और योजना एक्सप्लोरर",
+    focusScheme: "योजना पर ध्यान दें",
+    stateFilter: "राज्य फ़िल्टर",
+    categoryFilter: "श्रेणी फ़िल्टर",
+    allSchemes: "-- सभी योजनाएं --",
+    allStates: "-- सभी राज्य --",
+    allCategories: "-- सभी श्रेणियां --",
+    chatPlaceholder: "सरकारी योजना पात्रता के बारे में प्रश्न पूछें...",
+    ask: "पूछें",
+    citationInspector: "संदर्भ निरीक्षक",
+    noCitation: "कोई संदर्भ चयनित नहीं",
+    noCitationDesc: "आधिकारिक दस्तावेज़ उद्धरण और स्रोत लिंक देखने के लिए सहायक संदेश में किसी भी संदर्भ संख्या (जैसे [1]) पर क्लिक करें।",
+    citationIndex: "संदर्भ सूचकांक:",
+    headingHierarchy: "शीर्षक पदानुक्रम:",
+    sourceDoc: "आधिकारिक दस्तावेज़ स्रोत:",
+    viewSource: "स्रोत दस्तावेज़ देखें",
+    sourceQuote: "स्रोत उद्धरण:",
+    auditingFilter: "ऑडिटिंग फ़िल्टर",
+    keywordMatch: "कीवर्ड मिलान",
+    searchPlaceholder: "दस्तावेज़ पाठ खोजें...",
+    search: "खोजें",
+    limit: "सीमा:",
+    eligibilityProfile: "पात्रता प्रोफ़ाइल",
+    age: "आयु (वर्ष)",
+    state: "राज्य",
+    gender: "लिंग",
+    caste: "जाति वर्ग",
+    income: "वार्षिक पारिवारिक आय (₹)",
+    landholding: "कृषि भूमि (एकड़)",
+    verifiedSchemes: "सत्यापित योजनाएं",
+    noRules: "कोई नियम नहीं",
+    eligible: "पात्र",
+    ineligible: "अपात्र ⚠️",
+    failedCriteria: "अपात्रता के कारण:",
+    auditedChunks: "ऑडिटेड अंश",
+    clearFilter: "फ़िल्टर हटाएं",
+    noChunks: "कोई अंश नहीं मिला",
+    noChunksDesc: "पाठ दिशानिर्देशों को लोड करने के लिए बाईं ओर एक योजना का चयन करें।",
+    chunkInspector: "अंश निरीक्षक",
+    selectChunkInspect: "विवरण जांचने के लिए ऊपर एक अंश चुनें",
+    female: "महिला",
+    male: "पुरुष",
+    other: "अन्य",
+    general: "सामान्य (General)",
+    obc: "ओबीसी (OBC)",
+    sc: "अनुसूचित जाति (SC)",
+    st: "अनुसूचित जनजाति (ST)"
+  }
+};
+
 function App() {
+  // Internationalization language state
+  const [lang, setLang] = useState<'en' | 'hi'>('en');
+  const t = TRANSLATIONS[lang];
+
   // Navigation State
   const [activeTab, setActiveTab] = useState<'explorer' | 'chat'>('chat');
 
@@ -191,7 +302,6 @@ function App() {
   // Triggered on mount
   useEffect(() => {
     checkHealth();
-    // Fetch initial schemes list for dropdowns
     const fetchInitialSchemes = async () => {
       try {
         const response = await fetch('http://localhost:8000/api/v1/search?limit=1');
@@ -237,7 +347,6 @@ function App() {
     setChatError(null);
     setChatLoading(true);
 
-    // Append user message
     setChatMessages(prev => [...prev, { sender: 'user', text: userMsg }]);
 
     try {
@@ -413,7 +522,6 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col p-4 md:p-6 relative overflow-hidden font-sans">
-      {/* Decorative background glow elements */}
       <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-blue-600/5 rounded-full blur-[140px] pointer-events-none"></div>
       <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-[500px] h-[500px] bg-sky-500/5 rounded-full blur-[140px] pointer-events-none"></div>
 
@@ -422,49 +530,75 @@ function App() {
         <div>
           <div className="inline-flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-full px-3 py-1 text-xs font-semibold text-sky-400 mb-2.5 backdrop-blur-md">
             <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse"></span>
-            Sahayak Citizen Portal
+            {t.subtitle}
           </div>
           <h1 className="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-200 to-sky-400 bg-clip-text text-transparent">
-            Sahayak Government Scheme Assistant
+            {t.title}
           </h1>
         </div>
 
-        {/* Liveness Indicator */}
-        <div className="bg-slate-900/50 border border-slate-850 px-4 py-2.5 rounded-xl flex items-center gap-4 text-xs shadow-lg backdrop-blur-md">
-          <div>
-            <div className="text-slate-500">API status:</div>
-            <div className="font-semibold mt-0.5">
-              {healthLoading ? (
-                <span className="text-slate-400">Checking...</span>
-              ) : healthError ? (
-                <span className="text-red-400 font-bold">Offline</span>
-              ) : (
-                <span className="text-emerald-400 font-bold">Online</span>
-              )}
-            </div>
+        {/* Language Selection & Liveness Indicator */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3.5">
+          {/* i18n Language Toggle */}
+          <div className="flex gap-1.5 bg-slate-900/60 border border-slate-800 p-1 rounded-xl shadow-md backdrop-blur-md">
+            <button
+              onClick={() => setLang('en')}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                lang === 'en'
+                  ? 'bg-sky-950/60 text-sky-400 border border-sky-900/50 shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              English
+            </button>
+            <button
+              onClick={() => setLang('hi')}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                lang === 'hi'
+                  ? 'bg-sky-950/60 text-sky-400 border border-sky-900/50 shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              हिन्दी
+            </button>
           </div>
-          <div className="h-6 w-px bg-slate-850"></div>
-          <div>
-            <div className="text-slate-500">Database:</div>
-            <div className="font-semibold mt-0.5">
-              {healthLoading ? (
-                <span className="text-slate-400">Checking...</span>
-              ) : health?.database === "connected" ? (
-                <span className="text-emerald-400 font-semibold">Connected</span>
-              ) : (
-                <span className="text-red-400 font-bold">Disconnected</span>
-              )}
+
+          <div className="bg-slate-900/50 border border-slate-850 px-4 py-2.5 rounded-xl flex items-center gap-4 text-xs shadow-lg backdrop-blur-md">
+            <div>
+              <div className="text-slate-500">API:</div>
+              <div className="font-semibold mt-0.5 text-slate-300">
+                {healthLoading ? (
+                  <span className="text-slate-400">...</span>
+                ) : healthError ? (
+                  <span className="text-red-400 font-bold">Offline</span>
+                ) : (
+                  <span className="text-emerald-400 font-bold">Online</span>
+                )}
+              </div>
             </div>
+            <div className="h-6 w-px bg-slate-850"></div>
+            <div>
+              <div className="text-slate-500">DB:</div>
+              <div className="font-semibold mt-0.5">
+                {healthLoading ? (
+                  <span className="text-slate-400">...</span>
+                ) : health?.database === "connected" ? (
+                  <span className="text-emerald-400 font-semibold">Connected</span>
+                ) : (
+                  <span className="text-red-400 font-bold">Offline</span>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={() => setCheckCount(prev => prev + 1)}
+              disabled={healthLoading}
+              className="p-1 bg-slate-850 hover:bg-slate-800 rounded border border-slate-800 text-slate-300 transition-colors"
+            >
+              <svg className={`h-3.5 w-3.5 ${healthLoading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89H18v3.582" />
+              </svg>
+            </button>
           </div>
-          <button
-            onClick={() => setCheckCount(prev => prev + 1)}
-            disabled={healthLoading}
-            className="p-1 bg-slate-850 hover:bg-slate-850 rounded border border-slate-800 text-slate-300 transition-colors"
-          >
-            <svg className={`h-3.5 w-3.5 ${healthLoading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89H18v3.582" />
-            </svg>
-          </button>
         </div>
       </header>
 
@@ -472,23 +606,23 @@ function App() {
       <nav className="z-10 flex gap-2 mb-6 border-b border-slate-900 pb-2">
         <button
           onClick={() => setActiveTab('chat')}
-          className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all ${
+          className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all cursor-pointer ${
             activeTab === 'chat'
               ? 'bg-sky-950/60 border border-sky-900/60 text-sky-400 shadow-md'
               : 'text-slate-400 hover:text-slate-200 border border-transparent'
           }`}
         >
-          Grounded Q&A Chat
+          {t.chatTab}
         </button>
         <button
           onClick={() => setActiveTab('explorer')}
-          className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all ${
+          className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all cursor-pointer ${
             activeTab === 'explorer'
               ? 'bg-sky-950/60 border border-sky-900/60 text-sky-400 shadow-md'
               : 'text-slate-400 hover:text-slate-200 border border-transparent'
           }`}
         >
-          Citizen Dashboard & Scheme Explorer
+          {t.dashboardTab}
         </button>
       </nav>
 
@@ -501,50 +635,50 @@ function App() {
               {/* Top Banner Options */}
               <div className="bg-slate-950/40 border-b border-slate-850 p-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                 <div>
-                  <label className="block text-slate-500 font-medium mb-1.5">Focus Scheme</label>
+                  <label className="block text-slate-500 font-medium mb-1.5">{t.focusScheme}</label>
                   <select
                     value={chatSchemeId}
                     onChange={(e) => setChatSchemeId(e.target.value)}
                     className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-slate-300 focus:outline-none focus:border-sky-500"
                   >
-                    <option value="">-- All Schemes --</option>
+                    <option value="">{t.allSchemes}</option>
                     {schemes.map((s) => (
                       <option key={s.id} value={s.id}>{s.name}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-slate-500 font-medium mb-1.5">State Filter</label>
+                  <label className="block text-slate-500 font-medium mb-1.5">{t.stateFilter}</label>
                   <select
                     value={chatStateFilter}
                     onChange={(e) => setChatStateFilter(e.target.value)}
                     className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-slate-300 focus:outline-none focus:border-sky-500"
                   >
-                    <option value="">-- All States --</option>
-                    <option value="Central">Central</option>
-                    <option value="Bihar">Bihar</option>
-                    <option value="Karnataka">Karnataka</option>
-                    <option value="Madhya Pradesh">Madhya Pradesh</option>
-                    <option value="Telangana">Telangana</option>
-                    <option value="West Bengal">West Bengal</option>
-                    <option value="Andhra Pradesh">Andhra Pradesh</option>
-                    <option value="Maharashtra">Maharashtra</option>
-                    <option value="Odisha">Odisha</option>
+                    <option value="">{t.allStates}</option>
+                    <option value="Central">{lang === 'hi' ? 'केंद्र (Central)' : 'Central'}</option>
+                    <option value="Bihar">{lang === 'hi' ? 'बिहार' : 'Bihar'}</option>
+                    <option value="Karnataka">{lang === 'hi' ? 'कर्नाटक' : 'Karnataka'}</option>
+                    <option value="Madhya Pradesh">{lang === 'hi' ? 'मध्य प्रदेश' : 'Madhya Pradesh'}</option>
+                    <option value="Telangana">{lang === 'hi' ? 'तेलंगाना' : 'Telangana'}</option>
+                    <option value="West Bengal">{lang === 'hi' ? 'पश्चिम बंगाल' : 'West Bengal'}</option>
+                    <option value="Andhra Pradesh">{lang === 'hi' ? 'आंध्र प्रदेश' : 'Andhra Pradesh'}</option>
+                    <option value="Maharashtra">{lang === 'hi' ? 'महाराष्ट्र' : 'Maharashtra'}</option>
+                    <option value="Odisha">{lang === 'hi' ? 'ओडिशा' : 'Odisha'}</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-slate-500 font-medium mb-1.5">Category Filter</label>
+                  <label className="block text-slate-500 font-medium mb-1.5">{t.categoryFilter}</label>
                   <select
                     value={chatCategoryFilter}
                     onChange={(e) => setChatCategoryFilter(e.target.value)}
                     className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-slate-300 focus:outline-none focus:border-sky-500"
                   >
-                    <option value="">-- All Categories --</option>
-                    <option value="Agriculture">Agriculture</option>
-                    <option value="Welfare">Welfare</option>
-                    <option value="Pension">Pension</option>
-                    <option value="Education">Education</option>
-                    <option value="Women & Child Development">Women & Child Development</option>
+                    <option value="">{t.allCategories}</option>
+                    <option value="Agriculture">{lang === 'hi' ? 'कृषि (Agriculture)' : 'Agriculture'}</option>
+                    <option value="Welfare">{lang === 'hi' ? 'कल्याण (Welfare)' : 'Welfare'}</option>
+                    <option value="Pension">{lang === 'hi' ? 'पेंशन (Pension)' : 'Pension'}</option>
+                    <option value="Education">{lang === 'hi' ? 'शिक्षा (Education)' : 'Education'}</option>
+                    <option value="Women & Child Development">{lang === 'hi' ? 'महिला एवं बाल विकास' : 'Women & Child Development'}</option>
                   </select>
                 </div>
               </div>
@@ -603,16 +737,16 @@ function App() {
                   type="text"
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
-                  placeholder="Ask a question about government scheme criteria..."
+                  placeholder={t.chatPlaceholder}
                   disabled={chatLoading}
                   className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-sky-500 transition-colors"
                 />
                 <button
                   type="submit"
                   disabled={chatLoading || !chatInput.trim()}
-                  className="px-5 py-2.5 bg-sky-650 hover:bg-sky-600 disabled:opacity-50 text-white text-sm font-semibold rounded-xl transition-colors shadow-md shadow-sky-950/25 flex items-center gap-1.5"
+                  className="px-5 py-2.5 bg-sky-650 hover:bg-sky-600 disabled:opacity-50 text-white text-sm font-semibold rounded-xl transition-colors shadow-md shadow-sky-950/25 flex items-center gap-1.5 cursor-pointer"
                 >
-                  Ask
+                  {t.ask}
                 </button>
               </form>
             </section>
@@ -623,34 +757,34 @@ function App() {
                 <svg className="h-4.5 w-4.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                Citation Inspector
+                {t.citationInspector}
               </h3>
 
               {activeCitation ? (
                 <div className="space-y-5 overflow-y-auto flex-1 pr-1 scrollbar-thin">
                   <div className="bg-slate-950 border border-slate-900 rounded-xl p-4">
-                    <span className="text-[10px] text-slate-500 font-bold block mb-1">Citation Index:</span>
+                    <span className="text-[10px] text-slate-500 font-bold block mb-1">{t.citationIndex}</span>
                     <span className="inline-flex items-center justify-center h-6 w-6 text-xs font-bold rounded bg-sky-950 border border-sky-800 text-sky-400">
                       [{activeCitation.n}]
                     </span>
                   </div>
 
                   <div className="bg-slate-950 border border-slate-900 rounded-xl p-4">
-                    <span className="text-[10px] text-slate-500 font-bold block mb-1">Heading Hierarchy:</span>
+                    <span className="text-[10px] text-slate-500 font-bold block mb-1">{t.headingHierarchy}</span>
                     <span className="text-xs font-semibold text-slate-200 leading-relaxed">
                       {activeCitation.heading_path}
                     </span>
                   </div>
 
                   <div className="bg-slate-950 border border-slate-900 rounded-xl p-4">
-                    <span className="text-[10px] text-slate-500 font-bold block mb-1">Official Document Source:</span>
+                    <span className="text-[10px] text-slate-500 font-bold block mb-1">{t.sourceDoc}</span>
                     <a
                       href={activeCitation.source_url}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-xs text-sky-400 hover:text-sky-300 font-medium underline flex items-center gap-1 leading-normal"
                     >
-                      View Source Document
+                      {t.viewSource}
                       <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                       </svg>
@@ -658,7 +792,7 @@ function App() {
                   </div>
 
                   <div className="bg-slate-950 border border-slate-900 rounded-xl p-4 flex-1">
-                    <span className="text-[10px] text-slate-500 font-bold block mb-2">Source Quote:</span>
+                    <span className="text-[10px] text-slate-500 font-bold block mb-2">{t.sourceQuote}</span>
                     <div className="bg-slate-900/60 p-3 rounded-lg text-xs leading-relaxed text-slate-300 font-mono overflow-auto max-h-[220px]">
                       {activeCitation.quote}
                     </div>
@@ -669,9 +803,9 @@ function App() {
                   <svg className="h-10 w-10 opacity-30 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
                   </svg>
-                  <p className="text-sm font-semibold">No Citation Selected</p>
+                  <p className="text-sm font-semibold">{t.noCitation}</p>
                   <p className="text-xs mt-1 max-w-[200px]">
-                    Click on any citation badge in an assistant message (e.g. <span className="text-sky-400 font-bold">[1]</span>) to view official document excerpts and source links.
+                    {t.noCitationDesc}
                   </p>
                 </div>
               )}
@@ -688,38 +822,38 @@ function App() {
                   <svg className="h-4.5 w-4.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
-                  Auditing Filter
+                  {t.auditingFilter}
                 </h2>
                 
                 <form onSubmit={handleSearchSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-xs text-slate-400 font-medium mb-1.5">Keyword Match</label>
+                    <label className="block text-xs text-slate-400 font-medium mb-1.5">{t.keywordMatch}</label>
                     <div className="flex gap-2">
                       <input
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search document text..."
+                        placeholder={t.searchPlaceholder}
                         className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-sky-500 transition-colors"
                       />
                       <button
                         type="submit"
-                        className="px-3.5 py-2 bg-sky-650 hover:bg-sky-600 active:bg-sky-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-md shadow-sky-950/20"
+                        className="px-3.5 py-2 bg-sky-650 hover:bg-sky-600 active:bg-sky-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-md shadow-sky-950/20 cursor-pointer"
                       >
-                        Search
+                        {t.search}
                       </button>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between pt-2">
-                    <span className="text-xs text-slate-400">Limit:</span>
+                    <span className="text-xs text-slate-400">{t.limit}</span>
                     <div className="flex gap-1.5">
                       {[10, 20, 50].map((limitVal) => (
                         <button
                           key={limitVal}
                           type="button"
                           onClick={() => setSearchLimit(limitVal)}
-                          className={`text-[10px] px-2.5 py-1 rounded-md border transition-colors ${
+                          className={`text-[10px] px-2.5 py-1 rounded-md border transition-colors cursor-pointer ${
                             searchLimit === limitVal
                               ? 'bg-sky-950/60 border-sky-800/80 text-sky-400'
                               : 'bg-slate-950 border-slate-900 text-slate-500 hover:text-slate-300'
@@ -739,13 +873,13 @@ function App() {
                   <svg className="h-4.5 w-4.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
-                  Eligibility Profile
+                  {t.eligibilityProfile}
                 </h2>
 
                 <div className="space-y-3.5 text-xs">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-slate-500 font-medium mb-1">Age (Years)</label>
+                      <label className="block text-slate-500 font-medium mb-1">{t.age}</label>
                       <input
                         type="number"
                         value={profileAge}
@@ -754,55 +888,55 @@ function App() {
                       />
                     </div>
                     <div>
-                      <label className="block text-slate-500 font-medium mb-1">State</label>
+                      <label className="block text-slate-500 font-medium mb-1">{t.state}</label>
                       <select
                         value={profileState}
                         onChange={(e) => setProfileState(e.target.value)}
                         className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-sky-500"
                       >
-                        <option value="Central">Central</option>
-                        <option value="Bihar">Bihar</option>
-                        <option value="Madhya Pradesh">Madhya Pradesh</option>
-                        <option value="Karnataka">Karnataka</option>
-                        <option value="Telangana">Telangana</option>
-                        <option value="West Bengal">West Bengal</option>
-                        <option value="Andhra Pradesh">Andhra Pradesh</option>
-                        <option value="Maharashtra">Maharashtra</option>
-                        <option value="Odisha">Odisha</option>
+                        <option value="Central">{lang === 'hi' ? 'केंद्र (Central)' : 'Central'}</option>
+                        <option value="Bihar">{lang === 'hi' ? 'बिहार' : 'Bihar'}</option>
+                        <option value="Madhya Pradesh">{lang === 'hi' ? 'मध्य प्रदेश' : 'Madhya Pradesh'}</option>
+                        <option value="Karnataka">{lang === 'hi' ? 'कर्नाटक' : 'Karnataka'}</option>
+                        <option value="Telangana">{lang === 'hi' ? 'तेलंगाना' : 'Telangana'}</option>
+                        <option value="West Bengal">{lang === 'hi' ? 'पश्चिम बंगाल' : 'West Bengal'}</option>
+                        <option value="Andhra Pradesh">{lang === 'hi' ? 'आंध्र प्रदेश' : 'Andhra Pradesh'}</option>
+                        <option value="Maharashtra">{lang === 'hi' ? 'महाराष्ट्र' : 'Maharashtra'}</option>
+                        <option value="Odisha">{lang === 'hi' ? 'ओडिशा' : 'Odisha'}</option>
                       </select>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-slate-500 font-medium mb-1">Gender</label>
+                      <label className="block text-slate-500 font-medium mb-1">{t.gender}</label>
                       <select
                         value={profileGender}
                         onChange={(e) => setProfileGender(e.target.value)}
                         className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-sky-500"
                       >
-                        <option value="Female">Female</option>
-                        <option value="Male">Male</option>
-                        <option value="Other">Other</option>
+                        <option value="Female">{t.female}</option>
+                        <option value="Male">{t.male}</option>
+                        <option value="Other">{t.other}</option>
                       </select>
                     </div>
                     <div>
-                      <label className="block text-slate-500 font-medium mb-1">Caste Category</label>
+                      <label className="block text-slate-500 font-medium mb-1">{t.caste}</label>
                       <select
                         value={profileCaste}
                         onChange={(e) => setProfileCaste(e.target.value)}
                         className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-sky-500"
                       >
-                        <option value="General">General</option>
-                        <option value="OBC">OBC</option>
-                        <option value="SC">SC</option>
-                        <option value="ST">ST</option>
+                        <option value="General">{t.general}</option>
+                        <option value="OBC">{t.obc}</option>
+                        <option value="SC">{t.sc}</option>
+                        <option value="ST">{t.st}</option>
                       </select>
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-slate-500 font-medium mb-1">Annual Household Income (₹)</label>
+                    <label className="block text-slate-500 font-medium mb-1">{t.income}</label>
                     <input
                       type="number"
                       value={profileIncome}
@@ -813,7 +947,7 @@ function App() {
                   </div>
 
                   <div>
-                    <label className="block text-slate-500 font-medium mb-1">Agricultural Land owned (Acres)</label>
+                    <label className="block text-slate-500 font-medium mb-1">{t.landholding}</label>
                     <input
                       type="number"
                       step="0.1"
@@ -830,7 +964,7 @@ function App() {
             {/* Column 2: Schemes Directory Cards with Eligibility Badges */}
             <section className="lg:col-span-4 flex flex-col bg-slate-900/60 border border-slate-850 p-5 rounded-2xl backdrop-blur-xl shadow-xl min-h-[400px]">
               <h3 className="text-sm font-semibold text-slate-300 mb-4 pb-2 border-b border-slate-850 uppercase tracking-wider flex items-center justify-between">
-                <span>Verified Schemes ({schemes.length})</span>
+                <span>{t.verifiedSchemes} ({schemes.length})</span>
                 <span className="text-[10px] text-sky-400 bg-sky-950/80 px-2 py-0.5 rounded border border-sky-900/50">Directory</span>
               </h3>
 
@@ -853,33 +987,32 @@ function App() {
                         {elig ? (
                           elig.eligible ? (
                             <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-950/80 border border-emerald-800/80 text-emerald-400 tracking-wider shrink-0 uppercase">
-                              Eligible
+                              {t.eligible}
                             </span>
                           ) : (
                             <span
                               className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-rose-950/80 border border-rose-800/80 text-rose-400 shrink-0 uppercase cursor-help"
                               title={elig.failed_rules.join('\n')}
                             >
-                              Ineligible ⚠️
+                              {t.ineligible}
                             </span>
                           )
                         ) : (
                           <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-500 shrink-0 uppercase">
-                            No Rules
+                            {t.noRules}
                           </span>
                         )}
                       </div>
                       
                       <div className="flex gap-2 text-[10px] text-slate-500 font-medium">
-                        <span>State: {s.state}</span>
+                        <span>State: {s.state === 'Central' && lang === 'hi' ? 'केंद्रीय' : s.state}</span>
                         <span>•</span>
                         <span>Category: {s.category}</span>
                       </div>
 
-                      {/* Display warning checklist if ineligible */}
                       {elig && !elig.eligible && (
                         <div className="mt-2.5 text-[10px] text-rose-300 bg-rose-950/20 border border-rose-900/30 p-2 rounded-lg leading-relaxed">
-                          <strong className="block text-rose-400 mb-0.5">Failed Criteria:</strong>
+                          <strong className="block text-rose-400 mb-0.5">{t.failedCriteria}</strong>
                           <ul className="list-disc pl-3.5 space-y-0.5">
                             {elig.failed_rules.map((rule, idx) => (
                               <li key={idx}>{rule}</li>
@@ -899,7 +1032,7 @@ function App() {
               <div className="bg-slate-900/60 border border-slate-850 p-5 rounded-2xl flex-1 flex flex-col backdrop-blur-xl shadow-xl min-h-[300px]">
                 <h3 className="text-sm font-semibold text-slate-300 mb-4 flex justify-between items-center pb-2 border-b border-slate-850">
                   <span className="flex items-center gap-2">
-                    Audited Chunks ({chunks.length})
+                    {t.auditedChunks} ({chunks.length})
                     {searchLoading && (
                       <svg className="animate-spin h-3.5 w-3.5 text-sky-500" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -910,9 +1043,9 @@ function App() {
                   {selectedSchemeId && (
                     <button
                       onClick={() => setSelectedSchemeId('')}
-                      className="text-[10px] text-sky-400 hover:text-sky-300 underline font-medium"
+                      className="text-[10px] text-sky-400 hover:text-sky-300 underline font-medium cursor-pointer"
                     >
-                      Clear Filter
+                      {t.clearFilter}
                     </button>
                   )}
                 </h3>
@@ -924,8 +1057,8 @@ function App() {
                   </div>
                 ) : chunks.length === 0 ? (
                   <div className="text-center py-16 text-slate-500 flex-1 flex flex-col justify-center">
-                    <p className="text-sm font-semibold">No Chunks Found</p>
-                    <p className="text-xs mt-1">Select a scheme on the left to load its text guidelines.</p>
+                    <p className="text-sm font-semibold">{t.noChunks}</p>
+                    <p className="text-xs mt-1">{t.noChunksDesc}</p>
                   </div>
                 ) : (
                   <div className="space-y-3 overflow-y-auto max-h-[180px] pr-1 scrollbar-thin">
@@ -963,12 +1096,12 @@ function App() {
               {/* Chunk Inspector */}
               <div className="bg-slate-900/60 border border-slate-850 p-5 rounded-2xl flex-1 flex flex-col backdrop-blur-xl shadow-xl min-h-[250px]">
                 <h3 className="text-sm font-semibold text-slate-300 pb-2 border-b border-slate-850 uppercase tracking-wider mb-3">
-                  Chunk Inspector
+                  {t.chunkInspector}
                 </h3>
                 {selectedChunk ? (
                   <div className="flex-1 flex flex-col min-h-0">
                     <div className="bg-slate-950 border border-slate-900 p-2.5 rounded-xl text-[10px] mb-3 leading-normal">
-                      <span className="text-slate-500 block mb-0.5">Heading Path:</span>
+                      <span className="text-slate-500 block mb-0.5">{t.headingHierarchy}</span>
                       <span className="font-semibold text-slate-200">{selectedChunk.heading_path || "Root Document"}</span>
                     </div>
                     <div className="flex-1 bg-slate-950 border border-slate-900 rounded-xl p-3 text-[11px] font-mono leading-relaxed text-slate-300 overflow-y-auto max-h-[140px]">
@@ -977,7 +1110,7 @@ function App() {
                   </div>
                 ) : (
                   <div className="flex-1 flex items-center justify-center text-slate-500 text-center text-xs py-10">
-                    Select a chunk above to inspect details
+                    {t.selectChunkInspect}
                   </div>
                 )}
               </div>
@@ -988,7 +1121,7 @@ function App() {
 
       {/* Footer */}
       <footer className="z-10 border-t border-slate-900 mt-6 pt-4 text-center text-slate-600 text-xs">
-        Sahayak Government Scheme Assistant • Phase 5 Eligibility Engine
+        Sahayak Government Scheme Assistant • Phase 6 Hindi Support & Polish
       </footer>
     </div>
   );
