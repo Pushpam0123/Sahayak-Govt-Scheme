@@ -34,10 +34,7 @@ async def match_all_schemes(
         res_schemes = await db.execute(stmt_schemes)
         scheme_ids = res_schemes.scalars().all()
 
-        results = {
-            sid: {"eligible": True, "failed_rules": []}
-            for sid in scheme_ids
-        }
+        results = {sid: {"eligible": True, "failed_rules": []} for sid in scheme_ids}
 
         # 2. Fetch all defined eligibility rules
         stmt_rules = select(SchemeEligibilityRules)

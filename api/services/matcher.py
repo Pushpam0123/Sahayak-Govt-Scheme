@@ -27,9 +27,7 @@ def match_citizen_profile(
         if age is None:
             failed_reasons.append("Age details missing")
         elif age > max_age:
-            failed_reasons.append(
-                f"Age {age} exceeds maximum requirement of {max_age}"
-            )
+            failed_reasons.append(f"Age {age} exceeds maximum requirement of {max_age}")
 
     # 2. State residence check
     states = rules.get("states")
