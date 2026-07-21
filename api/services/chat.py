@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.llm.client import get_llm_client
 from api.models.chat import QALog
 from api.models.scheme import Document, Scheme
+from api.services.groundedness import verify_groundedness
 from api.services.retrieval import hybrid_search, is_hindi
 
 logger = logging.getLogger("sahayak.api.services.chat")
@@ -33,9 +34,7 @@ def split_into_sentences(text: str) -> List[str]:
     return sentences
 
 
-def parse_citations_for_sentence(
-    sentence_text: str, max_chunk_index: int
-) -> List[int]:
+def parse_citations_for_sentence(sentence_text: str, max_chunk_index: int) -> List[int]:
     """Extracts unique citation numbers from a sentence.
 
     Ensures they are within the index bounds (1 to max_chunk_index).
@@ -154,7 +153,16 @@ async def get_grounded_answer(
                 }
             )
 
-    # 7. Log Q&A to database
+    # 7. Groundedness Verification Pass
+    groundedness_results = await verify_groundedness(parsed_sentences, chunks)
+    for idx, s in enumerate(parsed_sentences):
+        res = groundedness_results[idx]
+        s["groundedness"] = {
+            "status": res["status"],
+            "reasoning": res["reasoning"],
+        }
+
+    # 8. Log Q&A to database
     qa_log = QALog(
         session_id=session_id,
         question=query,
@@ -162,7 +170,7 @@ async def get_grounded_answer(
         retrieved_chunk_ids=[chunk.id for chunk, _ in chunks],
         answer=raw_answer,
         citations_json=citations_metadata,
-        groundedness_json=None,  # Set in Phase 4
+        groundedness_json=groundedness_results,
         latency_ms=latency_ms,
         tokens_in=usage["input_tokens"],
         tokens_out=usage["output_tokens"],
