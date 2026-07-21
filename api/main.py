@@ -3,7 +3,7 @@ from typing import Any, Dict
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routers import health, search
+from api.routers import chat, health, search
 
 app = FastAPI(
     title="Sahayak API",
@@ -24,6 +24,7 @@ app.add_middleware(
 # Register endpoint routers
 app.include_router(health.router, prefix="/api/v1", tags=["system"])
 app.include_router(search.router, prefix="/api/v1", tags=["search"])
+app.include_router(chat.router, prefix="/api/v1", tags=["chat"])
 
 
 @app.get("/")

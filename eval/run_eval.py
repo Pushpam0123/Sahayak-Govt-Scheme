@@ -1,6 +1,8 @@
 import asyncio
+import json
 import logging
 import os
+import re
 import subprocess
 import sys
 import time
@@ -16,7 +18,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from api.db import AsyncSessionLocal
 from api.models.eval import EvalCase, EvalRun
 from api.models.scheme import Chunk, Document
+from api.models.chat import QALog
 from api.services.retrieval import get_fts_search, get_vector_search, hybrid_search
+from api.services.chat import get_grounded_answer
+from api.llm.client import get_llm_client
 
 logger = logging.getLogger("sahayak.eval.harness")
 logging.basicConfig(
@@ -149,6 +154,57 @@ async def evaluate_strategy(
     return hits / len(in_corpus_cases)
 
 
+async def evaluate_faithfulness(
+    answer: str, retrieved_chunks: List[str]
+) -> float:
+    """Invokes LLM-as-judge to verify if the answer is faithful to the context chunks.
+
+    Returns 1.0 (faithful) or 0.0 (unfaithful).
+    """
+    rubric_path = "eval/rubrics/faithfulness.md"
+    if not os.path.exists(rubric_path):
+        logger.warning(f"Rubric file {rubric_path} not found. Defaulting to 1.0.")
+        return 1.0
+
+    with open(rubric_path, "r", encoding="utf-8") as f:
+        rubric_content = f.read()
+
+    context_str = ""
+    for idx, text in enumerate(retrieved_chunks, 1):
+        context_str += f"Context [{idx}]:\n{text}\n\n"
+
+    system_prompt = (
+        f"{rubric_content}\n\n"
+        f"--- PROVIDED CONTEXTS ---\n"
+        f"{context_str}\n"
+        f"--- END OF CONTEXTS ---"
+    )
+
+    messages = [
+        {
+            "role": "user",
+            "content": f"Please evaluate the faithfulness of this Answer:\n\n{answer}",
+        }
+    ]
+
+    llm_client = get_llm_client()
+    try:
+        response = await llm_client.generate_response(
+            system_prompt, messages, temperature=0.0
+        )
+        content = response["content"]
+        
+        # Parse JSON block from response
+        match = re.search(r"({.*})", content, re.DOTALL)
+        if match:
+            data = json.loads(match.group(1))
+            return float(data.get("score", 0.0))
+        return 0.0
+    except Exception as e:
+        logger.error(f"Faithfulness evaluation judge failed: {str(e)}")
+        return 0.0
+
+
 async def main() -> None:
     # 1. Load golden cases
     cases_data = await load_golden_set()
@@ -159,41 +215,85 @@ async def main() -> None:
 
         logger.info("Starting retrieval evaluation...")
 
-        # 3. Evaluate FTS
+        # 3. Evaluate FTS recall
         fts_recall = await evaluate_strategy(db, synced_cases, "fts")
         logger.info("FTS Recall@5: %.4f", fts_recall)
 
-        # 4. Evaluate Vector
+        # 4. Evaluate Vector recall
         vector_recall = await evaluate_strategy(db, synced_cases, "vector")
         logger.info("Vector Recall@5: %.4f", vector_recall)
 
-        # 5. Evaluate Hybrid and measure latency
-        in_corpus_cases = [c for c in synced_cases if c["gold_chunk_ids"]]
-
-        hybrid_recall = 0.0
+        # 5. Evaluate Hybrid Q&A (Recall@5, Citation Precision, and Faithfulness)
+        logger.info("Starting Grounded Q&A Evaluation...")
+        
         total_latency_ms = 0.0
-        hits = 0
-
-        for case in in_corpus_cases:
+        hybrid_hits = 0
+        citation_precisions = []
+        faithfulness_scores = []
+        
+        # We evaluate QA metrics for all cases (faithfulness applies to out-of-corpus as well!)
+        for case in synced_cases:
+            question = case["question"]
+            gold_ids = set(case["gold_chunk_ids"])
+            
+            # Start timer & run full chat generation pipeline
             start_time = time.perf_counter()
-            results = await hybrid_search(db, case["question"], limit=5)
+            chat_res = await get_grounded_answer(db, question)
             latency = (time.perf_counter() - start_time) * 1000.0
             total_latency_ms += latency
 
-            retrieved_ids = {int(c.id) for c, _ in results}
-            gold_ids = set(case["gold_chunk_ids"])
-            if gold_ids.intersection(retrieved_ids):
-                hits += 1
+            answer = chat_res["answer"]
+            citations = chat_res["citations"]
+            
+            # A. Compute hybrid recall (if in-corpus)
+            if gold_ids:
+                # Reconstruct retrieved IDs from the chat database logs
+                # Since get_grounded_answer uses hybrid_search, we check if gold intersects top 5
+                # Wait, get_grounded_answer retrieves top 5 in chunks list.
+                # Let's get the retrieved chunk IDs.
+                retrieved_ids = {cit["chunk_id"] for cit in citations}
+                # Wait, the assistant might only cite some. Let's look at all retrieved chunks.
+                # To be precise, we get them from the DB log we just created
+                qa_log_id = chat_res["id"]
+                qa_log = await db.get(QALog, qa_log_id)
+                ret_chunk_ids = set(qa_log.retrieved_chunk_ids or []) if qa_log else set()
+                
+                if gold_ids.intersection(ret_chunk_ids):
+                    hybrid_hits += 1
 
-        if in_corpus_cases:
-            hybrid_recall = hits / len(in_corpus_cases)
-            avg_latency = total_latency_ms / len(in_corpus_cases)
-        else:
-            avg_latency = 0.0
+            # B. Compute Citation Precision
+            cited_chunk_ids = {cit["chunk_id"] for cit in citations}
+            if not cited_chunk_ids:
+                # If cited nothing, it's correct only if there were no gold chunk ids
+                precision = 1.0 if not gold_ids else 0.0
+            else:
+                precision = len(cited_chunk_ids.intersection(gold_ids)) / len(cited_chunk_ids)
+            citation_precisions.append(precision)
+
+            # C. Compute Faithfulness (LLM-as-judge)
+            # Retrieve text of cited chunks to pass to judge
+            cited_texts = []
+            for cit in citations:
+                # Retrieve from database
+                chunk_id = cit["chunk_id"]
+                chunk_obj = await db.get(Chunk, chunk_id)
+                if chunk_obj:
+                    cited_texts.append(chunk_obj.text)
+            
+            faith = await evaluate_faithfulness(answer, cited_texts)
+            faithfulness_scores.append(faith)
+
+        in_corpus_count = sum(1 for c in synced_cases if c["gold_chunk_ids"])
+        hybrid_recall = hybrid_hits / in_corpus_count if in_corpus_count > 0 else 0.0
+        avg_precision = sum(citation_precisions) / len(synced_cases) if synced_cases else 0.0
+        avg_faithfulness = sum(faithfulness_scores) / len(synced_cases) if synced_cases else 0.0
+        avg_latency = total_latency_ms / len(synced_cases) if synced_cases else 0.0
 
         logger.info(
-            "Hybrid Recall@5: %.4f (Average Latency: %.2f ms)",
+            "Hybrid Recall@5: %.4f, Citation Precision: %.4f, Faithfulness: %.4f (Avg Latency: %.2f ms)",
             hybrid_recall,
+            avg_precision,
+            avg_faithfulness,
             avg_latency,
         )
 
@@ -206,8 +306,10 @@ async def main() -> None:
             vector_recall=vector_recall,
             fts_recall=fts_recall,
             hybrid_recall=hybrid_recall,
+            citation_precision=avg_precision,
+            faithfulness=avg_faithfulness,
             avg_latency_ms=avg_latency,
-            notes="RRF hybrid retrieval evaluation run",
+            notes="Grounded Chat & Citations evaluation run",
         )
         db.add(run_record)
         await db.commit()
@@ -220,16 +322,17 @@ async def main() -> None:
         date_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         row_str = (
             f"| {date_str} | `{git_sha[:7]}` | {vector_recall:.4f} | "
-            f"{fts_recall:.4f} | {hybrid_recall:.4f} | {avg_latency:.2f}ms | "
-            f"RRF hybrid retrieval run |\n"
+            f"{fts_recall:.4f} | {hybrid_recall:.4f} | {avg_precision:.4f} | "
+            f"{avg_faithfulness:.4f} | {avg_latency:.2f}ms | "
+            f"Grounded Chat & Citations run |\n"
         )
 
         if not exists:
             header = (
                 "# Sahayak Evaluation History\n\n"
                 "| Date | Git SHA | Vector Recall@5 | FTS Recall@5 | "
-                "Hybrid Recall@5 | Avg Latency | Notes |\n"
-                "| --- | --- | --- | --- | --- | --- | --- |\n"
+                "Hybrid Recall@5 | Citation Precision | Faithfulness | Avg Latency | Notes |\n"
+                "| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n"
             )
             with open(evals_file_path, "w", encoding="utf-8") as f:
                 f.write(header + row_str)

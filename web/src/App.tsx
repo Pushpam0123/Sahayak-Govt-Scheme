@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 interface HealthResponse {
   status: string;
@@ -27,15 +27,45 @@ interface SearchResponse {
   schemes: SchemeInfo[];
 }
 
+interface CitationInfo {
+  n: number;
+  chunk_id: number;
+  source_url: string;
+  heading_path: string;
+  quote: string;
+}
+
+interface SentenceInfo {
+  text: string;
+  citations: number[];
+}
+
+interface ChatMessage {
+  sender: 'user' | 'assistant';
+  text: string;
+  sentences?: SentenceInfo[];
+  citations?: CitationInfo[];
+  usage?: {
+    input_tokens: number;
+    output_tokens: number;
+  };
+  latency_ms?: number;
+}
+
 function App() {
+  // Navigation State
+  const [activeTab, setActiveTab] = useState<'explorer' | 'chat'>('chat');
+
   // Liveness state
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [healthError, setHealthError] = useState<string | null>(null);
   const [healthLoading, setHealthLoading] = useState<boolean>(true);
   const [checkCount, setCheckCount] = useState<number>(0);
 
-  // Search/Browser state
+  // General states
   const [schemes, setSchemes] = useState<SchemeInfo[]>([]);
+
+  // Explorer Tab State
   const [chunks, setChunks] = useState<ChunkResult[]>([]);
   const [selectedSchemeId, setSelectedSchemeId] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -43,6 +73,25 @@ function App() {
   const [searchLoading, setSearchLoading] = useState<boolean>(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [selectedChunk, setSelectedChunk] = useState<ChunkResult | null>(null);
+
+  // Chat Tab State
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+    {
+      sender: 'assistant',
+      text: "Hello! I am Sahayak, your government scheme RAG assistant. Ask me questions about eligibility or benefits, and I'll answer using only official guidelines. You can also apply state or category filters in the options below."
+    }
+  ]);
+  const [chatInput, setChatInput] = useState<string>('');
+  const [chatLoading, setChatLoading] = useState<boolean>(false);
+  const [chatError, setChatError] = useState<string | null>(null);
+  const [activeCitation, setActiveCitation] = useState<CitationInfo | null>(null);
+  
+  // Chat option filters
+  const [chatSchemeId, setChatSchemeId] = useState<string>('');
+  const [chatStateFilter, setChatStateFilter] = useState<string>('');
+  const [chatCategoryFilter, setChatCategoryFilter] = useState<string>('');
+
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch liveness
   const checkHealth = async () => {
@@ -92,277 +141,571 @@ function App() {
     }
   };
 
+  // Triggered on mount
   useEffect(() => {
     checkHealth();
+    // Fetch initial schemes list for dropdowns
+    const fetchInitialSchemes = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/api/v1/search?limit=1');
+        if (response.ok) {
+          const data: SearchResponse = await response.json();
+          setSchemes(data.schemes);
+        }
+      } catch (err) {
+        console.error("Failed to fetch schemes dropdown:", err);
+      }
+    };
+    fetchInitialSchemes();
   }, [checkCount]);
 
   useEffect(() => {
-    fetchChunks();
+    if (activeTab === 'explorer') {
+      fetchChunks();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedSchemeId, searchLimit]);
+  }, [selectedSchemeId, searchLimit, activeTab]);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     fetchChunks();
   };
 
+  // Handle Grounded Q&A Chat Submit
+  const handleChatSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatInput.trim() || chatLoading) return;
+
+    const userMsg = chatInput;
+    setChatInput('');
+    setChatError(null);
+    setChatLoading(true);
+
+    // Append user message
+    setChatMessages(prev => [...prev, { sender: 'user', text: userMsg }]);
+
+    try {
+      const payload = {
+        question: userMsg,
+        filters: {
+          state: chatStateFilter || null,
+          category: chatCategoryFilter || null,
+          scheme_id: chatSchemeId || null
+        }
+      };
+
+      const response = await fetch('http://localhost:8000/api/v1/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Chat API error! Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      setChatMessages(prev => [
+        ...prev,
+        {
+          sender: 'assistant',
+          text: data.answer,
+          sentences: data.sentences,
+          citations: data.citations,
+          usage: data.usage,
+          latency_ms: data.latency_ms
+        }
+      ]);
+    } catch (err: any) {
+      console.error("Chat generation failed:", err);
+      setChatError(err.message || "Failed to generate cited response.");
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
+  // Inline citation renderer
+  const renderMessageText = (msg: ChatMessage) => {
+    if (!msg.citations || msg.citations.length === 0) {
+      const isRefusal = msg.text === "I don't have this information in the official documents I've indexed.";
+      return (
+        <p className={`whitespace-pre-wrap leading-relaxed ${isRefusal ? 'text-red-400 font-semibold' : ''}`}>
+          {msg.text}
+        </p>
+      );
+    }
+
+    const parts = msg.text.split(/(\[[0-9]+\])/g);
+    return (
+      <p className="whitespace-pre-wrap leading-relaxed">
+        {parts.map((part, idx) => {
+          const match = part.match(/^\[([0-9]+)\]$/);
+          if (match) {
+            const citationNum = parseInt(match[1]);
+            const cit = msg.citations?.find(c => c.n === citationNum);
+            if (cit) {
+              return (
+                <button
+                  key={idx}
+                  onClick={() => setActiveCitation(cit)}
+                  className="inline-flex items-center justify-center text-[10px] font-bold px-1.5 py-0.5 rounded mx-0.5 bg-sky-950 border border-sky-800 text-sky-400 hover:bg-sky-900 active:bg-sky-850 cursor-pointer transition-colors shadow-sm align-super"
+                  title={`Citation [${citationNum}]: ${cit.heading_path}`}
+                >
+                  {citationNum}
+                </button>
+              );
+            }
+          }
+          return part;
+        })}
+      </p>
+    );
+  };
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col p-6 relative overflow-hidden font-sans">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col p-4 md:p-6 relative overflow-hidden font-sans">
       {/* Decorative background glow elements */}
       <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-blue-600/5 rounded-full blur-[140px] pointer-events-none"></div>
       <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-[500px] h-[500px] bg-sky-500/5 rounded-full blur-[140px] pointer-events-none"></div>
 
       {/* Header Bar */}
-      <header className="z-10 border-b border-slate-900 pb-6 mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <header className="z-10 border-b border-slate-900 pb-4 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <div className="inline-flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-full px-3 py-1 text-xs font-semibold text-sky-400 mb-3 backdrop-blur-md">
+          <div className="inline-flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-full px-3 py-1 text-xs font-semibold text-sky-400 mb-2.5 backdrop-blur-md">
             <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse"></span>
-            Sahayak Scheme Assistant
+            Sahayak Citizen Portal
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-200 to-sky-400 bg-clip-text text-transparent">
-            Sahayak Ingestion & Scheme Explorer
+          <h1 className="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-200 to-sky-400 bg-clip-text text-transparent">
+            Sahayak Government Scheme Assistant
           </h1>
-          <p className="mt-1 text-slate-400 text-sm max-w-xl">
-            Audit and verify document cleaning, table markdown preservation, and semantic heading-aware chunk boundaries.
-          </p>
         </div>
 
-        {/* System Liveness Panel */}
-        <div className="bg-slate-900/50 border border-slate-850 p-4 rounded-xl flex items-center gap-6 text-xs shadow-lg backdrop-blur-md">
+        {/* Liveness Indicator */}
+        <div className="bg-slate-900/50 border border-slate-850 px-4 py-2.5 rounded-xl flex items-center gap-4 text-xs shadow-lg backdrop-blur-md">
           <div>
-            <div className="text-slate-500">API Status:</div>
+            <div className="text-slate-500">API status:</div>
             <div className="font-semibold mt-0.5">
               {healthLoading ? (
                 <span className="text-slate-400">Checking...</span>
               ) : healthError ? (
-                <span className="text-red-400">Offline</span>
+                <span className="text-red-400 font-bold">Offline</span>
               ) : (
-                <span className="text-emerald-400">Online</span>
+                <span className="text-emerald-400 font-bold">Online</span>
               )}
             </div>
           </div>
-          <div className="h-8 w-px bg-slate-800"></div>
+          <div className="h-6 w-px bg-slate-850"></div>
           <div>
-            <div className="text-slate-500">Database Connection:</div>
+            <div className="text-slate-500">Database:</div>
             <div className="font-semibold mt-0.5">
               {healthLoading ? (
                 <span className="text-slate-400">Checking...</span>
               ) : health?.database === "connected" ? (
                 <span className="text-emerald-400 font-semibold">Connected</span>
               ) : (
-                <span className="text-red-400">Disconnected</span>
+                <span className="text-red-400 font-bold">Disconnected</span>
               )}
             </div>
           </div>
           <button
             onClick={() => setCheckCount(prev => prev + 1)}
             disabled={healthLoading}
-            className="p-1.5 bg-slate-850 hover:bg-slate-800 rounded-lg border border-slate-800 text-slate-300 transition-colors"
-            title="Refresh Liveness"
+            className="p-1 bg-slate-850 hover:bg-slate-850 rounded border border-slate-800 text-slate-300 transition-colors"
           >
-            <svg className={`h-4.5 w-4.5 ${healthLoading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89H18v3.582" />
+            <svg className={`h-3.5 w-3.5 ${healthLoading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89H18v3.582" />
             </svg>
           </button>
         </div>
       </header>
 
-      {/* Main Grid View */}
-      <main className="z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1">
-        {/* Left Side: Filter and Listing Panel */}
-        <section className="lg:col-span-5 flex flex-col gap-6">
-          {/* Filtering Controls */}
-          <div className="bg-slate-900/60 border border-slate-850 p-5 rounded-2xl backdrop-blur-xl shadow-xl">
-            <h2 className="text-sm font-semibold text-slate-300 mb-4 uppercase tracking-wider">Search and Filter Chunks</h2>
-            
-            <form onSubmit={handleSearchSubmit} className="space-y-4">
-              {/* Scheme Select */}
-              <div>
-                <label className="block text-xs text-slate-400 font-medium mb-1.5">Select Government Scheme</label>
-                <select
-                  value={selectedSchemeId}
-                  onChange={(e) => setSelectedSchemeId(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-sky-500 transition-colors"
-                >
-                  <option value="">-- All Schemes --</option>
-                  {schemes.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} ({s.state === 'Central' ? 'Central' : s.state})
-                    </option>
-                  ))}
-                </select>
-              </div>
+      {/* Tabs Navigation */}
+      <nav className="z-10 flex gap-2 mb-6 border-b border-slate-900 pb-2">
+        <button
+          onClick={() => setActiveTab('chat')}
+          className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all ${
+            activeTab === 'chat'
+              ? 'bg-sky-950/60 border border-sky-900/60 text-sky-400 shadow-md'
+              : 'text-slate-400 hover:text-slate-200 border border-transparent'
+          }`}
+        >
+          Grounded Q&A Chat
+        </button>
+        <button
+          onClick={() => setActiveTab('explorer')}
+          className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all ${
+            activeTab === 'explorer'
+              ? 'bg-sky-950/60 border border-sky-900/60 text-sky-400 shadow-md'
+              : 'text-slate-400 hover:text-slate-200 border border-transparent'
+          }`}
+        >
+          Ingestion & Chunks Explorer
+        </button>
+      </nav>
 
-              {/* Keyword Search */}
-              <div>
-                <label className="block text-xs text-slate-400 font-medium mb-1.5">Keyword Match</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Enter keywords..."
-                    className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-sky-500 transition-colors"
-                  />
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-sky-650 hover:bg-sky-600 active:bg-sky-700 text-white text-sm font-medium rounded-xl transition-colors shadow-md shadow-sky-950/20"
+      {/* Main Container */}
+      <main className="z-10 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-0">
+        {activeTab === 'chat' ? (
+          <>
+            {/* Grounded Chat Panel */}
+            <section className="lg:col-span-8 flex flex-col bg-slate-900/40 border border-slate-850 rounded-2xl backdrop-blur-xl shadow-xl overflow-hidden min-h-[500px]">
+              {/* Top Banner Options */}
+              <div className="bg-slate-950/40 border-b border-slate-850 p-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div>
+                  <label className="block text-slate-500 font-medium mb-1.5">Focus Scheme</label>
+                  <select
+                    value={chatSchemeId}
+                    onChange={(e) => setChatSchemeId(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-slate-300 focus:outline-none focus:border-sky-500"
                   >
-                    Search
-                  </button>
+                    <option value="">-- All Schemes --</option>
+                    {schemes.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-500 font-medium mb-1.5">State Filter</label>
+                  <select
+                    value={chatStateFilter}
+                    onChange={(e) => setChatStateFilter(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-slate-300 focus:outline-none focus:border-sky-500"
+                  >
+                    <option value="">-- All States --</option>
+                    <option value="Central">Central</option>
+                    <option value="Bihar">Bihar</option>
+                    <option value="Karnataka">Karnataka</option>
+                    <option value="Madhya Pradesh">Madhya Pradesh</option>
+                    <option value="Telangana">Telangana</option>
+                    <option value="West Bengal">West Bengal</option>
+                    <option value="Andhra Pradesh">Andhra Pradesh</option>
+                    <option value="Maharashtra">Maharashtra</option>
+                    <option value="Odisha">Odisha</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-500 font-medium mb-1.5">Category Filter</label>
+                  <select
+                    value={chatCategoryFilter}
+                    onChange={(e) => setChatCategoryFilter(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-slate-300 focus:outline-none focus:border-sky-500"
+                  >
+                    <option value="">-- All Categories --</option>
+                    <option value="Agriculture">Agriculture</option>
+                    <option value="Welfare">Welfare</option>
+                    <option value="Pension">Pension</option>
+                    <option value="Education">Education</option>
+                    <option value="Women & Child Development">Women & Child Development</option>
+                  </select>
                 </div>
               </div>
 
-              {/* Limit Slider */}
-              <div className="flex items-center justify-between pt-2">
-                <span className="text-xs text-slate-400">Limit Results:</span>
-                <div className="flex gap-2">
-                  {[10, 20, 50, 100].map((limitVal) => (
-                    <button
-                      key={limitVal}
-                      type="button"
-                      onClick={() => setSearchLimit(limitVal)}
-                      className={`text-xs px-2.5 py-1 rounded-md border transition-colors ${
-                        searchLimit === limitVal
-                          ? 'bg-sky-950/60 border-sky-800/80 text-sky-400'
-                          : 'bg-slate-950 border-slate-900 text-slate-500 hover:text-slate-300'
-                      }`}
-                    >
-                      {limitVal}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </form>
-          </div>
-
-          {/* Results List */}
-          <div className="bg-slate-900/60 border border-slate-850 p-5 rounded-2xl flex-1 flex flex-col backdrop-blur-xl shadow-xl min-h-[400px]">
-            <h3 className="text-sm font-semibold text-slate-300 mb-4 flex justify-between items-center pb-2 border-b border-slate-850">
-              <span>Retrieved Chunks ({chunks.length})</span>
-              {searchLoading && (
-                <svg className="animate-spin h-4 w-4 text-sky-500" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-              )}
-            </h3>
-
-            {searchError ? (
-              <div className="text-center py-12 text-red-400 bg-red-950/10 border border-red-900/20 rounded-xl px-4">
-                <p className="font-semibold">Query Failed</p>
-                <p className="text-xs opacity-80 mt-1">{searchError}</p>
-                <p className="text-xs text-slate-500 mt-4">Make sure you have run migrations and the ingestion script (`make ingest`).</p>
-              </div>
-            ) : chunks.length === 0 ? (
-              <div className="text-center py-16 text-slate-500 flex-1 flex flex-col justify-center">
-                <svg className="mx-auto h-8 w-8 opacity-40 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 13.5h3.86a2.25 2.25 0 012.008 1.24l.885 1.77a2.25 2.25 0 002.007 1.24h1.98a2.25 2.25 0 002.007-1.24l.885-1.77a2.25 2.25 0 012.007-1.24h3.86m-18 0h18" />
-                </svg>
-                <p className="text-sm font-semibold">No Chunks Found</p>
-                <p className="text-xs mt-1 max-w-xs mx-auto">Database is empty or no chunks match your filters. Run the ingestion pipeline first.</p>
-              </div>
-            ) : (
-              <div className="space-y-3 overflow-y-auto max-h-[500px] pr-1 scrollbar-thin">
-                {chunks.map((c) => {
-                  const isSelected = selectedChunk?.id === c.id;
+              {/* Chat Thread */}
+              <div className="flex-1 p-4 overflow-y-auto space-y-4 max-h-[500px]">
+                {chatMessages.map((msg, idx) => {
+                  const isUser = msg.sender === 'user';
                   return (
                     <div
-                      key={c.id}
-                      onClick={() => setSelectedChunk(c)}
-                      className={`p-4 rounded-xl border text-left cursor-pointer transition-all ${
-                        isSelected
-                          ? 'bg-sky-950/40 border-sky-800/80 shadow-md shadow-sky-950/15'
-                          : 'bg-slate-950 border-slate-900/80 hover:border-slate-800 hover:bg-slate-900/30'
-                      }`}
+                      key={idx}
+                      className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}
                     >
-                      <div className="flex justify-between items-start gap-2 mb-2">
-                        <div className="text-[11px] font-bold text-sky-400 bg-sky-950/80 border border-sky-900/50 rounded px-1.5 py-0.5">
-                          Seq: {c.seq}
-                        </div>
-                        <span className="text-[10px] text-slate-500 font-mono">ID: #{c.id}</span>
-                      </div>
-                      <div className="text-xs font-semibold text-slate-200 line-clamp-1 mb-1.5" title={c.heading_path}>
-                        {c.heading_path || "Root Document"}
-                      </div>
-                      <div className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
-                        {c.text}
-                      </div>
-                      <div className="mt-3 flex justify-between items-center text-[10px] text-slate-500 pt-2 border-t border-slate-900/50">
-                        <span>Doc: {c.document_title}</span>
-                        <span>{c.tokens} tokens</span>
+                      <div
+                        className={`max-w-[85%] rounded-2xl px-4.5 py-3 shadow-md border ${
+                          isUser
+                            ? 'bg-sky-650 border-sky-650 text-white rounded-br-none'
+                            : 'bg-slate-950 border-slate-900 text-slate-200 rounded-bl-none'
+                        }`}
+                      >
+                        {renderMessageText(msg)}
+                        {!isUser && msg.latency_ms && (
+                          <div className="mt-2.5 pt-1.5 border-t border-slate-900/60 flex items-center gap-3 text-[10px] text-slate-500 font-mono">
+                            <span>Latency: {msg.latency_ms.toFixed(0)}ms</span>
+                            {msg.usage && (
+                              <span>Tokens: In={msg.usage.input_tokens} Out={msg.usage.output_tokens}</span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
                 })}
+                {chatLoading && (
+                  <div className="flex justify-start">
+                    <div className="bg-slate-950 border border-slate-900 rounded-2xl rounded-bl-none px-4.5 py-3 flex items-center gap-3">
+                      <svg className="animate-spin h-4 w-4 text-sky-500" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span className="text-xs text-slate-400 font-medium">Consulting official records...</span>
+                    </div>
+                  </div>
+                )}
+                {chatError && (
+                  <div className="p-3 bg-red-950/20 border border-red-900/30 rounded-xl text-xs text-red-400 font-medium">
+                    Failed to query: {chatError}
+                  </div>
+                )}
+                <div ref={chatEndRef}></div>
               </div>
-            )}
-          </div>
-        </section>
 
-        {/* Right Side: Chunk Inspector Panel */}
-        <section className="lg:col-span-7 flex flex-col">
-          <div className="bg-slate-900/60 border border-slate-850 rounded-2xl flex-1 flex flex-col backdrop-blur-xl shadow-xl p-6 min-h-[500px]">
-            <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider pb-3 border-b border-slate-850 flex items-center justify-between mb-4">
-              <span>Detailed Chunk Inspector</span>
-              {selectedChunk && (
-                <span className="text-xs text-sky-400 font-mono normal-case">
-                  Est. Tokens: {selectedChunk.tokens}
-                </span>
-              )}
-            </h2>
+              {/* Chat Input */}
+              <form onSubmit={handleChatSubmit} className="bg-slate-950/30 border-t border-slate-850 p-4 flex gap-3">
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  placeholder="Ask a question about government scheme criteria..."
+                  disabled={chatLoading}
+                  className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-sky-500 transition-colors"
+                />
+                <button
+                  type="submit"
+                  disabled={chatLoading || !chatInput.trim()}
+                  className="px-5 py-2.5 bg-sky-650 hover:bg-sky-600 disabled:opacity-50 text-white text-sm font-semibold rounded-xl transition-colors shadow-md shadow-sky-950/25 flex items-center gap-1.5"
+                >
+                  Ask
+                </button>
+              </form>
+            </section>
 
-            {selectedChunk ? (
-              <div className="flex-1 flex flex-col gap-6">
-                {/* Meta details list */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                  <div className="bg-slate-950 border border-slate-900 rounded-xl p-3.5">
-                    <span className="text-slate-500 block mb-1">Parent Scheme Slug:</span>
-                    <span className="font-mono font-semibold text-slate-200">{selectedChunk.scheme_id}</span>
-                  </div>
-                  <div className="bg-slate-950 border border-slate-900 rounded-xl p-3.5">
-                    <span className="text-slate-500 block mb-1">Heading Hierarchy Path:</span>
-                    <span className="font-semibold text-slate-200 leading-normal">{selectedChunk.heading_path || "Root (No Headings)"}</span>
-                  </div>
-                </div>
-
-                {/* Main Content Render Area */}
-                <div className="flex-1 flex flex-col">
-                  <span className="text-xs text-slate-500 font-medium mb-2">Chunk Markdown Content:</span>
-                  <div className="flex-1 bg-slate-950 border border-slate-900 rounded-xl p-5 font-mono text-xs leading-relaxed text-slate-300 overflow-auto max-h-[500px]">
-                    <pre className="whitespace-pre-wrap font-sans text-sm">{selectedChunk.text}</pre>
-                  </div>
-                </div>
-
-                {/* Eyeball Check Advice Box */}
-                <div className="bg-slate-950 border border-slate-900 rounded-xl p-4 text-xs text-slate-400 flex items-start gap-3">
-                  <svg className="h-5 w-5 text-sky-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <div>
-                    <p className="font-semibold text-slate-300 mb-0.5">Verification Guideline:</p>
-                    <p className="leading-normal">
-                      Check that markdown tables are intact and not cut off. Make sure the heading hierarchy path captures correct sub-sections (e.g., Eligibility &gt; Age Limit) to ensure context remains preserved when searched.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="flex-1 flex flex-col justify-center items-center text-slate-500 py-24">
-                <svg className="h-10 w-10 opacity-30 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+            {/* Right Side: Citations Panel */}
+            <section className="lg:col-span-4 flex flex-col bg-slate-900/40 border border-slate-850 rounded-2xl backdrop-blur-xl shadow-xl p-5 overflow-hidden">
+              <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider pb-3 border-b border-slate-850 flex items-center gap-2 mb-4">
+                <svg className="h-4.5 w-4.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                <p className="text-sm font-semibold">Select a chunk to view details</p>
-                <p className="text-xs mt-1">Chunk metadata, estimated tokens, and full markdown structures will load here.</p>
+                Citation Inspector
+              </h3>
+
+              {activeCitation ? (
+                <div className="space-y-5 overflow-y-auto flex-1 pr-1 scrollbar-thin">
+                  <div className="bg-slate-950 border border-slate-900 rounded-xl p-4">
+                    <span className="text-[10px] text-slate-500 font-bold block mb-1">Citation Index:</span>
+                    <span className="inline-flex items-center justify-center h-6 w-6 text-xs font-bold rounded bg-sky-950 border border-sky-800 text-sky-400">
+                      [{activeCitation.n}]
+                    </span>
+                  </div>
+
+                  <div className="bg-slate-950 border border-slate-900 rounded-xl p-4">
+                    <span className="text-[10px] text-slate-500 font-bold block mb-1">Heading Hierarchy:</span>
+                    <span className="text-xs font-semibold text-slate-200 leading-relaxed">
+                      {activeCitation.heading_path}
+                    </span>
+                  </div>
+
+                  <div className="bg-slate-950 border border-slate-900 rounded-xl p-4">
+                    <span className="text-[10px] text-slate-500 font-bold block mb-1">Official Document Source:</span>
+                    <a
+                      href={activeCitation.source_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-sky-400 hover:text-sky-300 font-medium underline flex items-center gap-1 leading-normal"
+                    >
+                      View Source Document
+                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </a>
+                  </div>
+
+                  <div className="bg-slate-950 border border-slate-900 rounded-xl p-4 flex-1">
+                    <span className="text-[10px] text-slate-500 font-bold block mb-2">Source Quote:</span>
+                    <div className="bg-slate-900/60 p-3 rounded-lg text-xs leading-relaxed text-slate-300 font-mono overflow-auto max-h-[220px]">
+                      {activeCitation.quote}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex-1 flex flex-col justify-center items-center text-slate-500 text-center py-20 px-4">
+                  <svg className="h-10 w-10 opacity-30 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+                  </svg>
+                  <p className="text-sm font-semibold">No Citation Selected</p>
+                  <p className="text-xs mt-1 max-w-[200px]">
+                    Click on any citation badge in an assistant message (e.g. <span className="text-sky-400 font-bold">[1]</span>) to view official document excerpts and source links.
+                  </p>
+                </div>
+              )}
+            </section>
+          </>
+        ) : (
+          /* Explorer Tab content */
+          <>
+            {/* Left Side: Filter and Listing Panel */}
+            <section className="lg:col-span-5 flex flex-col gap-6">
+              {/* Filtering Controls */}
+              <div className="bg-slate-900/60 border border-slate-850 p-5 rounded-2xl backdrop-blur-xl shadow-xl">
+                <h2 className="text-sm font-semibold text-slate-300 mb-4 uppercase tracking-wider">Search and Filter Chunks</h2>
+                
+                <form onSubmit={handleSearchSubmit} className="space-y-4">
+                  {/* Scheme Select */}
+                  <div>
+                    <label className="block text-xs text-slate-400 font-medium mb-1.5">Select Government Scheme</label>
+                    <select
+                      value={selectedSchemeId}
+                      onChange={(e) => setSelectedSchemeId(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-sky-500 transition-colors"
+                    >
+                      <option value="">-- All Schemes --</option>
+                      {schemes.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name} ({s.state === 'Central' ? 'Central' : s.state})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Keyword Search */}
+                  <div>
+                    <label className="block text-xs text-slate-400 font-medium mb-1.5">Keyword Match</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Enter keywords..."
+                        className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-sky-500 transition-colors"
+                      />
+                      <button
+                        type="submit"
+                        className="px-4 py-2 bg-sky-650 hover:bg-sky-600 active:bg-sky-700 text-white text-sm font-medium rounded-xl transition-colors shadow-md shadow-sky-950/20"
+                      >
+                        Search
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Limit Slider */}
+                  <div className="flex items-center justify-between pt-2">
+                    <span className="text-xs text-slate-400">Limit Results:</span>
+                    <div className="flex gap-2">
+                      {[10, 20, 50, 100].map((limitVal) => (
+                        <button
+                          key={limitVal}
+                          type="button"
+                          onClick={() => setSearchLimit(limitVal)}
+                          className={`text-xs px-2.5 py-1 rounded-md border transition-colors ${
+                            searchLimit === limitVal
+                              ? 'bg-sky-950/60 border-sky-800/80 text-sky-400'
+                              : 'bg-slate-950 border-slate-900 text-slate-500 hover:text-slate-300'
+                          }`}
+                        >
+                          {limitVal}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </form>
               </div>
-            )}
-          </div>
-        </section>
+
+              {/* Chunks List */}
+              <div className="bg-slate-900/60 border border-slate-850 p-5 rounded-2xl flex-1 flex flex-col backdrop-blur-xl shadow-xl min-h-[300px]">
+                <h3 className="text-sm font-semibold text-slate-300 mb-4 flex justify-between items-center pb-2 border-b border-slate-850">
+                  <span>Retrieved Chunks ({chunks.length})</span>
+                  {searchLoading && (
+                    <svg className="animate-spin h-4 w-4 text-sky-500" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  )}
+                </h3>
+
+                {searchError ? (
+                  <div className="text-center py-12 text-red-400 bg-red-950/10 border border-red-900/20 rounded-xl px-4">
+                    <p className="font-semibold">Query Failed</p>
+                    <p className="text-xs opacity-80 mt-1">{searchError}</p>
+                  </div>
+                ) : chunks.length === 0 ? (
+                  <div className="text-center py-16 text-slate-500 flex-1 flex flex-col justify-center">
+                    <p className="text-sm font-semibold">No Chunks Found</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 overflow-y-auto max-h-[350px] pr-1 scrollbar-thin">
+                    {chunks.map((c) => {
+                      const isSelected = selectedChunk?.id === c.id;
+                      return (
+                        <div
+                          key={c.id}
+                          onClick={() => setSelectedChunk(c)}
+                          className={`p-4 rounded-xl border text-left cursor-pointer transition-all ${
+                            isSelected
+                              ? 'bg-sky-950/40 border-sky-800/80 shadow-md'
+                              : 'bg-slate-950 border-slate-900/80 hover:border-slate-800 hover:bg-slate-900/30'
+                          }`}
+                        >
+                          <div className="flex justify-between items-start gap-2 mb-2">
+                            <div className="text-[11px] font-bold text-sky-400 bg-sky-950/80 border border-sky-900/50 rounded px-1.5 py-0.5">
+                              Seq: {c.seq}
+                            </div>
+                            <span className="text-[10px] text-slate-500 font-mono">ID: #{c.id}</span>
+                          </div>
+                          <div className="text-xs font-semibold text-slate-200 line-clamp-1 mb-1.5">
+                            {c.heading_path || "Root Document"}
+                          </div>
+                          <div className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+                            {c.text}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* Right Side: Chunk Inspector Panel */}
+            <section className="lg:col-span-7 flex flex-col">
+              <div className="bg-slate-900/60 border border-slate-850 rounded-2xl flex-1 flex flex-col backdrop-blur-xl shadow-xl p-6 min-h-[500px]">
+                <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider pb-3 border-b border-slate-850 flex items-center justify-between mb-4">
+                  <span>Detailed Chunk Inspector</span>
+                  {selectedChunk && (
+                    <span className="text-xs text-sky-400 font-mono">
+                      Est. Tokens: {selectedChunk.tokens}
+                    </span>
+                  )}
+                </h2>
+
+                {selectedChunk ? (
+                  <div className="flex-1 flex flex-col gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                      <div className="bg-slate-950 border border-slate-900 rounded-xl p-3.5">
+                        <span className="text-slate-500 block mb-1">Parent Scheme Slug:</span>
+                        <span className="font-mono font-semibold text-slate-200">{selectedChunk.scheme_id}</span>
+                      </div>
+                      <div className="bg-slate-950 border border-slate-900 rounded-xl p-3.5">
+                        <span className="text-slate-500 block mb-1">Heading Hierarchy Path:</span>
+                        <span className="font-semibold text-slate-200">{selectedChunk.heading_path || "Root (No Headings)"}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex-1 flex flex-col">
+                      <span className="text-xs text-slate-500 font-medium mb-2">Chunk Markdown Content:</span>
+                      <div className="flex-1 bg-slate-950 border border-slate-900 rounded-xl p-5 font-mono text-xs leading-relaxed text-slate-300 overflow-auto max-h-[300px]">
+                        <pre className="whitespace-pre-wrap font-sans text-sm">{selectedChunk.text}</pre>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex-1 flex flex-col justify-center items-center text-slate-500 py-24">
+                    <p className="text-sm font-semibold">Select a chunk to view details</p>
+                  </div>
+                )}
+              </div>
+            </section>
+          </>
+        )}
       </main>
 
       {/* Footer */}
-      <footer className="z-10 border-t border-slate-900 mt-10 pt-6 text-center text-slate-600 text-xs">
-        Sahayak Government Scheme Assistant • Phase 1 Ingestion Completed
+      <footer className="z-10 border-t border-slate-900 mt-6 pt-4 text-center text-slate-600 text-xs">
+        Sahayak Government Scheme Assistant • Phase 3 Grounded Chat & Citations
       </footer>
     </div>
   );

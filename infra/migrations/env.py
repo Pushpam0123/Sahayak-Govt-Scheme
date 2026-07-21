@@ -21,6 +21,7 @@ except ImportError:
 from api.db import Base
 import api.models.scheme  # Ensure models are imported for autogenerate
 import api.models.eval  # Ensure evaluation models are imported for autogenerate
+import api.models.chat  # Ensure chat log models are imported for autogenerate
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
