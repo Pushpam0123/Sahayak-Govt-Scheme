@@ -18,7 +18,7 @@ class SchemeEligibilityRules(Base):
         unique=True,
     )
     rules_json: Any = Column(JSONB, nullable=False)
-    is_verified = Column(Boolean, default=False, nullable=False)
+    is_verified: Any = Column(Boolean, default=False, nullable=False)
     updated_at = Column(
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
     )

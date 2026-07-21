@@ -38,6 +38,10 @@ interface CitationInfo {
 interface SentenceInfo {
   text: string;
   citations: number[];
+  groundedness?: {
+    status: string;
+    reasoning: string;
+  };
 }
 
 interface ChatMessage {
@@ -50,6 +54,11 @@ interface ChatMessage {
     output_tokens: number;
   };
   latency_ms?: number;
+}
+
+interface EligibilityStatus {
+  eligible: boolean;
+  failed_rules: string[];
 }
 
 function App() {
@@ -90,6 +99,15 @@ function App() {
   const [chatSchemeId, setChatSchemeId] = useState<string>('');
   const [chatStateFilter, setChatStateFilter] = useState<string>('');
   const [chatCategoryFilter, setChatCategoryFilter] = useState<string>('');
+
+  // Citizen Profile Questionnaire State
+  const [profileAge, setProfileAge] = useState<string>('30');
+  const [profileState, setProfileState] = useState<string>('Madhya Pradesh');
+  const [profileGender, setProfileGender] = useState<string>('Female');
+  const [profileCaste, setProfileCaste] = useState<string>('General');
+  const [profileIncome, setProfileIncome] = useState<string>('180000');
+  const [profileLandholding, setProfileLandholding] = useState<string>('2.5');
+  const [eligibilityMap, setEligibilityMap] = useState<Record<string, EligibilityStatus>>({});
 
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -141,6 +159,35 @@ function App() {
     }
   };
 
+  // Run eligibility match
+  const runEligibilityCheck = async () => {
+    try {
+      const payload = {
+        age: profileAge ? parseInt(profileAge, 10) : null,
+        state: profileState || null,
+        gender: profileGender || null,
+        caste: profileCaste || null,
+        annual_income: profileIncome ? parseFloat(profileIncome) : null,
+        landholding_acres: profileLandholding ? parseFloat(profileLandholding) : null
+      };
+
+      const response = await fetch('http://localhost:8000/api/v1/eligibility/match-all', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setEligibilityMap(data);
+      }
+    } catch (err) {
+      console.error("Failed to match profile eligibility:", err);
+    }
+  };
+
   // Triggered on mount
   useEffect(() => {
     checkHealth();
@@ -169,6 +216,11 @@ function App() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
+
+  useEffect(() => {
+    runEligibilityCheck();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileAge, profileState, profileGender, profileCaste, profileIncome, profileLandholding]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -436,7 +488,7 @@ function App() {
               : 'text-slate-400 hover:text-slate-200 border border-transparent'
           }`}
         >
-          Ingestion & Chunks Explorer
+          Citizen Dashboard & Scheme Explorer
         </button>
       </nav>
 
@@ -626,33 +678,20 @@ function App() {
             </section>
           </>
         ) : (
-          /* Explorer Tab content */
+          /* Explorer Tab content (3-Column Layout) */
           <>
-            {/* Left Side: Filter and Listing Panel */}
-            <section className="lg:col-span-5 flex flex-col gap-6">
-              {/* Filtering Controls */}
+            {/* Column 1: Auditing Search Controls & Citizen Profile */}
+            <section className="lg:col-span-4 flex flex-col gap-6">
+              {/* Auditing Search Filters */}
               <div className="bg-slate-900/60 border border-slate-850 p-5 rounded-2xl backdrop-blur-xl shadow-xl">
-                <h2 className="text-sm font-semibold text-slate-300 mb-4 uppercase tracking-wider">Search and Filter Chunks</h2>
+                <h2 className="text-sm font-semibold text-slate-300 mb-4 uppercase tracking-wider flex items-center gap-2">
+                  <svg className="h-4.5 w-4.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  Auditing Filter
+                </h2>
                 
                 <form onSubmit={handleSearchSubmit} className="space-y-4">
-                  {/* Scheme Select */}
-                  <div>
-                    <label className="block text-xs text-slate-400 font-medium mb-1.5">Select Government Scheme</label>
-                    <select
-                      value={selectedSchemeId}
-                      onChange={(e) => setSelectedSchemeId(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-sky-500 transition-colors"
-                    >
-                      <option value="">-- All Schemes --</option>
-                      {schemes.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name} ({s.state === 'Central' ? 'Central' : s.state})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Keyword Search */}
                   <div>
                     <label className="block text-xs text-slate-400 font-medium mb-1.5">Keyword Match</label>
                     <div className="flex gap-2">
@@ -660,28 +699,27 @@ function App() {
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Enter keywords..."
+                        placeholder="Search document text..."
                         className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-sky-500 transition-colors"
                       />
                       <button
                         type="submit"
-                        className="px-4 py-2 bg-sky-650 hover:bg-sky-600 active:bg-sky-700 text-white text-sm font-medium rounded-xl transition-colors shadow-md shadow-sky-950/20"
+                        className="px-3.5 py-2 bg-sky-650 hover:bg-sky-600 active:bg-sky-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-md shadow-sky-950/20"
                       >
                         Search
                       </button>
                     </div>
                   </div>
 
-                  {/* Limit Slider */}
                   <div className="flex items-center justify-between pt-2">
-                    <span className="text-xs text-slate-400">Limit Results:</span>
-                    <div className="flex gap-2">
-                      {[10, 20, 50, 100].map((limitVal) => (
+                    <span className="text-xs text-slate-400">Limit:</span>
+                    <div className="flex gap-1.5">
+                      {[10, 20, 50].map((limitVal) => (
                         <button
                           key={limitVal}
                           type="button"
                           onClick={() => setSearchLimit(limitVal)}
-                          className={`text-xs px-2.5 py-1 rounded-md border transition-colors ${
+                          className={`text-[10px] px-2.5 py-1 rounded-md border transition-colors ${
                             searchLimit === limitVal
                               ? 'bg-sky-950/60 border-sky-800/80 text-sky-400'
                               : 'bg-slate-950 border-slate-900 text-slate-500 hover:text-slate-300'
@@ -695,15 +733,187 @@ function App() {
                 </form>
               </div>
 
-              {/* Chunks List */}
+              {/* Citizen Eligibility Profile Card */}
+              <div className="bg-slate-900/60 border border-slate-850 p-5 rounded-2xl backdrop-blur-xl shadow-xl">
+                <h2 className="text-sm font-semibold text-slate-300 mb-4 uppercase tracking-wider flex items-center gap-2">
+                  <svg className="h-4.5 w-4.5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  Eligibility Profile
+                </h2>
+
+                <div className="space-y-3.5 text-xs">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-500 font-medium mb-1">Age (Years)</label>
+                      <input
+                        type="number"
+                        value={profileAge}
+                        onChange={(e) => setProfileAge(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-sky-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-500 font-medium mb-1">State</label>
+                      <select
+                        value={profileState}
+                        onChange={(e) => setProfileState(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-sky-500"
+                      >
+                        <option value="Central">Central</option>
+                        <option value="Bihar">Bihar</option>
+                        <option value="Madhya Pradesh">Madhya Pradesh</option>
+                        <option value="Karnataka">Karnataka</option>
+                        <option value="Telangana">Telangana</option>
+                        <option value="West Bengal">West Bengal</option>
+                        <option value="Andhra Pradesh">Andhra Pradesh</option>
+                        <option value="Maharashtra">Maharashtra</option>
+                        <option value="Odisha">Odisha</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-500 font-medium mb-1">Gender</label>
+                      <select
+                        value={profileGender}
+                        onChange={(e) => setProfileGender(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-sky-500"
+                      >
+                        <option value="Female">Female</option>
+                        <option value="Male">Male</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-slate-500 font-medium mb-1">Caste Category</label>
+                      <select
+                        value={profileCaste}
+                        onChange={(e) => setProfileCaste(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-sky-500"
+                      >
+                        <option value="General">General</option>
+                        <option value="OBC">OBC</option>
+                        <option value="SC">SC</option>
+                        <option value="ST">ST</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-500 font-medium mb-1">Annual Household Income (₹)</label>
+                    <input
+                      type="number"
+                      value={profileIncome}
+                      onChange={(e) => setProfileIncome(e.target.value)}
+                      placeholder="e.g. 180000"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-sky-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-500 font-medium mb-1">Agricultural Land owned (Acres)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={profileLandholding}
+                      onChange={(e) => setProfileLandholding(e.target.value)}
+                      placeholder="e.g. 2.5"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-sky-500"
+                    />
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Column 2: Schemes Directory Cards with Eligibility Badges */}
+            <section className="lg:col-span-4 flex flex-col bg-slate-900/60 border border-slate-850 p-5 rounded-2xl backdrop-blur-xl shadow-xl min-h-[400px]">
+              <h3 className="text-sm font-semibold text-slate-300 mb-4 pb-2 border-b border-slate-850 uppercase tracking-wider flex items-center justify-between">
+                <span>Verified Schemes ({schemes.length})</span>
+                <span className="text-[10px] text-sky-400 bg-sky-950/80 px-2 py-0.5 rounded border border-sky-900/50">Directory</span>
+              </h3>
+
+              <div className="space-y-3 overflow-y-auto max-h-[500px] pr-1 scrollbar-thin">
+                {schemes.map((s) => {
+                  const elig = eligibilityMap[s.id];
+                  const isSelected = selectedSchemeId === s.id;
+                  return (
+                    <div
+                      key={s.id}
+                      onClick={() => setSelectedSchemeId(s.id)}
+                      className={`p-4 rounded-xl border text-left cursor-pointer transition-all relative group/card ${
+                        isSelected
+                          ? 'bg-sky-950/40 border-sky-800/80 shadow-md'
+                          : 'bg-slate-950 border-slate-900/80 hover:border-slate-800 hover:bg-slate-900/30'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start gap-2 mb-1.5">
+                        <span className="text-xs font-bold text-slate-200 line-clamp-1">{s.name}</span>
+                        {elig ? (
+                          elig.eligible ? (
+                            <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-950/80 border border-emerald-800/80 text-emerald-400 tracking-wider shrink-0 uppercase">
+                              Eligible
+                            </span>
+                          ) : (
+                            <span
+                              className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-rose-950/80 border border-rose-800/80 text-rose-400 shrink-0 uppercase cursor-help"
+                              title={elig.failed_rules.join('\n')}
+                            >
+                              Ineligible ⚠️
+                            </span>
+                          )
+                        ) : (
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-500 shrink-0 uppercase">
+                            No Rules
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="flex gap-2 text-[10px] text-slate-500 font-medium">
+                        <span>State: {s.state}</span>
+                        <span>•</span>
+                        <span>Category: {s.category}</span>
+                      </div>
+
+                      {/* Display warning checklist if ineligible */}
+                      {elig && !elig.eligible && (
+                        <div className="mt-2.5 text-[10px] text-rose-300 bg-rose-950/20 border border-rose-900/30 p-2 rounded-lg leading-relaxed">
+                          <strong className="block text-rose-400 mb-0.5">Failed Criteria:</strong>
+                          <ul className="list-disc pl-3.5 space-y-0.5">
+                            {elig.failed_rules.map((rule, idx) => (
+                              <li key={idx}>{rule}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* Column 3: Audited Chunks Listing & Inspector */}
+            <section className="lg:col-span-4 flex flex-col gap-6">
+              {/* Auditing Chunks list */}
               <div className="bg-slate-900/60 border border-slate-850 p-5 rounded-2xl flex-1 flex flex-col backdrop-blur-xl shadow-xl min-h-[300px]">
                 <h3 className="text-sm font-semibold text-slate-300 mb-4 flex justify-between items-center pb-2 border-b border-slate-850">
-                  <span>Retrieved Chunks ({chunks.length})</span>
-                  {searchLoading && (
-                    <svg className="animate-spin h-4 w-4 text-sky-500" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
+                  <span className="flex items-center gap-2">
+                    Audited Chunks ({chunks.length})
+                    {searchLoading && (
+                      <svg className="animate-spin h-3.5 w-3.5 text-sky-500" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    )}
+                  </span>
+                  {selectedSchemeId && (
+                    <button
+                      onClick={() => setSelectedSchemeId('')}
+                      className="text-[10px] text-sky-400 hover:text-sky-300 underline font-medium"
+                    >
+                      Clear Filter
+                    </button>
                   )}
                 </h3>
 
@@ -715,31 +925,32 @@ function App() {
                 ) : chunks.length === 0 ? (
                   <div className="text-center py-16 text-slate-500 flex-1 flex flex-col justify-center">
                     <p className="text-sm font-semibold">No Chunks Found</p>
+                    <p className="text-xs mt-1">Select a scheme on the left to load its text guidelines.</p>
                   </div>
                 ) : (
-                  <div className="space-y-3 overflow-y-auto max-h-[350px] pr-1 scrollbar-thin">
+                  <div className="space-y-3 overflow-y-auto max-h-[180px] pr-1 scrollbar-thin">
                     {chunks.map((c) => {
                       const isSelected = selectedChunk?.id === c.id;
                       return (
                         <div
                           key={c.id}
                           onClick={() => setSelectedChunk(c)}
-                          className={`p-4 rounded-xl border text-left cursor-pointer transition-all ${
+                          className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
                             isSelected
                               ? 'bg-sky-950/40 border-sky-800/80 shadow-md'
                               : 'bg-slate-950 border-slate-900/80 hover:border-slate-800 hover:bg-slate-900/30'
                           }`}
                         >
-                          <div className="flex justify-between items-start gap-2 mb-2">
-                            <div className="text-[11px] font-bold text-sky-400 bg-sky-950/80 border border-sky-900/50 rounded px-1.5 py-0.5">
+                          <div className="flex justify-between items-start gap-2 mb-1.5">
+                            <span className="text-[10px] font-bold text-sky-400 bg-sky-950/80 border border-sky-900/50 rounded px-1.5 py-0.5">
                               Seq: {c.seq}
-                            </div>
-                            <span className="text-[10px] text-slate-500 font-mono">ID: #{c.id}</span>
+                            </span>
+                            <span className="text-[9px] text-slate-500 font-mono">ID: #{c.id}</span>
                           </div>
-                          <div className="text-xs font-semibold text-slate-200 line-clamp-1 mb-1.5">
+                          <div className="text-[11px] font-semibold text-slate-200 line-clamp-1 mb-1">
                             {c.heading_path || "Root Document"}
                           </div>
-                          <div className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+                          <div className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed font-mono">
                             {c.text}
                           </div>
                         </div>
@@ -748,43 +959,25 @@ function App() {
                   </div>
                 )}
               </div>
-            </section>
 
-            {/* Right Side: Chunk Inspector Panel */}
-            <section className="lg:col-span-7 flex flex-col">
-              <div className="bg-slate-900/60 border border-slate-850 rounded-2xl flex-1 flex flex-col backdrop-blur-xl shadow-xl p-6 min-h-[500px]">
-                <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider pb-3 border-b border-slate-850 flex items-center justify-between mb-4">
-                  <span>Detailed Chunk Inspector</span>
-                  {selectedChunk && (
-                    <span className="text-xs text-sky-400 font-mono">
-                      Est. Tokens: {selectedChunk.tokens}
-                    </span>
-                  )}
-                </h2>
-
+              {/* Chunk Inspector */}
+              <div className="bg-slate-900/60 border border-slate-850 p-5 rounded-2xl flex-1 flex flex-col backdrop-blur-xl shadow-xl min-h-[250px]">
+                <h3 className="text-sm font-semibold text-slate-300 pb-2 border-b border-slate-850 uppercase tracking-wider mb-3">
+                  Chunk Inspector
+                </h3>
                 {selectedChunk ? (
-                  <div className="flex-1 flex flex-col gap-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                      <div className="bg-slate-950 border border-slate-900 rounded-xl p-3.5">
-                        <span className="text-slate-500 block mb-1">Parent Scheme Slug:</span>
-                        <span className="font-mono font-semibold text-slate-200">{selectedChunk.scheme_id}</span>
-                      </div>
-                      <div className="bg-slate-950 border border-slate-900 rounded-xl p-3.5">
-                        <span className="text-slate-500 block mb-1">Heading Hierarchy Path:</span>
-                        <span className="font-semibold text-slate-200">{selectedChunk.heading_path || "Root (No Headings)"}</span>
-                      </div>
+                  <div className="flex-1 flex flex-col min-h-0">
+                    <div className="bg-slate-950 border border-slate-900 p-2.5 rounded-xl text-[10px] mb-3 leading-normal">
+                      <span className="text-slate-500 block mb-0.5">Heading Path:</span>
+                      <span className="font-semibold text-slate-200">{selectedChunk.heading_path || "Root Document"}</span>
                     </div>
-
-                    <div className="flex-1 flex flex-col">
-                      <span className="text-xs text-slate-500 font-medium mb-2">Chunk Markdown Content:</span>
-                      <div className="flex-1 bg-slate-950 border border-slate-900 rounded-xl p-5 font-mono text-xs leading-relaxed text-slate-300 overflow-auto max-h-[300px]">
-                        <pre className="whitespace-pre-wrap font-sans text-sm">{selectedChunk.text}</pre>
-                      </div>
+                    <div className="flex-1 bg-slate-950 border border-slate-900 rounded-xl p-3 text-[11px] font-mono leading-relaxed text-slate-300 overflow-y-auto max-h-[140px]">
+                      {selectedChunk.text}
                     </div>
                   </div>
                 ) : (
-                  <div className="flex-1 flex flex-col justify-center items-center text-slate-500 py-24">
-                    <p className="text-sm font-semibold">Select a chunk to view details</p>
+                  <div className="flex-1 flex items-center justify-center text-slate-500 text-center text-xs py-10">
+                    Select a chunk above to inspect details
                   </div>
                 )}
               </div>
@@ -795,7 +988,7 @@ function App() {
 
       {/* Footer */}
       <footer className="z-10 border-t border-slate-900 mt-6 pt-4 text-center text-slate-600 text-xs">
-        Sahayak Government Scheme Assistant • Phase 3 Grounded Chat & Citations
+        Sahayak Government Scheme Assistant • Phase 5 Eligibility Engine
       </footer>
     </div>
   );
