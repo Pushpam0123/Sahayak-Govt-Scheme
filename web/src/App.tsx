@@ -231,12 +231,102 @@ function App() {
     }
   };
 
+  const renderSentenceWithCitations = (
+    sentText: string,
+    citations: any[],
+    groundedness?: { status: string; reasoning: string }
+  ) => {
+    const isUnsupported = groundedness?.status === 'unsupported';
+    const isPartial = groundedness?.status === 'partial';
+
+    const parts = sentText.split(/(\[[0-9]+\])/g);
+
+    let sentenceClass = "";
+    if (isUnsupported) {
+      sentenceClass = "bg-rose-950/20 border-b border-rose-500/30 px-1 py-0.5 rounded";
+    } else if (isPartial) {
+      sentenceClass = "bg-amber-950/20 border-b border-amber-500/30 px-1 py-0.5 rounded";
+    }
+
+    return (
+      <span className={`${sentenceClass} inline relative group mr-1`} key={sentText}>
+        {parts.map((part, idx) => {
+          const match = part.match(/^\[([0-9]+)\]$/);
+          if (match) {
+            const citationNum = parseInt(match[1]);
+            const cit = citations?.find(c => c.n === citationNum);
+            if (cit) {
+              return (
+                <button
+                  key={idx}
+                  onClick={() => setActiveCitation(cit)}
+                  className="inline-flex items-center justify-center text-[9px] font-bold px-1.5 py-0.5 rounded mx-0.5 bg-sky-950 border border-sky-850 text-sky-400 hover:bg-sky-900 active:bg-sky-850 cursor-pointer transition-colors shadow-sm align-super"
+                  title={`Citation [${citationNum}]: ${cit.heading_path}`}
+                >
+                  {citationNum}
+                </button>
+              );
+            }
+          }
+          return part;
+        })}
+
+        {(isUnsupported || isPartial) && (
+          <span className="inline-flex items-center ml-1 align-middle">
+            <span
+              className={`h-4.5 w-4.5 rounded-full inline-flex items-center justify-center text-[10px] font-extrabold cursor-help shadow-sm border ${
+                isUnsupported
+                  ? 'bg-rose-950 border-rose-800 text-rose-400'
+                  : 'bg-amber-950 border-amber-800 text-amber-400'
+              }`}
+              title={`${isUnsupported ? 'Unsupported Claim' : 'Partially Supported'}: ${groundedness?.reasoning}`}
+            >
+              ⚠️
+            </span>
+            <span className="absolute left-1/2 bottom-full mb-2 -translate-x-1/2 hidden group-hover:block bg-slate-900 border border-slate-800 text-slate-200 text-[11px] p-2.5 rounded-xl shadow-xl w-64 z-50 pointer-events-none leading-normal">
+              <strong className={isUnsupported ? 'text-rose-400' : 'text-amber-400'}>
+                {isUnsupported ? 'Claim Unsupported' : 'Claim Partially Supported'}
+              </strong>
+              <p className="mt-1 font-sans text-slate-400">{groundedness?.reasoning}</p>
+            </span>
+          </span>
+        )}
+      </span>
+    );
+  };
+
   // Inline citation renderer
   const renderMessageText = (msg: ChatMessage) => {
-    if (!msg.citations || msg.citations.length === 0) {
-      const isRefusal = msg.text === "I don't have this information in the official documents I've indexed.";
+    const isRefusal = msg.text === "I don't have this information in the official documents I've indexed.";
+    if (isRefusal) {
       return (
-        <p className={`whitespace-pre-wrap leading-relaxed ${isRefusal ? 'text-red-400 font-semibold' : ''}`}>
+        <div className="flex items-start gap-2.5 p-3.5 bg-red-950/20 border border-red-900/30 rounded-xl">
+          <svg className="h-5 w-5 text-red-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <div>
+            <p className="text-red-400 font-semibold text-sm">Refusal: Out of Corpus Question</p>
+            <p className="text-xs text-red-300/80 mt-1 leading-normal">
+              This request fell outside the scope of our verified government scheme index.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    if (msg.sentences && msg.sentences.length > 0) {
+      return (
+        <div className="space-y-1.5">
+          {msg.sentences.map((sent) =>
+            renderSentenceWithCitations(sent.text, msg.citations || [], sent.groundedness)
+          )}
+        </div>
+      );
+    }
+
+    if (!msg.citations || msg.citations.length === 0) {
+      return (
+        <p className="whitespace-pre-wrap leading-relaxed">
           {msg.text}
         </p>
       );
