@@ -114,7 +114,7 @@ async def get_grounded_answer(
 
     # 5. Parse answer into cited sentences
     raw_sentences = split_into_sentences(raw_answer)
-    parsed_sentences = []
+    parsed_sentences: List[Dict[str, Any]] = []
     unique_citation_nums = set()
 
     for s_text in raw_sentences:
@@ -156,10 +156,10 @@ async def get_grounded_answer(
     # 7. Groundedness Verification Pass
     groundedness_results = await verify_groundedness(parsed_sentences, chunks)
     for idx, s in enumerate(parsed_sentences):
-        res = groundedness_results[idx]
+        g_res = groundedness_results[idx]
         s["groundedness"] = {
-            "status": res["status"],
-            "reasoning": res["reasoning"],
+            "status": g_res["status"],
+            "reasoning": g_res["reasoning"],
         }
 
     # 8. Log Q&A to database

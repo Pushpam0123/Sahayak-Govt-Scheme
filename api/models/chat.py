@@ -24,8 +24,4 @@ class QALog(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     def __repr__(self) -> str:
-        return (
-            f"<QALog(id={self.id}, "
-            f"question={self.question[:30]}, "
-            f"lang={self.lang})>"
-        )
+        return f"<QALog(id={self.id}, question={self.question[:30]}, lang={self.lang})>"

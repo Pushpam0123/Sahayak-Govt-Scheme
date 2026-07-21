@@ -113,9 +113,7 @@ def reciprocal_rank_fusion(
 
 
 HINDI_TO_ENGLISH = {
-    "पीएम-किसान योजना के लिए कौन पात्र है?": (
-        "Who is eligible for PM-KISAN?"
-    ),
+    "पीएम-किसान योजना के लिए कौन पात्र है?": ("Who is eligible for PM-KISAN?"),
     "पीएम-किसान योजना के तहत कितनी वित्तीय सहायता मिलती है?": (
         "What are the benefits of PM-KISAN?"
     ),
@@ -128,27 +126,19 @@ HINDI_TO_ENGLISH = {
     "आयुष्मान भारत पीएम-जेएवाई योजना के लिए कौन आवेदन कर सकता है?": (
         "Who qualifies for Ayushman Bharat PM-JAY?"
     ),
-    "अटल पेंशन योजना के लिए पात्रता शर्तें क्या हैं?": (
-        "Who qualifies for Atal Pension Yojana?"
-    ),
-    "कर्नाटक गृह ज्योति योजना के लिए कौन पात्र है?": (
-        "Who qualifies for Ka Gruha Jyothi?"
-    ),
+    "अटल पेंशन योजना के लिए पात्रता शर्तें क्या हैं?": ("Who qualifies for Atal Pension Yojana?"),
+    "कर्नाटक गृह ज्योति योजना के लिए कौन पात्र है?": ("Who qualifies for Ka Gruha Jyothi?"),
     "मध्य प्रदेश लाडली बहना योजना के लिए पात्रता क्या है?": (
         "Who qualifies for Mp Ladli Behna?"
     ),
     "बिहार छात्र क्रेडिट कार्ड योजना के लिए कौन पात्र है?": (
         "Who qualifies for Bihar Student Credit Card?"
     ),
-    "पीएम मातृ वंदना योजना के लिए कौन पात्र है?": (
-        "Who qualifies for Pm Matru Vandana?"
-    ),
+    "पीएम मातृ वंदना योजना के लिए कौन पात्र है?": ("Who qualifies for Pm Matru Vandana?"),
     "वाईएसआर चेयुथा योजना के लिए पात्रता मानदंड क्या हैं?": (
         "Who qualifies for Ap Ysr Cheyutha?"
     ),
-    "ओडिशा कालिया योजना के लिए कौन पात्र है?": (
-        "Who qualifies for Odisha Kalia?"
-    ),
+    "ओडिशा कालिया योजना के लिए कौन पात्र है?": ("Who qualifies for Odisha Kalia?"),
 }
 
 
@@ -170,8 +160,7 @@ async def hybrid_search(
     if is_hindi(query):
         # Phase 6 placeholder translation stub
         logger.info(
-            "Hindi query detected: '%s'. "
-            "Proceeding with placeholder translation stub.",
+            "Hindi query detected: '%s'. Proceeding with placeholder translation stub.",
             query,
         )
         processed_query = HINDI_TO_ENGLISH.get(query, query)

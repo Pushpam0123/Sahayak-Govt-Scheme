@@ -230,6 +230,8 @@ async def main() -> None:
         hybrid_hits = 0
         citation_precisions = []
         faithfulness_scores = []
+        total_sentences = 0
+        supported_sentences = 0
         
         # We evaluate QA metrics for all cases (faithfulness applies to out-of-corpus as well!)
         for case in synced_cases:
@@ -283,17 +285,29 @@ async def main() -> None:
             faith = await evaluate_faithfulness(answer, cited_texts)
             faithfulness_scores.append(faith)
 
+            # D. Parse Groundedness Rate
+            for s in chat_res.get("sentences", []):
+                total_sentences += 1
+                g_status = s.get("groundedness", {}).get("status", "supported")
+                if g_status == "supported":
+                    supported_sentences += 1
+
         in_corpus_count = sum(1 for c in synced_cases if c["gold_chunk_ids"])
         hybrid_recall = hybrid_hits / in_corpus_count if in_corpus_count > 0 else 0.0
         avg_precision = sum(citation_precisions) / len(synced_cases) if synced_cases else 0.0
         avg_faithfulness = sum(faithfulness_scores) / len(synced_cases) if synced_cases else 0.0
+        avg_groundedness = (
+            supported_sentences / total_sentences if total_sentences > 0 else 1.0
+        )
         avg_latency = total_latency_ms / len(synced_cases) if synced_cases else 0.0
 
         logger.info(
-            "Hybrid Recall@5: %.4f, Citation Precision: %.4f, Faithfulness: %.4f (Avg Latency: %.2f ms)",
+            "Hybrid Recall@5: %.4f, Citation Precision: %.4f, "
+            "Faithfulness: %.4f, Groundedness Rate: %.4f (Avg Latency: %.2f ms)",
             hybrid_recall,
             avg_precision,
             avg_faithfulness,
+            avg_groundedness,
             avg_latency,
         )
 
@@ -308,8 +322,9 @@ async def main() -> None:
             hybrid_recall=hybrid_recall,
             citation_precision=avg_precision,
             faithfulness=avg_faithfulness,
+            groundedness_rate=avg_groundedness,
             avg_latency_ms=avg_latency,
-            notes="Grounded Chat & Citations evaluation run",
+            notes="Groundedness verification evaluation run",
         )
         db.add(run_record)
         await db.commit()
@@ -323,16 +338,16 @@ async def main() -> None:
         row_str = (
             f"| {date_str} | `{git_sha[:7]}` | {vector_recall:.4f} | "
             f"{fts_recall:.4f} | {hybrid_recall:.4f} | {avg_precision:.4f} | "
-            f"{avg_faithfulness:.4f} | {avg_latency:.2f}ms | "
-            f"Grounded Chat & Citations run |\n"
+            f"{avg_faithfulness:.4f} | {avg_groundedness:.4f} | {avg_latency:.2f}ms | "
+            f"Groundedness verification run |\n"
         )
 
         if not exists:
             header = (
                 "# Sahayak Evaluation History\n\n"
                 "| Date | Git SHA | Vector Recall@5 | FTS Recall@5 | "
-                "Hybrid Recall@5 | Citation Precision | Faithfulness | Avg Latency | Notes |\n"
-                "| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n"
+                "Hybrid Recall@5 | Citation Precision | Faithfulness | Groundedness Rate | Avg Latency | Notes |\n"
+                "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n"
             )
             with open(evals_file_path, "w", encoding="utf-8") as f:
                 f.write(header + row_str)

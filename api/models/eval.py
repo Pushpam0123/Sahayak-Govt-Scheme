@@ -40,6 +40,7 @@ class EvalRun(Base):
     # Other Phase 3/4 evaluation metrics
     citation_precision = Column(Float, nullable=True)
     faithfulness = Column(Float, nullable=True)
+    groundedness_rate = Column(Float, nullable=True)
 
     # Latency & details
     avg_latency_ms = Column(Float, nullable=True)
