@@ -11,7 +11,8 @@ from api.llm.client import get_llm_client
 from api.models.chat import QALog
 from api.models.scheme import Document, Scheme
 from api.services.groundedness import verify_groundedness
-from api.services.retrieval import hybrid_search, is_hindi
+from api.services.retrieval import hybrid_search
+from api.services.translation import is_hindi
 
 logger = logging.getLogger("sahayak.api.services.chat")
 

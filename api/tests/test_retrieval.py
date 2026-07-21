@@ -7,9 +7,9 @@ from api.models.scheme import Chunk
 from api.services.retrieval import (
     get_fts_search,
     get_vector_search,
-    is_hindi,
     reciprocal_rank_fusion,
 )
+from api.services.translation import is_hindi
 
 
 def test_is_hindi_detection() -> None:

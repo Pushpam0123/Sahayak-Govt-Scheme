@@ -5,14 +5,10 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.models.scheme import Chunk, Document, Scheme
+from api.services.translation import HINDI_TO_ENGLISH, is_hindi
 from ingest.embedder import get_embedder
 
 logger = logging.getLogger("sahayak.api.services.retrieval")
-
-
-def is_hindi(text: str) -> bool:
-    """Helper to detect if text contains Devanagari characters."""
-    return any("\u0900" <= char <= "\u097f" for char in text)
 
 
 async def get_vector_search(
@@ -110,36 +106,6 @@ def reciprocal_rank_fusion(
 
     merged_results = [(chunk_map[cid], score) for cid, score in sorted_items[:limit]]
     return merged_results
-
-
-HINDI_TO_ENGLISH = {
-    "पीएम-किसान योजना के लिए कौन पात्र है?": ("Who is eligible for PM-KISAN?"),
-    "पीएम-किसान योजना के तहत कितनी वित्तीय सहायता मिलती है?": (
-        "What are the benefits of PM-KISAN?"
-    ),
-    "पीएम-किसान योजना की अपवर्जन श्रेणियां क्या हैं?": (
-        "What is the exclusion criteria of PM-KISAN?"
-    ),
-    "राष्ट्रीय छात्रवृत्ति पोर्टल पोस्ट-मैट्रिक योजना के लिए पात्रता क्या है?": (
-        "What is the eligibility for NSP Post-Matric SC scholarship?"
-    ),
-    "आयुष्मान भारत पीएम-जेएवाई योजना के लिए कौन आवेदन कर सकता है?": (
-        "Who qualifies for Ayushman Bharat PM-JAY?"
-    ),
-    "अटल पेंशन योजना के लिए पात्रता शर्तें क्या हैं?": ("Who qualifies for Atal Pension Yojana?"),
-    "कर्नाटक गृह ज्योति योजना के लिए कौन पात्र है?": ("Who qualifies for Ka Gruha Jyothi?"),
-    "मध्य प्रदेश लाडली बहना योजना के लिए पात्रता क्या है?": (
-        "Who qualifies for Mp Ladli Behna?"
-    ),
-    "बिहार छात्र क्रेडिट कार्ड योजना के लिए कौन पात्र है?": (
-        "Who qualifies for Bihar Student Credit Card?"
-    ),
-    "पीएम मातृ वंदना योजना के लिए कौन पात्र है?": ("Who qualifies for Pm Matru Vandana?"),
-    "वाईएसआर चेयुथा योजना के लिए पात्रता मानदंड क्या हैं?": (
-        "Who qualifies for Ap Ysr Cheyutha?"
-    ),
-    "ओडिशा कालिया योजना के लिए कौन पात्र है?": ("Who qualifies for Odisha Kalia?"),
-}
 
 
 async def hybrid_search(
