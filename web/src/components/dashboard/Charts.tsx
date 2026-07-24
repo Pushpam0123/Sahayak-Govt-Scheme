@@ -31,7 +31,7 @@ function Donut({
   let offset = 0;
 
   return (
-    <div className="flex items-center gap-5">
+    <div className="flex flex-wrap items-center justify-center gap-5">
       <div className="relative h-40 w-40 shrink-0">
         <svg
           viewBox="0 0 160 160"

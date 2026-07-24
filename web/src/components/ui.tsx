@@ -34,7 +34,7 @@ export function CardHeader({
   right?: ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-border-subtle">
+    <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-border-subtle">
       <h3 className="flex items-center gap-2 text-sm font-semibold text-content">
         {icon ? <span className="text-primary">{icon}</span> : null}
         {title}
@@ -222,7 +222,7 @@ export function Segmented<T extends string>({
             role="tab"
             aria-selected={active}
             onClick={() => onChange(opt.value)}
-            className={`rounded-lg font-semibold transition-colors cursor-pointer ${pad} ${
+            className={`whitespace-nowrap rounded-lg font-semibold transition-colors cursor-pointer ${pad} ${
               active
                 ? 'bg-primary text-on-primary shadow-sm'
                 : 'text-muted hover:text-content'
