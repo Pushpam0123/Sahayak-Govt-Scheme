@@ -1,32 +1,55 @@
-# React + TypeScript + Vite
+# Sahayak Web
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React + TypeScript + Vite frontend for the Sahayak government-scheme assistant.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Ask Sahayak** — grounded Q&A chat with sentence-level citations, a citation
+  inspector, groundedness (unsupported / partially-supported) flags, and
+  suggested prompts.
+- **My Dashboard** — citizen eligibility at a glance: KPI tiles, an eligibility
+  profile form, an eligibility-breakdown donut, a schemes-by-category chart, a
+  filterable scheme directory, and a collapsible document explorer.
+- **Light / dark themes** — light by default; the toggle (top-right) persists to
+  `localStorage`.
+- **Bilingual** — English + Hindi, persisted across sessions.
+- **Offline-friendly** — when the API is unreachable the UI falls back to
+  clearly-labelled sample data behind a "Sample data" banner.
 
-## React Compiler
+## Getting started
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev      # start the dev server (http://localhost:5173)
+npm run build    # type-check + production build
+npm run lint     # oxlint
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Configuration
+
+The API base URL is read from `VITE_API_BASE` (defaults to
+`http://localhost:8000`). To point the app at a different backend, create a
+`.env` file in this directory:
+
+```bash
+VITE_API_BASE=https://your-api-host
+```
+
+## Project layout
+
+```
+src/
+  lib/          types, API client, i18n dictionary, theme/format helpers, demo data
+  hooks/        useSahayak — health, schemes, and eligibility with offline fallback
+  components/
+    ui.tsx      reusable primitives (Card, Button, Badge, Field, Select, …)
+    icons.tsx   inline icon set
+    chat/       ChatView, MessageBubble, CitationInspector
+    dashboard/  DashboardView, StatTiles, EligibilityForm, SchemeGrid, Charts, …
+  index.css     Tailwind v4 design-system tokens (light + dark)
+  App.tsx       app shell (header, tabs, routing between surfaces)
+```
+
+Theming is token-based: semantic CSS variables in `index.css` are consumed as
+Tailwind utilities (`bg-surface`, `text-muted`, `text-primary`, …) and swapped
+between light and dark by the `.dark` class on `<html>`.
