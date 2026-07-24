@@ -206,7 +206,11 @@ export function ChatView({ t, lang, schemes, offline }: ChatViewProps) {
             disabled={loading}
             aria-label={t.chatPlaceholder}
           />
-          <Button type="submit" disabled={loading || !input.trim()}>
+          <Button
+            type="submit"
+            disabled={loading || !input.trim()}
+            aria-label={t.ask}
+          >
             <SendIcon className="h-4 w-4" />
             <span className="hidden sm:inline">{t.ask}</span>
           </Button>

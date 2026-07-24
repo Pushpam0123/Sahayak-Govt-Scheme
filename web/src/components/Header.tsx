@@ -16,9 +16,11 @@ interface HeaderProps {
   onRefresh: () => void;
 }
 
-function StatusDot({ ok }: { ok: boolean }) {
+function StatusDot({ ok, label }: { ok: boolean; label: string }) {
   return (
     <span
+      role="img"
+      aria-label={label}
       className={`inline-block h-2 w-2 rounded-full ${
         ok ? 'bg-success' : 'bg-danger'
       }`}
@@ -83,7 +85,10 @@ export function Header({
             {healthLoading ? (
               <Spinner className="h-3 w-3" />
             ) : (
-              <StatusDot ok={apiOnline} />
+              <StatusDot
+                ok={apiOnline}
+                label={`${t.apiLabel}: ${apiOnline ? t.online : t.offline}`}
+              />
             )}
             <span className="text-muted">{t.apiLabel}</span>
           </span>
@@ -92,7 +97,10 @@ export function Header({
             {healthLoading ? (
               <Spinner className="h-3 w-3" />
             ) : (
-              <StatusDot ok={dbConnected} />
+              <StatusDot
+                ok={dbConnected}
+                label={`${t.dbLabel}: ${dbConnected ? t.connected : t.offline}`}
+              />
             )}
             <span className="text-muted">{t.dbLabel}</span>
           </span>
