@@ -3,6 +3,7 @@ import { Header } from './components/Header';
 import { OfflineBanner } from './components/OfflineBanner';
 import { TabBar, type TabKey } from './components/TabBar';
 import { ChatView } from './components/chat/ChatView';
+import { DashboardView } from './components/dashboard/DashboardView';
 import { useSahayak } from './hooks/useSahayak';
 import { TRANSLATIONS } from './lib/i18n';
 import { useLang, useTheme } from './lib/theme';
@@ -20,6 +21,9 @@ function App() {
     dbConnected,
     offline,
     schemes,
+    eligibility,
+    profile,
+    setProfileField,
     refresh,
   } = useSahayak();
 
@@ -45,9 +49,14 @@ function App() {
         {tab === 'chat' ? (
           <ChatView t={t} lang={lang} schemes={schemes} offline={offline} />
         ) : (
-          <div className="py-20 text-center text-sm text-muted">
-            Dashboard coming up next.
-          </div>
+          <DashboardView
+            t={t}
+            schemes={schemes}
+            eligibility={eligibility}
+            profile={profile}
+            setField={setProfileField}
+            offline={offline}
+          />
         )}
       </main>
 
