@@ -13,9 +13,8 @@ const LANG_KEY = 'sahayak-lang';
 function getInitialTheme(): Theme {
   const stored = localStorage.getItem(THEME_KEY);
   if (stored === 'light' || stored === 'dark') return stored;
-  const prefersDark =
-    window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
-  return prefersDark ? 'dark' : 'light';
+  // Light (citizen-portal) is the default; the toggle persists any change.
+  return 'light';
 }
 
 function applyTheme(theme: Theme) {
