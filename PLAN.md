@@ -185,8 +185,9 @@ Consequences:
 | **0.1** | Remove the fabrication path | Delete `generate_mock_guidelines()`. `fetch_scheme_guidelines` returns an explicit outcome (`fetched` / `cached` / `failed`) instead of inventing content. Failures are logged and skipped, never indexed. | **done** — `f3faccc` |
 | **0.2** | Document verification state | Migration adding `documents.fetch_status`, `documents.verified_at`, `documents.content_sha256`. Ingest populates them. | **done** — `ff3fdd1`, rev `eeef26b00837` |
 | **0.3** | Retrieval guard | Vector and FTS search exclude any chunk whose document is not verified. A chunk that cannot be traced to a real fetched document can never be cited. | **done** — `ff9615f` |
-| **0.3b** | Review corrections | See §5.2. Cached-provenance sidecar, stronger content validation, idempotency refresh, `lxml_html_clean` dependency. | in progress |
-| **0.4** | Eligibility three-state | `unknown` replaces the `eligible: True` default. API returns `status: "eligible" \| "ineligible" \| "unknown"`. Frontend renders three visually distinct states. | pending |
+| **0.3b** | Review corrections | See §5.2. Cached-provenance sidecar, stronger content validation, idempotency refresh, `lxml_html_clean` dependency. | **done** — `c09e2e9`…`1ef4991` |
+| **0.3c** | Correction 5 | `verified_at` may only be upgraded, never downgraded, on the idempotent path. | in progress |
+| **0.4** | Eligibility three-state | `unknown` replaces the `eligible: True` default. API returns `status: "eligible" \| "ineligible" \| "unknown"`. Frontend renders three visually distinct states. | in progress |
 | **0.5** | **Re-source the corpus** | **Critical path — see §5.1.** Find the real, live guidelines document for each scheme. Drop what cannot be sourced. | pending |
 | **0.6** | Honest UI | Standing disclaimer ("information only — verify on the official portal before applying"). `lib/demo.ts::demoChat()` either removed or labelled unmistakably as sample data. | pending |
 | **0.7** | Re-baseline | Re-run the eval against real documents. Rewrite `EVALS.md` from zero. Correct the accuracy claims in `README.md`. | pending |
@@ -208,6 +209,10 @@ The intended semantic for `verified_at` is *"this exact content was confirmed to
 **Correction 4 — scope extension, authorised.** `lxml_html_clean` is a transitive dependency of `trafilatura`/`justext` that isn't pinned, so a fresh clone cannot run the test suite. Added to dev dependencies.
 
 **Approved as-is:** setting `db_scheme.status = "active"` on a successful re-fetch (without it, a scheme that failed once stays `unverified` forever).
+
+**Correction 5, found reviewing 0.3b — `verified_at` must only ever be upgraded.** The idempotent path assigns `existing_doc.verified_at = fetch_result.fetched_at` unconditionally, so it downgrades as readily as it upgrades. A document verified at T1 whose sidecar is later lost — a backup that didn't carry `.meta.json`, a partial copy, a `.gitignore` rule — gets silently nulled on the next cached run. Narrower than correction 1 but the same failure mode.
+
+The rule that resolves it: `verified_at` means *"these exact bytes were confirmed to have come from this URL at time T."* A checksum match means the bytes are identical, so an earlier confirmation remains valid evidence — losing the sidecar does not retroactively un-happen the fetch. On the idempotent path, only assign when the incoming value is better than the stored one; never overwrite a stored `"fetched"` with `"cached"`. This applies to the idempotent path only: on the replace path the bytes differ, so discarding the old verification is correct.
 
 ### 5.1 Work order 0.5 in detail — re-sourcing the corpus
 
@@ -241,3 +246,4 @@ The intended semantic for `verified_at` is *"this exact content was confirmed to
 | 2026-08-26 | Plan created. Design direction selected (Warm Civic). Phase 0 work orders defined. | Opus |
 | 2026-08-26 | Full 20-URL corpus audit run. Only 1 URL yields a real document, not the 13 the spot-check implied. Work order 0.5 promoted from cleanup to critical path; §5.1 added with a decided source strategy. myScheme API scraping explicitly ruled out; formal access request added as a business action. | Opus |
 | 2026-08-26 | 0.1–0.3 delivered and reviewed. Three corrections issued as 0.3b (§5.2). Correction 1 fixes a defect in the original spec that would have silently emptied the corpus on any cached ingestion run. | Opus |
+| 2026-08-26 | 0.3b delivered and reviewed; approved. Correction 5 issued (§5.2) — `verified_at` must only be upgraded, never downgraded. Work order 0.4 dispatched. | Opus |
