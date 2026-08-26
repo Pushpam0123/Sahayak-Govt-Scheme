@@ -1,20 +1,23 @@
 import type { Metadata } from 'next';
 import { SchemeClient } from './scheme-client';
-import type { SchemeDetail } from '../../../lib/types';
+import type { SchemeDetail, SchemeInfo } from '../../../lib/types';
+import { DEMO_SCHEMES } from '../../../lib/demo';
 
 export const dynamicParams = true;
 export const revalidate = 3600;
 
-async function getSchemeData(slug: string): Promise<SchemeDetail | null> {
+async function getSchemeData(slug: string): Promise<SchemeDetail | SchemeInfo | null> {
   try {
     const apiBase = process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, '') ?? 'http://localhost:8000';
     const res = await fetch(`${apiBase}/api/v1/schemes/${slug}`, {
       next: { revalidate: 3600 },
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      return DEMO_SCHEMES.find((s) => s.id === slug) ?? null;
+    }
     return (await res.json()) as SchemeDetail;
   } catch {
-    return null;
+    return DEMO_SCHEMES.find((s) => s.id === slug) ?? null;
   }
 }
 
@@ -81,7 +84,11 @@ export default async function SchemePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const initialScheme = await getSchemeData(slug);
+  const schemeData = await getSchemeData(slug);
+  const initialScheme =
+    schemeData && 'required_documents' in schemeData
+      ? (schemeData as SchemeDetail)
+      : null;
 
   return <SchemeClient slug={slug} initialScheme={initialScheme} />;
 }
