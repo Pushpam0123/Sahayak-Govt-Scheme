@@ -9,6 +9,8 @@ from typing import Any, Dict, List, Optional
 import anthropic
 import yaml
 
+from collections.abc import AsyncGenerator
+
 logger = logging.getLogger("sahayak.api.llm")
 
 
@@ -26,6 +28,16 @@ class BaseLLMClient(ABC):
         - "content": the text response
         - "usage": {"input_tokens": int, "output_tokens": int}
         """
+        pass
+
+    @abstractmethod
+    async def stream_response(
+        self,
+        system_prompt: str,
+        messages: List[Dict[str, str]],
+        temperature: float = 0.0,
+    ) -> AsyncGenerator[str, None]:
+        """Streams text chunks from the LLM."""
         pass
 
 
@@ -79,6 +91,27 @@ class ClaudeClient(BaseLLMClient):
                     raise e
                 await asyncio.sleep(2**attempt)
         raise RuntimeError("LLM call failed after retries")
+
+    async def stream_response(
+        self,
+        system_prompt: str,
+        messages: List[Dict[str, str]],
+        temperature: float = 0.0,
+    ) -> AsyncGenerator[str, None]:
+        max_tokens = int(os.getenv("ANTHROPIC_MAX_TOKENS", "1024"))
+        formatted_messages = []
+        for m in messages:
+            formatted_messages.append({"role": m["role"], "content": m["content"]})
+
+        async with self.client.messages.stream(
+            model=self.model,
+            system=system_prompt,
+            messages=formatted_messages,  # type: ignore
+            temperature=temperature,
+            max_tokens=max_tokens,
+        ) as stream:
+            async for text in stream.text_stream:
+                yield text
 
 
 class MockClaudeClient(BaseLLMClient):
@@ -275,6 +308,20 @@ class MockClaudeClient(BaseLLMClient):
                 "output_tokens": output_tokens,
             },
         }
+
+    async def stream_response(
+        self,
+        system_prompt: str,
+        messages: List[Dict[str, str]],
+        temperature: float = 0.0,
+    ) -> AsyncGenerator[str, None]:
+        res = await self.generate_response(system_prompt, messages, temperature)
+        full_text = res["content"]
+        tokens = full_text.split(" ")
+        for i, token in enumerate(tokens):
+            space = " " if i < len(tokens) - 1 else ""
+            yield token + space
+            await asyncio.sleep(0.005)
 
 
 def get_llm_client(chat_model: Optional[str] = None) -> BaseLLMClient:

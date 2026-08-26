@@ -1,11 +1,12 @@
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.db import get_db
-from api.services.chat import get_grounded_answer
+from api.services.chat import get_grounded_answer, stream_grounded_answer
 
 router = APIRouter()
 
@@ -53,3 +54,37 @@ async def chat(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Chat generation failed: {str(e)}",
         )
+
+
+@router.post("/chat/stream")
+async def chat_stream(
+    request: ChatRequest,
+    db: AsyncSession = Depends(get_db),
+) -> StreamingResponse:
+    """Streams a grounded cited answer via Server-Sent Events (SSE)."""
+    state = None
+    category = None
+    scheme_id = None
+    if request.filters:
+        state = request.filters.state
+        category = request.filters.category
+        scheme_id = request.filters.scheme_id
+
+    generator = stream_grounded_answer(
+        db=db,
+        query=request.question,
+        state=state,
+        category=category,
+        scheme_id=scheme_id,
+        session_id=request.session_id,
+    )
+
+    return StreamingResponse(
+        generator,
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
