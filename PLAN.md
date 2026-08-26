@@ -325,8 +325,8 @@ Rejected: React Router on Vite (cheap, but leaves the app client-rendered and in
 | # | Work order | Effort | Status |
 | --- | --- | --- | --- |
 | **A** | Fix what's broken — TLS verification with per-scheme opt-in, re-fetch and hash-verify all nine documents, run the eval and publish real numbers, correct the `pm-jjby` quote, README scheme count. | ~3 days | in progress |
-| **B** | Migrate to Next.js App Router + TanStack Query. Port existing views rather than rewriting them. Static generation, sitemap, structured data, metadata. Nothing visual changes. | ~1.5 wk | pending |
-| **C** | Build the public surfaces — homepage, services, browse, audience pages, privacy. Motion, share cards, OG images, designed dark mode. | ~1.5 wk | pending |
+| **B** | Migrate to Next.js App Router + TanStack Query. Port existing views rather than rewriting them. Static generation, sitemap, structured data, metadata. Nothing visual changes. | ~1.5 wk | done (B, B2) — one open regression, C0 |
+| **C** | Build the public surfaces — homepage, services, browse, audience pages, privacy. Motion, share cards, OG images, designed dark mode. | ~1.5 wk | C1 dispatched 2026-08-26; C2 (services, /for/*, OG images) pending |
 | **D** | Close the skipped non-negotiables — voice in/out, four more languages (Bengali, Marathi, Telugu, Tamil) done properly rather than twelve announced, a real service worker, font-size and contrast controls. | ~1.5 wk | pending |
 
 **Decision on languages:** four more, done properly. Announcing twelve and shipping two is how the current gap happened.
