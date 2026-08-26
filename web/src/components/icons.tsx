@@ -92,3 +92,11 @@ export const ChartIcon = (p: IconProps) => (
     <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
   </svg>
 );
+
+export const HelpIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M9.5 9a2.5 2.5 0 114.2 1.8c-.7.6-1.7 1-1.7 2.2" />
+    <path d="M12 17h.01" />
+  </svg>
+);

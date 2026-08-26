@@ -56,7 +56,7 @@ export interface Dict {
   statTotal: string;
   statEligible: string;
   statReview: string;
-  statCategories: string;
+  statUnassessed: string;
   eligibilityBreakdown: string;
   schemesByCategory: string;
   noData: string;
@@ -159,7 +159,7 @@ const en: Dict = {
   statTotal: 'Schemes indexed',
   statEligible: 'You may qualify',
   statReview: 'Not a match',
-  statCategories: 'Categories',
+  statUnassessed: 'Not yet assessed',
   eligibilityBreakdown: 'Eligibility breakdown',
   schemesByCategory: 'Schemes by category',
   noData: 'No data yet',
@@ -259,7 +259,7 @@ const hi: Dict = {
   statTotal: 'अनुक्रमित योजनाएं',
   statEligible: 'आप पात्र हो सकते हैं',
   statReview: 'मेल नहीं खाता',
-  statCategories: 'श्रेणियां',
+  statUnassessed: 'अभी तक आकलन नहीं हुआ',
   eligibilityBreakdown: 'पात्रता विवरण',
   schemesByCategory: 'श्रेणी अनुसार योजनाएं',
   noData: 'अभी कोई डेटा नहीं',

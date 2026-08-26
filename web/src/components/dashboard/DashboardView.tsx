@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import type { ProfileForm } from '../../hooks/useSahayak';
 import type { Dict } from '../../lib/i18n';
 import type { EligibilityMap, SchemeInfo } from '../../lib/types';
-import { CheckIcon, DocIcon, AlertIcon, ChartIcon } from '../icons';
+import { CheckIcon, DocIcon, AlertIcon, HelpIcon } from '../icons';
 import { DashboardCharts, type CategoryDatum } from './Charts';
 import { DocumentExplorer } from './DocumentExplorer';
 import { EligibilityForm } from './EligibilityForm';
@@ -50,7 +50,6 @@ export function DashboardView({
       eligible,
       ineligible,
       noRules,
-      categories: byCategory.size,
       categoryData,
     };
   }, [schemes, eligibility]);
@@ -75,10 +74,10 @@ export function DashboardView({
       icon: <AlertIcon className="h-5 w-5" />,
     },
     {
-      label: t.statCategories,
-      value: derived.categories,
-      tone: 'accent',
-      icon: <ChartIcon className="h-5 w-5" />,
+      label: t.statUnassessed,
+      value: derived.noRules,
+      tone: 'muted',
+      icon: <HelpIcon className="h-5 w-5" />,
     },
   ];
 
