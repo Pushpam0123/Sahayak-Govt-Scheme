@@ -1,3 +1,4 @@
+from api.config import settings
 import asyncio
 import json
 import logging
@@ -45,7 +46,7 @@ class ClaudeClient(BaseLLMClient):
     def __init__(self, api_key: str, chat_model: Optional[str] = None):
         self.client = anthropic.AsyncAnthropic(api_key=api_key)
         model_name = chat_model or os.getenv("ANTHROPIC_CHAT_MODEL")
-        self.model: str = model_name or "claude-3-5-sonnet-20241022"
+        self.model: str = model_name or settings.CHAT_MODEL or "claude-haiku-4-5-20251001"
         logger.info(f"Initialized ClaudeClient using model '{self.model}'")
 
     async def generate_response(
