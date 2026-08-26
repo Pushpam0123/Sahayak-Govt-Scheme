@@ -34,14 +34,17 @@ async def match_all_schemes(
         res_schemes = await db.execute(stmt_schemes)
         scheme_ids = res_schemes.scalars().all()
 
-        results = {sid: {"eligible": True, "failed_rules": []} for sid in scheme_ids}
+        # Every scheme starts "unknown" - it only becomes "eligible" or
+        # "ineligible" once a rules row exists and is actually evaluated
+        # below. Unknown must never render as an unearned "yes".
+        results = {sid: {"status": "unknown", "failed_rules": []} for sid in scheme_ids}
 
         # 2. Fetch all defined eligibility rules
         stmt_rules = select(SchemeEligibilityRules)
         res_rules = await db.execute(stmt_rules)
         rules_records = res_rules.scalars().all()
 
-        profile_dict = request.dict()
+        profile_dict = request.model_dump()
 
         # 3. Match profile against each rule
         for r in rules_records:
@@ -51,7 +54,7 @@ async def match_all_schemes(
                     profile_dict, r.rules_json
                 )
                 results[sid] = {
-                    "eligible": eligible,
+                    "status": "eligible" if eligible else "ineligible",
                     "failed_rules": failed_rules,
                 }
 
