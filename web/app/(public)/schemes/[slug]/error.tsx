@@ -20,20 +20,20 @@ export default function SchemeError({
 
         <div>
           <h1 className="text-xl font-bold text-content">This scheme is temporarily unavailable</h1>
-          <p className="text-sm text-muted mt-2 leading-relaxed">
-            We could not reach the server to fetch this scheme&apos;s verified guideline data right now. Please try again in a moment.
+          <p className="text-base text-muted mt-2 leading-relaxed">
+            We could not reach the server to fetch this scheme&apos;s guideline data right now. Please try again in a moment.
           </p>
         </div>
 
         <div className="flex items-center gap-3 mt-2">
-          <Button onClick={() => reset()} variant="primary">
+          <Button onClick={() => reset()} variant="primary" className="min-h-[48px] text-base">
             Try Again
           </Button>
           <Link
             href="/schemes"
-            className="rounded-xl border border-border-strong px-4 py-2 text-sm font-semibold text-content hover:bg-surface-2 transition-colors"
+            className="flex min-h-[48px] items-center justify-center rounded-xl border border-border-strong px-4 py-2 text-base font-semibold text-content hover:bg-surface-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
-            Browse All Schemes
+            Browse all schemes
           </Link>
         </div>
       </Card>

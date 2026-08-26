@@ -16,17 +16,20 @@ interface LandingViewProps {
 
 export function LandingView({ schemes }: LandingViewProps) {
   const router = useRouter();
-  const [selectedState, setSelectedState] = useState<string>('Madhya Pradesh');
-  const [age, setAge] = useState<string>('30');
+  const [selectedState, setSelectedState] = useState<string>('');
+  const [age, setAge] = useState<string>('');
+
+  const isFormValid = Boolean(selectedState && age && !isNaN(parseInt(age, 10)) && parseInt(age, 10) >= 18);
 
   const handleHeroSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const current = loadSavedProfile();
+    if (!isFormValid) return;
     const parsedAge = parseInt(age, 10);
+    const current = loadSavedProfile();
     saveProfile({
       ...current,
-      state: selectedState || 'Madhya Pradesh',
-      age: isNaN(parsedAge) ? 30 : parsedAge,
+      state: selectedState,
+      age: parsedAge,
     });
     router.push('/check');
   };
@@ -38,9 +41,9 @@ export function LandingView({ schemes }: LandingViewProps) {
       {/* 1. Hero Section */}
       <Section bg="bg-page" className="py-12 sm:py-16 lg:py-20">
         <div className="max-w-4xl mx-auto text-center flex flex-col items-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-border-strong bg-surface px-4 py-1.5 text-sm font-bold text-muted mb-6">
+          <div className="inline-flex items-center gap-2 rounded-full border border-border-strong bg-surface px-4 py-1.5 text-base font-bold text-muted mb-6">
             <span className="h-2 w-2 rounded-full bg-success" />
-            Deterministic rule matching against official gazettes
+            Deterministic rule matching against official scheme guidelines
           </div>
 
           <h1 className="text-display-hero text-content text-balance">
@@ -62,7 +65,7 @@ export function LandingView({ schemes }: LandingViewProps) {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="hero-state" className="block text-sm font-bold text-muted mb-1.5">
+                <label htmlFor="hero-state" className="block text-base font-bold text-muted mb-1.5">
                   Your State
                 </label>
                 <select
@@ -71,6 +74,7 @@ export function LandingView({ schemes }: LandingViewProps) {
                   onChange={(e) => setSelectedState(e.target.value)}
                   className="w-full min-h-[48px] rounded-xl border border-border-strong bg-page px-3.5 py-2.5 text-base font-semibold text-content focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
+                  <option value="">Select your state</option>
                   {INDIAN_STATES.map((st) => (
                     <option key={st} value={st}>
                       {st === 'Central' ? 'All India (Central Schemes)' : st}
@@ -80,7 +84,7 @@ export function LandingView({ schemes }: LandingViewProps) {
               </div>
 
               <div>
-                <label htmlFor="hero-age" className="block text-sm font-bold text-muted mb-1.5">
+                <label htmlFor="hero-age" className="block text-base font-bold text-muted mb-1.5">
                   Your Age (Years)
                 </label>
                 <input
@@ -98,7 +102,9 @@ export function LandingView({ schemes }: LandingViewProps) {
 
             <button
               type="submit"
-              className="mt-2 w-full min-h-[48px] rounded-xl bg-primary px-6 py-3 text-base font-bold text-on-primary shadow-sm hover:bg-primary-hover transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 flex items-center justify-center gap-2"
+              disabled={!isFormValid}
+              aria-disabled={!isFormValid}
+              className="mt-2 w-full min-h-[48px] rounded-xl bg-primary px-6 py-3 text-base font-bold text-on-primary shadow-sm hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 flex items-center justify-center gap-2"
             >
               <span>Check what I qualify for</span>
               <span aria-hidden="true">→</span>
@@ -132,10 +138,10 @@ export function LandingView({ schemes }: LandingViewProps) {
                   Every answer quotes the exact line of the official guideline
                 </h3>
                 <p className="mt-3 text-base text-muted leading-relaxed">
-                  You see the exact paragraph, page number, and clause that determines eligibility. No fabricated summaries.
+                  You see the exact matched text excerpt and document reference that determines eligibility. No fabricated summaries.
                 </p>
               </div>
-              <div className="mt-6 text-sm font-bold text-primary group-hover:underline">
+              <div className="mt-6 text-base font-bold text-primary group-hover:underline">
                 Explore guidelines →
               </div>
             </Link>
@@ -152,11 +158,11 @@ export function LandingView({ schemes }: LandingViewProps) {
                   You see the source document and when it was last verified
                 </h3>
                 <p className="mt-3 text-base text-muted leading-relaxed">
-                  Every scheme document is indexed directly from official government gazettes with transparent TLS certificate verification.
+                  Every scheme document is indexed directly from official government scheme portals. Certificate verification status is recorded and shown per document.
                 </p>
               </div>
-              <div className="mt-6 text-sm font-bold text-primary group-hover:underline">
-                View verified schemes →
+              <div className="mt-6 text-base font-bold text-primary group-hover:underline">
+                View schemes →
               </div>
             </Link>
 
@@ -175,7 +181,7 @@ export function LandingView({ schemes }: LandingViewProps) {
                   DPDP Act 2023 compliant. Your age, income, and personal details remain strictly in local browser storage and are never uploaded to remote user databases.
                 </p>
               </div>
-              <div className="mt-6 text-sm font-bold text-primary group-hover:underline">
+              <div className="mt-6 text-base font-bold text-primary group-hover:underline">
                 Read privacy policy →
               </div>
             </Link>
@@ -189,7 +195,7 @@ export function LandingView({ schemes }: LandingViewProps) {
           <div className="max-w-7xl mx-auto">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
               <div>
-                <div className="text-sm font-bold uppercase tracking-wider text-muted mb-1">
+                <div className="text-base font-bold uppercase tracking-wider text-muted mb-1">
                   Corpus Directory
                 </div>
                 <h2 className="text-display-section text-content">
@@ -219,14 +225,14 @@ export function LandingView({ schemes }: LandingViewProps) {
       <Section bg="bg-surface" className="py-14 sm:py-18 border-t border-border-subtle">
         <div className="max-w-7xl mx-auto">
           <div className="text-center max-w-2xl mx-auto mb-12">
-            <div className="text-sm font-bold uppercase tracking-wider text-muted mb-1">
+            <div className="text-base font-bold uppercase tracking-wider text-muted mb-1">
               Process
             </div>
             <h2 className="text-display-section text-content">
               How eligibility evaluation works
             </h2>
             <p className="mt-3 text-base text-muted">
-              Deterministic matching built on official government rule sets.
+              Deterministic matching derived from official scheme guidelines.
             </p>
           </div>
 
@@ -251,7 +257,7 @@ export function LandingView({ schemes }: LandingViewProps) {
                 See what you qualify for
               </h3>
               <p className="text-base text-muted leading-relaxed">
-                Instant evaluation against all central and state rules with clear passes and exact failing criteria when disqualified.
+                Instant evaluation against central and state criteria with clear passes and exact failing criteria when disqualified.
               </p>
             </div>
 
@@ -264,7 +270,7 @@ export function LandingView({ schemes }: LandingViewProps) {
                 Read the exact guideline line
               </h3>
               <p className="text-base text-muted leading-relaxed">
-                Inspect the original government document clause that decided your verdict. Verify benefits with confidence before applying.
+                Inspect the original government document text that decided your verdict. Verify benefits with confidence before applying.
               </p>
             </div>
           </div>
