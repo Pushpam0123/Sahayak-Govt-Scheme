@@ -278,9 +278,12 @@ class MockClaudeClient(BaseLLMClient):
 
 
 def get_llm_client(chat_model: Optional[str] = None) -> BaseLLMClient:
-    api_key = os.getenv("ANTHROPIC_API_KEY")
+    from api.config import settings
+
+    api_key = settings.ANTHROPIC_API_KEY
+    model = chat_model or settings.CHAT_MODEL
     if api_key and api_key != "your-anthropic-api-key-here" and api_key.strip():
-        return ClaudeClient(api_key, chat_model)
+        return ClaudeClient(api_key, model)
     else:
         logger.warning(
             "ANTHROPIC_API_KEY not configured or placeholder. "

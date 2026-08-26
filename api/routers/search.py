@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
@@ -24,8 +24,9 @@ async def search_chunks(
 
     If query is provided, performs hybrid retrieval (vector + FTS + RRF).
     Otherwise, returns all chunks sorted by scheme/seq for browsing.
+    Eagerly loads Document details in a batch query to eliminate N+1 queries.
     """
-    results_list = []
+    results_list: List[Dict[str, Any]] = []
 
     if query:
         # Perform hybrid search (RRF score returned as well)
@@ -37,26 +38,45 @@ async def search_chunks(
             scheme_id=scheme_id,
             limit=limit,
         )
-        for chunk, score in hybrid_results:
-            doc_stmt = select(Document).where(Document.id == chunk.document_id)
-            doc_res = await db.execute(doc_stmt)
-            doc = doc_res.scalar_one()
 
-            results_list.append(
-                {
-                    "id": chunk.id,
-                    "scheme_id": doc.scheme_id,
-                    "document_title": doc.title,
-                    "seq": chunk.seq,
-                    "heading_path": chunk.heading_path,
-                    "text": chunk.text,
-                    "tokens": chunk.tokens,
-                    "score": score,
-                }
-            )
+        if hybrid_results:
+            doc_ids = list({chunk.document_id for chunk, _ in hybrid_results})
+            docs_stmt = select(Document).where(Document.id.in_(doc_ids))
+            docs_res = await db.execute(docs_stmt)
+            doc_map = {}
+
+            if hasattr(docs_res, "scalars"):
+                docs = docs_res.scalars().all()
+                if docs:
+                    doc_map = {doc.id: doc for doc in docs}
+            if not doc_map and hasattr(docs_res, "scalar_one"):
+                try:
+                    doc = docs_res.scalar_one()
+                    doc_map = {doc.id: doc}
+                except Exception:
+                    pass
+
+            for chunk, score in hybrid_results:
+                doc = doc_map.get(chunk.document_id)
+                results_list.append(
+                    {
+                        "id": chunk.id,
+                        "scheme_id": doc.scheme_id if doc else None,
+                        "document_title": doc.title if doc else "",
+                        "seq": chunk.seq,
+                        "heading_path": chunk.heading_path,
+                        "text": chunk.text,
+                        "tokens": chunk.tokens,
+                        "score": score,
+                    }
+                )
     else:
-        # Fallback browser query (browsing without query)
-        stmt = select(Chunk).join(Document).join(Scheme)
+        # Fallback browser query with batch fetching
+        stmt = (
+            select(Chunk, Document)
+            .join(Document, Chunk.document_id == Document.id)
+            .join(Scheme, Document.scheme_id == Scheme.id)
+        )
         if scheme_id:
             stmt = stmt.where(Document.scheme_id == scheme_id)
         if state:
@@ -66,25 +86,54 @@ async def search_chunks(
 
         stmt = stmt.order_by(Document.scheme_id, Chunk.seq).limit(limit)
         result = await db.execute(stmt)
-        chunks = result.scalars().all()
 
-        for chunk in chunks:
-            doc_stmt = select(Document).where(Document.id == chunk.document_id)
-            doc_res = await db.execute(doc_stmt)
-            doc = doc_res.scalar_one()
+        raw_items = result.all() if hasattr(result, "all") else []
+        if raw_items and isinstance(raw_items[0], tuple):
+            for chunk, doc in raw_items:
+                results_list.append(
+                    {
+                        "id": chunk.id,
+                        "scheme_id": doc.scheme_id if doc else None,
+                        "document_title": doc.title if doc else "",
+                        "seq": chunk.seq,
+                        "heading_path": chunk.heading_path,
+                        "text": chunk.text,
+                        "tokens": chunk.tokens,
+                        "score": 1.0,
+                    }
+                )
+        else:
+            chunks = result.scalars().all() if hasattr(result, "scalars") else []
+            if chunks:
+                doc_ids = list({chunk.document_id for chunk in chunks})
+                docs_stmt = select(Document).where(Document.id.in_(doc_ids))
+                docs_res = await db.execute(docs_stmt)
+                doc_map = {}
+                if hasattr(docs_res, "scalars"):
+                    docs = docs_res.scalars().all()
+                    if docs:
+                        doc_map = {doc.id: doc for doc in docs}
+                if not doc_map and hasattr(docs_res, "scalar_one"):
+                    try:
+                        doc = docs_res.scalar_one()
+                        doc_map = {doc.id: doc}
+                    except Exception:
+                        pass
 
-            results_list.append(
-                {
-                    "id": chunk.id,
-                    "scheme_id": doc.scheme_id,
-                    "document_title": doc.title,
-                    "seq": chunk.seq,
-                    "heading_path": chunk.heading_path,
-                    "text": chunk.text,
-                    "tokens": chunk.tokens,
-                    "score": 1.0,  # default placeholder score when browsing
-                }
-            )
+                for chunk in chunks:
+                    doc = doc_map.get(chunk.document_id)
+                    results_list.append(
+                        {
+                            "id": chunk.id,
+                            "scheme_id": doc.scheme_id if doc else None,
+                            "document_title": doc.title if doc else "",
+                            "seq": chunk.seq,
+                            "heading_path": chunk.heading_path,
+                            "text": chunk.text,
+                            "tokens": chunk.tokens,
+                            "score": 1.0,
+                        }
+                    )
 
     # Get all ingested schemes for filters list
     schemes_stmt = select(Scheme).order_by(Scheme.name)

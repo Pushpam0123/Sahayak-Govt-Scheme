@@ -4,13 +4,17 @@ from collections.abc import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
-# Read Database URL from environment
-DATABASE_URL = os.getenv(
-    "DATABASE_URL", "postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/sahayak"
-)
+from api.config import settings
 
-# Create async engine
-engine = create_async_engine(DATABASE_URL, echo=True)
+# Read Database URL from settings
+DATABASE_URL = settings.DATABASE_URL
+
+# Create async engine with configurable echo and pooling
+engine = create_async_engine(
+    DATABASE_URL,
+    echo=settings.DB_ECHO,
+    pool_pre_ping=True,
+)
 
 # Create async session factory
 AsyncSessionLocal = async_sessionmaker(

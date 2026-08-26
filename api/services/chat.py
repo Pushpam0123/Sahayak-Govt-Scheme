@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from api.config import settings
 from api.llm.client import get_llm_client
 from api.models.chat import QALog
 from api.models.scheme import Document, Scheme
@@ -22,10 +23,6 @@ def split_into_sentences(text: str) -> List[str]:
 
     Handles inline citation marks like [1] or [2][3].
     """
-    # Split on sentence boundaries (. ! ? । \n) while trying not to break up citations
-    # e.g. sentence text [1]. sentence text [2]
-    # We find segments ending with a boundary punctuation followed by
-    # whitespace/newlines.
     pattern = r"([^.!?।\n]+(?:[.!?।]+|\n+)?)"
     sentences = []
     for match in re.finditer(pattern, text):
@@ -89,7 +86,7 @@ async def get_grounded_answer(
         limit=5,
     )
 
-    # 2. Format context for system prompt
+    # 3. Format context for system prompt
     context_blocks = []
     for idx, (chunk, _) in enumerate(chunks, 1):
         context_blocks.append(
@@ -99,7 +96,7 @@ async def get_grounded_answer(
         )
     context_str = "\n\n".join(context_blocks)
 
-    # 3. Read prompt template
+    # 4. Read prompt template
     current_dir = os.path.dirname(os.path.abspath(__file__))
     prompt_path = os.path.join(
         os.path.dirname(current_dir), "llm", "prompts", "answer.md"
@@ -125,7 +122,7 @@ async def get_grounded_answer(
             "correctly attached to your sentences."
         )
 
-    # 4. Invoke LLM client
+    # 5. Invoke LLM client
     llm_client = get_llm_client()
     messages = [{"role": "user", "content": query}]
 
@@ -138,7 +135,7 @@ async def get_grounded_answer(
     raw_answer = response["content"]
     usage = response["usage"]
 
-    # 5. Parse answer into cited sentences
+    # 6. Parse answer into cited sentences
     raw_sentences = split_into_sentences(raw_answer)
     parsed_sentences: List[Dict[str, Any]] = []
     unique_citation_nums = set()
@@ -149,37 +146,48 @@ async def get_grounded_answer(
         for c in cits:
             unique_citation_nums.add(c)
 
-    # 6. Gather citations metadata
+    # 7. Gather citations metadata (Batch-fetched to eliminate N+1 queries)
     citations_metadata = []
-    for n in sorted(list(unique_citation_nums)):
-        chunk, _ = chunks[n - 1]
-
-        # Fetch document and scheme details
-        stmt = (
-            select(Document, Scheme)
-            .join(Scheme)
-            .where(Document.id == chunk.document_id)
-        )
-        res = await db.execute(stmt)
-        row = res.first()
-
-        if row:
-            doc, scheme = row
-            citations_metadata.append(
-                {
-                    "n": n,
-                    "chunk_id": chunk.id,
-                    "source_url": doc.source_url or scheme.official_url or "",
-                    "heading_path": chunk.heading_path or doc.title,
-                    "quote": (
-                        chunk.text[:150] + "..."
-                        if len(chunk.text) > 150
-                        else chunk.text
-                    ),
-                }
+    if unique_citation_nums:
+        doc_ids = {
+            chunks[n - 1][0].document_id
+            for n in unique_citation_nums
+            if 1 <= n <= len(chunks)
+        }
+        doc_scheme_map = {}
+        if doc_ids:
+            stmt = (
+                select(Document, Scheme)
+                .join(Scheme, Document.scheme_id == Scheme.id)
+                .where(Document.id.in_(doc_ids))
             )
+            res = await db.execute(stmt)
+            for doc, scheme in res.all():
+                doc_scheme_map[doc.id] = (doc, scheme)
 
-    # 7. Groundedness Verification Pass
+        for n in sorted(list(unique_citation_nums)):
+            if 1 <= n <= len(chunks):
+                chunk, _ = chunks[n - 1]
+                doc_scheme = doc_scheme_map.get(chunk.document_id)
+                doc = doc_scheme[0] if doc_scheme else None
+                scheme = doc_scheme[1] if doc_scheme else None
+                citations_metadata.append(
+                    {
+                        "n": n,
+                        "chunk_id": chunk.id,
+                        "source_url": (
+                            doc.source_url if doc and doc.source_url else (scheme.official_url if scheme else "")
+                        ),
+                        "heading_path": chunk.heading_path or (doc.title if doc else "Document"),
+                        "quote": (
+                            chunk.text[:150] + "..."
+                            if len(chunk.text) > 150
+                            else chunk.text
+                        ),
+                    }
+                )
+
+    # 8. Groundedness Verification Pass
     groundedness_usage: Dict[str, Any] = {}
     groundedness_results = await verify_groundedness(
         parsed_sentences, chunks, usage_collector=groundedness_usage
@@ -191,33 +199,35 @@ async def get_grounded_answer(
             "reasoning": g_res["reasoning"],
         }
 
-    # 8. Cost Accounting Calculation
-    chat_cost = (usage["input_tokens"] * 0.000003) + (
-        usage["output_tokens"] * 0.000015
+    # 9. Cost Accounting Calculation using centralized settings
+    chat_cost = (
+        usage.get("input_tokens", 0) * (settings.ANTHROPIC_INPUT_COST_PER_M / 1_000_000.0)
+    ) + (
+        usage.get("output_tokens", 0) * (settings.ANTHROPIC_OUTPUT_COST_PER_M / 1_000_000.0)
     )
     groundedness_cost = (
-        groundedness_usage.get("input_tokens", 0) * 0.00000025
-        + groundedness_usage.get("output_tokens", 0) * 0.00000125
+        groundedness_usage.get("input_tokens", 0) * (settings.ANTHROPIC_INPUT_COST_PER_M / 1_000_000.0)
+        + groundedness_usage.get("output_tokens", 0) * (settings.ANTHROPIC_OUTPUT_COST_PER_M / 1_000_000.0)
     )
     translation_cost = (
-        translation_input_tokens * 0.00000025
-        + translation_output_tokens * 0.00000125
+        translation_input_tokens * (settings.ANTHROPIC_INPUT_COST_PER_M / 1_000_000.0)
+        + translation_output_tokens * (settings.ANTHROPIC_OUTPUT_COST_PER_M / 1_000_000.0)
     )
 
     total_cost = chat_cost + groundedness_cost + translation_cost
 
     total_tokens_in = (
-        usage["input_tokens"]
+        usage.get("input_tokens", 0)
         + groundedness_usage.get("input_tokens", 0)
         + translation_input_tokens
     )
     total_tokens_out = (
-        usage["output_tokens"]
+        usage.get("output_tokens", 0)
         + groundedness_usage.get("output_tokens", 0)
         + translation_output_tokens
     )
 
-    # 9. Log Q&A to database
+    # 10. Log Q&A to database
     qa_log = QALog(
         session_id=session_id,
         question=query,
