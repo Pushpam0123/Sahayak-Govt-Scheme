@@ -60,6 +60,8 @@ schemes:
     official_url: "https://www.jansuraksha.gov.in"
     source_url: "https://www.jansuraksha.gov.in/Files/PMJJBY/English/Rules.pdf"
     verified_on: 2026-08-26
+    tls_insecure: true
+    tls_insecure_reason: "jansuraksha.gov.in serves only its leaf certificate without the GlobalSign GCC R3 EV TLS CA 2025 intermediate, so the chain cannot be completed locally (OpenSSL verify error 20/21: unable to get local issuer certificate). Confirmed on 2026-08-26 via `openssl s_client`; the leaf cert itself is a valid EV certificate for jansuraksha.gov.in issued to Punjab National Bank."
 
   - id: pm-sby
     name: Pradhan Mantri Suraksha Bima Yojana
@@ -79,6 +81,8 @@ schemes:
     official_url: "https://www.jansuraksha.gov.in"
     source_url: "https://www.jansuraksha.gov.in/Files/PMSBY/English/Rules.pdf"
     verified_on: 2026-08-26
+    tls_insecure: true
+    tls_insecure_reason: "jansuraksha.gov.in serves only its leaf certificate without the GlobalSign GCC R3 EV TLS CA 2025 intermediate, so the chain cannot be completed locally (OpenSSL verify error 20/21: unable to get local issuer certificate). Confirmed on 2026-08-26 via `openssl s_client`; the leaf cert itself is a valid EV certificate for jansuraksha.gov.in issued to Punjab National Bank."
 
   - id: atal-pension-yojana
     name: Atal Pension Yojana
@@ -99,6 +103,8 @@ schemes:
     official_url: "https://www.jansuraksha.gov.in"
     source_url: "https://www.jansuraksha.gov.in/Files/APY/English/Rules.pdf"
     verified_on: 2026-08-26
+    tls_insecure: true
+    tls_insecure_reason: "jansuraksha.gov.in serves only its leaf certificate without the GlobalSign GCC R3 EV TLS CA 2025 intermediate, so the chain cannot be completed locally (OpenSSL verify error 20/21: unable to get local issuer certificate). Confirmed on 2026-08-26 via `openssl s_client`; the leaf cert itself is a valid EV certificate for jansuraksha.gov.in issued to Punjab National Bank."
 
   - id: pm-matru-vandana
     name: Pradhan Mantri Matru Vandana Yojana
