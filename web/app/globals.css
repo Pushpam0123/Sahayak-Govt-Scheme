@@ -10,6 +10,7 @@
   - 48px minimum touch targets
   - 16px minimum body text for accessibility in challenging light/screens
   - Deliberately elevated dark theme clearing WCAG AA contrast standards
+  - Multilingual script support (Bengali, Telugu, Tamil, Devanagari) via [lang] selectors
 */
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -50,8 +51,11 @@
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
 
-  --font-sans: "Noto Sans", "Inter", ui-sans-serif, system-ui, -apple-system,
+  --font-sans: var(--font-sans), "Inter", ui-sans-serif, system-ui, -apple-system,
     "Segoe UI", Roboto, "Noto Sans Devanagari", sans-serif;
+  --font-bengali: var(--font-bengali), var(--font-sans), sans-serif;
+  --font-telugu: var(--font-telugu), var(--font-sans), sans-serif;
+  --font-tamil: var(--font-tamil), var(--font-sans), sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
 
   /* Display and headline tracking */
@@ -97,6 +101,8 @@
   --chart-3: #15803d;
   --chart-4: #7c3aed;
   --chart-5: #0891b2;
+
+  --font-scale: 1;
 
   color-scheme: light;
 }
@@ -150,8 +156,26 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
-    font-size: 1rem; /* 16px baseline minimum */
+    font-size: calc(1rem * var(--font-scale, 1)); /* 16px baseline scaled */
     line-height: 1.6;
+  }
+
+  /* Language-specific font family bindings */
+  html[lang="bn"] body {
+    font-family: var(--font-bengali), var(--font-sans), sans-serif;
+  }
+
+  html[lang="te"] body {
+    font-family: var(--font-telugu), var(--font-sans), sans-serif;
+  }
+
+  html[lang="ta"] body {
+    font-family: var(--font-tamil), var(--font-sans), sans-serif;
+  }
+
+  html[lang="hi"] body,
+  html[lang="mr"] body {
+    font-family: var(--font-sans), sans-serif;
   }
 
   /* Micro transitions on interactive elements */
@@ -183,21 +207,21 @@
 @layer utilities {
   /* Fluid display typography scale */
   .text-display-hero {
-    font-size: clamp(1.875rem, 4vw + 1rem, 3.5rem);
+    font-size: calc(clamp(1.875rem, 4vw + 1rem, 3.5rem) * var(--font-scale, 1));
     line-height: 1.15;
     letter-spacing: var(--tracking-tighter);
     font-weight: 800;
   }
 
   .text-display-section {
-    font-size: clamp(1.875rem, 3vw + 0.75rem, 2.5rem);
+    font-size: calc(clamp(1.875rem, 3vw + 0.75rem, 2.5rem) * var(--font-scale, 1));
     line-height: 1.2;
     letter-spacing: var(--tracking-tight);
     font-weight: 800;
   }
 
   .text-display-card {
-    font-size: clamp(1.25rem, 2vw + 0.5rem, 1.5rem);
+    font-size: calc(clamp(1.25rem, 2vw + 0.5rem, 1.5rem) * var(--font-scale, 1));
     line-height: 1.3;
     letter-spacing: var(--tracking-tight);
     font-weight: 700;

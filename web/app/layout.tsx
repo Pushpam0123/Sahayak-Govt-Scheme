@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Noto_Sans } from 'next/font/google';
+import { Noto_Sans, Noto_Sans_Bengali, Noto_Sans_Telugu, Noto_Sans_Tamil } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
 import { SITE_URL } from '../lib/site';
@@ -8,6 +8,27 @@ const notoSans = Noto_Sans({
   subsets: ['latin', 'devanagari'],
   weight: ['400', '500', '600', '700', '800'],
   variable: '--font-sans',
+  display: 'swap',
+});
+
+const notoBengali = Noto_Sans_Bengali({
+  subsets: ['bengali'],
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-bengali',
+  display: 'swap',
+});
+
+const notoTelugu = Noto_Sans_Telugu({
+  subsets: ['telugu'],
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-telugu',
+  display: 'swap',
+});
+
+const notoTamil = Noto_Sans_Tamil({
+  subsets: ['tamil'],
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-tamil',
   display: 'swap',
 });
 
@@ -36,7 +57,7 @@ const themeAndLangScript = `
       document.documentElement.classList.remove('dark');
     }
     var storedLang = localStorage.getItem('sahayak-lang');
-    if (storedLang === 'hi' || storedLang === 'en') {
+    if (storedLang && ['en', 'hi', 'bn', 'mr', 'te', 'ta'].indexOf(storedLang) !== -1) {
       document.documentElement.lang = storedLang;
     }
   } catch (e) {}
@@ -48,8 +69,10 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const fontVariables = `${notoSans.variable} ${notoBengali.variable} ${notoTelugu.variable} ${notoTamil.variable}`;
+
   return (
-    <html lang="en" className={notoSans.variable} suppressHydrationWarning>
+    <html lang="en" className={fontVariables} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeAndLangScript }} />
       </head>
