@@ -13,58 +13,78 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
   const t = TRANSLATIONS[lang];
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-7xl flex-col gap-6 p-4 md:p-6">
-      <header className="flex items-center justify-between border-b border-border-subtle pb-4">
-        <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-base font-black text-on-primary shadow-sm">
-              स
-            </div>
-            <div>
-              <div className="text-base font-extrabold tracking-tight text-content group-hover:text-primary transition-colors">
-                {t.appName}
+    <div className="flex min-h-screen flex-col bg-page text-content">
+      {/* Sticky header with solid background and visible focus rings */}
+      <header className="sticky top-0 z-40 w-full border-b border-border-subtle bg-page">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-6">
+            <Link
+              href="/"
+              className="group flex items-center gap-2.5 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-lg font-black text-on-primary shadow-sm">
+                स
               </div>
-              <div className="text-xs text-muted">{t.tagline}</div>
-            </div>
-          </Link>
+              <div>
+                <div className="text-base font-extrabold tracking-tight text-content group-hover:text-primary transition-colors">
+                  {t.appName}
+                </div>
+                <div className="text-sm text-muted">{t.tagline}</div>
+              </div>
+            </Link>
 
-          <nav className="hidden sm:flex items-center gap-4 text-sm font-semibold text-muted">
-            <Link href="/schemes" className="hover:text-content transition-colors">
-              Schemes
-            </Link>
-            <Link href="/services" className="hover:text-content transition-colors">
-              Services
-            </Link>
-            <Link href="/ask" className="hover:text-content transition-colors">
-              Ask Assistant
-            </Link>
-          </nav>
-        </div>
+            <nav className="hidden sm:flex items-center gap-5 text-base font-semibold text-muted" aria-label="Main Navigation">
+              <Link
+                href="/schemes"
+                className="rounded-lg px-2 py-1 hover:text-content transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                Schemes
+              </Link>
+              <Link
+                href="/services"
+                className="rounded-lg px-2 py-1 hover:text-content transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                Services
+              </Link>
+              <Link
+                href="/ask"
+                className="rounded-lg px-2 py-1 hover:text-content transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                Ask Assistant
+              </Link>
+            </nav>
+          </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setLang(lang === 'hi' ? 'en' : 'hi')}
-            className="rounded-lg border border-border-strong px-2.5 py-1 text-xs font-bold text-content hover:bg-surface-2 transition-colors"
-          >
-            {lang === 'hi' ? 'English' : 'हिंदी'}
-          </button>
-          <Button
-            variant="ghost"
-            onClick={toggleTheme}
-            aria-label="Toggle theme"
-            className="h-8 w-8 p-0"
-          >
-            {theme === 'dark' ? <SunIcon className="h-4 w-4" /> : <MoonIcon className="h-4 w-4" />}
-          </Button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setLang(lang === 'hi' ? 'en' : 'hi')}
+              className="min-h-[44px] rounded-xl border border-border-strong px-3 py-1.5 text-sm font-bold text-content hover:bg-surface-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              aria-label={`Switch to ${lang === 'hi' ? 'English' : 'Hindi'}`}
+            >
+              {lang === 'hi' ? 'English' : 'हिंदी'}
+            </button>
+            <Button
+              variant="ghost"
+              onClick={toggleTheme}
+              aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+              className="flex h-11 w-11 items-center justify-center p-0 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            >
+              {theme === 'dark' ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
+            </Button>
+          </div>
         </div>
       </header>
 
-      <main className="flex flex-1 flex-col">
+      {/* Main content allowing full-bleed and contained sections */}
+      <main className="flex-1 w-full flex flex-col">
         {children}
       </main>
 
-      <footer className="border-t border-border-subtle pt-4 text-center text-xs text-faint">
-        {t.appName} · {t.tagline}
+      {/* Honest footer with min 16px text */}
+      <footer className="w-full border-t border-border-subtle bg-surface">
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 text-center text-base text-faint">
+          {t.appName} · {t.tagline}
+        </div>
       </footer>
     </div>
   );
