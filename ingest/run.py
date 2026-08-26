@@ -78,11 +78,23 @@ async def ingest_scheme(db: AsyncSession, scheme_data: dict, force: bool = False
     if existing_doc and not force:
         # Same bytes as last time. We're not replacing the Document or its
         # chunks, but the verification evidence for those exact bytes may
-        # have changed (e.g. a prior run only had a "cached" fallback and
+        # have improved (e.g. a prior run only had a "cached" fallback and
         # this run just confirmed the identical content live) - refresh it
         # so a previously uncitable document doesn't stay uncitable forever.
-        existing_doc.fetch_status = fetch_result.status
-        existing_doc.verified_at = fetch_result.fetched_at
+        #
+        # This must only ever UPGRADE verified_at, never downgrade it. A
+        # checksum match means the bytes are identical, so an earlier
+        # confirmation is still valid evidence - losing this run's sidecar
+        # (backup restore, gitignore rule, whatever) doesn't retroactively
+        # make an earlier verified fetch not have happened. fetch_status
+        # rides along with verified_at: a stored "fetched" is never
+        # overwritten by this run's "cached" unless it's a genuine upgrade.
+        if fetch_result.fetched_at is not None and (
+            existing_doc.verified_at is None
+            or fetch_result.fetched_at > existing_doc.verified_at
+        ):
+            existing_doc.verified_at = fetch_result.fetched_at
+            existing_doc.fetch_status = fetch_result.status
         existing_doc.content_sha256 = fetch_result.content_sha256
         logger.info(f"Skipping scheme '{scheme_id}': Document matches checksum {checksum}")
         return

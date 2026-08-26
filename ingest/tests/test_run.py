@@ -109,3 +109,50 @@ async def test_ingest_scheme_upgrades_verified_at_on_idempotent_checksum_match()
     # No new Document (or anything else) was created - this was an
     # in-place upgrade of the existing row.
     mock_db.add.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_ingest_scheme_never_downgrades_verified_at_on_idempotent_checksum_match() -> None:
+    """A document verified at T1 must keep that verified_at (and its
+    fetch_status) if a later run on the identical bytes only manages a
+    cached fetch with no provenance (e.g. the sidecar was lost). The bytes
+    are unchanged, so the earlier confirmation is still valid evidence -
+    losing this run's sidecar must not retroactively make it uncitable."""
+    mock_db = AsyncMock(spec=AsyncSession)
+
+    verified_time = datetime(2026, 8, 20, 9, 0, 0, tzinfo=timezone.utc)
+    existing_doc = Document(
+        id=1,
+        scheme_id="some-scheme",
+        title="Some Scheme",
+        source_url="https://example.gov.in/guidelines.html",
+        doc_type="html",
+        checksum="matching-checksum",
+        fetch_status="fetched",
+        verified_at=verified_time,
+        content_sha256="matching-sha256",
+    )
+    mock_doc_result = MagicMock()
+    mock_doc_result.scalars().first.return_value = existing_doc
+    mock_db.execute.return_value = mock_doc_result
+
+    # This run's fetch fell back to cache with no sidecar proof - fetched_at
+    # is None even though the bytes (and thus the checksum) are identical.
+    cached_no_sidecar_result = FetchResult(
+        status="cached",
+        file_path="data/raw/some-scheme.html",
+        doc_type="html",
+        checksum="matching-checksum",
+        content_sha256="matching-sha256",
+        http_status=None,
+        error="Connection refused",
+        fetched_at=None,
+    )
+
+    with patch("ingest.run.fetch_scheme_guidelines", return_value=cached_no_sidecar_result):
+        await ingest_scheme(mock_db, SCHEME_DATA, force=False)
+
+    # verified_at and fetch_status are untouched - not downgraded.
+    assert existing_doc.verified_at == verified_time
+    assert existing_doc.fetch_status == "fetched"
+    mock_db.add.assert_not_called()
