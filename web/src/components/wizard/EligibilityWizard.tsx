@@ -62,6 +62,44 @@ export const EligibilityWizard: React.FC<EligibilityWizardProps> = ({
 
       {/* Steps Content */}
       <Card className="p-6 md:p-8 shadow-sm">
+        {step === 0 && (
+          <div className="flex flex-col gap-6">
+            <div className="flex items-center gap-3">
+              <div className="rounded-xl bg-primary-soft p-3 text-primary">
+                <SparklesIcon className="h-6 w-6" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-extrabold text-content">Citizen Privacy Notice</h2>
+                <p className="text-xs text-muted mt-0.5">Digital Personal Data Protection (DPDP) Act 2023</p>
+              </div>
+            </div>
+
+            <div className="rounded-xl bg-surface-2 p-5 border border-border-subtle flex flex-col gap-3 text-sm text-content">
+              <p>
+                To determine which government schemes you qualify for, Sahayak will ask for basic criteria like your age, state, gender, and family income.
+              </p>
+              <ul className="list-disc pl-5 space-y-1.5 text-xs text-muted">
+                <li><strong>Purpose Limitation:</strong> Used strictly to calculate matching criteria.</li>
+                <li><strong>Storage:</strong> Stored only inside your device's browser local storage.</li>
+                <li><strong>Zero Profiling:</strong> We do not track or sell your data to any third party.</li>
+                <li><strong>Right to Erasure:</strong> You can purge your profile at any time with the "Reset Profile" button.</li>
+              </ul>
+            </div>
+
+            <div className="flex items-center justify-between pt-4 border-t border-border-subtle">
+              <span className="text-xs text-muted">By clicking proceed, you give explicit consent to calculate matching benefits.</span>
+              <Button
+                variant="primary"
+                className="px-6 tap-target font-semibold flex items-center gap-2"
+                onClick={() => setStep(1)}
+              >
+                I Agree & Proceed
+                <ArrowRightIcon className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+
         {step === 1 && (
           <div className="flex flex-col gap-6">
             <div>

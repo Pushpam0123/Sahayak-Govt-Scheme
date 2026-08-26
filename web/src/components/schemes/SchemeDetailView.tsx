@@ -12,6 +12,8 @@ import {
   ArrowRightIcon,
 } from '../icons';
 
+import { shareSchemeOnWhatsApp, triggerPrint } from '../../lib/export';
+
 interface SchemeDetailViewProps {
   t: Dict;
   schemeId: string;
@@ -82,14 +84,30 @@ export const SchemeDetailView: React.FC<SchemeDetailViewProps> = ({
   return (
     <div className="mx-auto max-w-4xl flex flex-col gap-6 pb-12">
       {/* Navigation Breadcrumb */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <button
           onClick={onBack}
           className="text-xs font-semibold text-muted hover:text-primary transition-colors flex items-center gap-1"
         >
           ← Back to schemes
         </button>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="secondary"
+            className="text-xs flex items-center gap-1.5"
+            onClick={() => shareSchemeOnWhatsApp(scheme)}
+            title="Share scheme details on WhatsApp"
+          >
+            💬 WhatsApp
+          </Button>
+          <Button
+            variant="secondary"
+            className="text-xs flex items-center gap-1.5"
+            onClick={triggerPrint}
+            title="Print checklist"
+          >
+            🖨️ Print
+          </Button>
           <Button
             variant="secondary"
             className="text-xs flex items-center gap-1.5"
@@ -103,7 +121,7 @@ export const SchemeDetailView: React.FC<SchemeDetailViewProps> = ({
             className="text-xs"
             onClick={() => onAskChatAboutScheme(scheme.name)}
           >
-            Ask AI about this
+            Ask AI
           </Button>
         </div>
       </div>

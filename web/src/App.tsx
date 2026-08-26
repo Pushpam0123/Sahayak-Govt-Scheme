@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { DisclaimerStrip } from './components/DisclaimerStrip';
 import { Header } from './components/Header';
 import { OfflineBanner } from './components/OfflineBanner';
+import { PrivacyBanner } from './components/PrivacyBanner';
 import { TabBar, type TabKey } from './components/TabBar';
 import { LandingView } from './components/home/LandingView';
 import { EligibilityWizard } from './components/wizard/EligibilityWizard';
@@ -81,6 +82,8 @@ function App() {
       />
 
       <DisclaimerStrip t={t} />
+
+      <PrivacyBanner t={t} onPurgeData={resetProfile} />
 
       {offline ? <OfflineBanner t={t} /> : null}
 

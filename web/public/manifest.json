@@ -1,0 +1,16 @@
+{
+  "name": "Sahayak - Government Scheme Assistant",
+  "short_name": "Sahayak",
+  "description": "Find and verify your government scheme eligibility with citations directly from official guidelines.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#1d4ed8",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}
