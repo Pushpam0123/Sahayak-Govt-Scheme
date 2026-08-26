@@ -76,6 +76,14 @@ async def ingest_scheme(db: AsyncSession, scheme_data: dict, force: bool = False
     existing_doc = result.scalars().first()
 
     if existing_doc and not force:
+        # Same bytes as last time. We're not replacing the Document or its
+        # chunks, but the verification evidence for those exact bytes may
+        # have changed (e.g. a prior run only had a "cached" fallback and
+        # this run just confirmed the identical content live) - refresh it
+        # so a previously uncitable document doesn't stay uncitable forever.
+        existing_doc.fetch_status = fetch_result.status
+        existing_doc.verified_at = fetch_result.fetched_at
+        existing_doc.content_sha256 = fetch_result.content_sha256
         logger.info(f"Skipping scheme '{scheme_id}': Document matches checksum {checksum}")
         return
 
@@ -133,7 +141,7 @@ async def ingest_scheme(db: AsyncSession, scheme_data: dict, force: bool = False
         fetched_at=datetime.now(timezone.utc),
         checksum=checksum,
         fetch_status=fetch_result.status,
-        verified_at=fetch_result.fetched_at if fetch_result.status == "fetched" else None,
+        verified_at=fetch_result.fetched_at,
         content_sha256=fetch_result.content_sha256,
     )
     db.add(db_doc)
