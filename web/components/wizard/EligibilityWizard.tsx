@@ -6,9 +6,10 @@ import type { Dict } from '../../lib/i18n';
 import { INDIAN_STATES } from '../../lib/i18n';
 import type { CitizenProfile, EligibilityMap, SchemeInfo } from '../../lib/types';
 import { Card, Badge, Button } from '../ui';
-import { SparklesIcon, ArrowRightIcon, CheckCircleIcon, XCircleIcon, SpeakerIcon, StopIcon } from '../icons';
+import { SparklesIcon, ArrowRightIcon, CheckCircleIcon, XCircleIcon, SpeakerIcon, StopIcon, ShieldCheckIcon } from '../icons';
 import { useLang } from '../../lib/theme';
 import { useSpeechSynthesis } from '../../hooks/useSpeech';
+import { loadConsentGiven, saveConsentGiven } from '../../lib/storage';
 
 interface EligibilityWizardProps {
   t: Dict;
@@ -42,7 +43,12 @@ export const EligibilityWizard: React.FC<EligibilityWizardProps> = ({
   const router = useRouter();
   const { lang } = useLang();
   const speechSynth = useSpeechSynthesis({ lang });
-  const [step, setStep] = useState<number>(initialStep);
+  const [step, setStep] = useState<number>(() => {
+    if (initialStep !== undefined && initialStep > 1) {
+      return initialStep;
+    }
+    return loadConsentGiven() ? (initialStep ?? 1) : 0;
+  });
   const totalSteps = 6;
 
   const handleSelectScheme = (schemeId: string) => {
@@ -82,14 +88,18 @@ export const EligibilityWizard: React.FC<EligibilityWizardProps> = ({
     <div className="mx-auto max-w-3xl flex flex-col gap-6 pb-12">
       {/* Progress Bar */}
       <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between text-xs text-muted">
-          <span>Step {Math.min(step, totalSteps)} of {totalSteps}</span>
-          <button
-            onClick={onResetProfile}
-            className="text-xs text-faint hover:text-danger transition-colors underline"
-          >
-            Reset Profile
-          </button>
+        <div className="flex items-center justify-between text-sm text-muted">
+          <span>
+            {step === 0 ? 'Consent Step — DPDP Act 2023' : `Question ${Math.min(step, totalSteps)} of ${totalSteps}`}
+          </span>
+          {step > 0 && (
+            <button
+              onClick={onResetProfile}
+              className="text-sm text-faint hover:text-danger transition-colors underline cursor-pointer"
+            >
+              Reset Profile
+            </button>
+          )}
         </div>
         <div className="h-2 w-full rounded-full bg-surface-3 overflow-hidden">
           <div
@@ -105,34 +115,51 @@ export const EligibilityWizard: React.FC<EligibilityWizardProps> = ({
           <div className="flex flex-col gap-6">
             <div className="flex items-center gap-3">
               <div className="rounded-xl bg-primary-soft p-3 text-primary">
-                <SparklesIcon className="h-6 w-6" />
+                <ShieldCheckIcon className="h-7 w-7" />
               </div>
               <div>
-                <h2 className="text-2xl font-extrabold text-content">Citizen Privacy Notice</h2>
-                <p className="text-xs text-muted mt-0.5">Digital Personal Data Protection (DPDP) Act 2023</p>
+                <h2 className="text-display-card text-content">Data Collection & Privacy Consent</h2>
+                <p className="text-sm text-muted mt-0.5">Digital Personal Data Protection (DPDP) Act, 2023</p>
               </div>
             </div>
 
-            <div className="rounded-xl bg-surface-2 p-5 border border-border-subtle flex flex-col gap-3 text-sm text-content">
-              <p>
-                To determine which government schemes you qualify for, Sahayak will ask for basic criteria like your age, state, gender, and family income.
+            <div className="rounded-2xl bg-surface-2 p-6 border border-border-subtle flex flex-col gap-4 text-base text-content">
+              <p className="leading-relaxed">
+                Before entering your information to check eligibility, please review our data handling practices:
               </p>
-              <ul className="list-disc pl-5 space-y-1.5 text-xs text-muted">
-                <li><strong>Purpose Limitation:</strong> Used strictly to calculate matching criteria.</li>
-                <li><strong>Storage:</strong> Stored only inside your device's browser local storage.</li>
-                <li><strong>Zero Profiling:</strong> We do not track or sell your data to any third party.</li>
-                <li><strong>Right to Erasure:</strong> You can purge your profile at any time with the "Reset Profile" button.</li>
+              <ul className="list-disc pl-5 space-y-2.5 text-base text-muted">
+                <li>
+                  <strong className="text-content">What is collected:</strong> Your age, state of residence, gender, caste category, annual household income, and agricultural landholding.
+                </li>
+                <li>
+                  <strong className="text-content">Purpose:</strong> Strictly to evaluate eligibility criteria against official central and state government scheme guidelines.
+                </li>
+                <li>
+                  <strong className="text-content">Storage & Transmission:</strong> Your answers are saved locally on this device in your browser (<code className="text-sm bg-surface-3 px-1.5 py-0.5 rounded font-bold">localStorage</code>). When you calculate matches, your profile values (including annual income and caste) are transmitted in an encrypted HTTPS request to our eligibility rule engine (<code className="text-sm bg-surface-3 px-1.5 py-0.5 rounded font-bold">POST /api/v1/eligibility/match-all</code>) statelessly. They are never stored in any remote server database or user account.
+                </li>
+                <li>
+                  <strong className="text-content">Right to Erasure:</strong> You can permanently erase your stored profile, saved schemes, and document checklists at any time from the Saved page or Privacy Notice.
+                </li>
               </ul>
             </div>
 
-            <div className="flex items-center justify-between pt-4 border-t border-border-subtle">
-              <span className="text-xs text-muted">By clicking proceed, you give explicit consent to calculate matching benefits.</span>
+            <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-border-subtle">
+              <Button
+                variant="secondary"
+                className="min-h-[48px] px-5 text-base font-semibold"
+                onClick={() => router.push('/schemes')}
+              >
+                Cancel / Browse Schemes Directly
+              </Button>
               <Button
                 variant="primary"
-                className="px-6 tap-target font-semibold flex items-center gap-2"
-                onClick={() => setStep(1)}
+                className="min-h-[48px] px-6 text-base font-bold flex items-center gap-2"
+                onClick={() => {
+                  saveConsentGiven(true);
+                  setStep(1);
+                }}
               >
-                I Agree & Proceed
+                I Consent & Continue
                 <ArrowRightIcon className="h-4 w-4" />
               </Button>
             </div>
