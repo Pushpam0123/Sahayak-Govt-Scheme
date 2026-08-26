@@ -1,27 +1,48 @@
+'use client';
+
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import type { Dict } from '../../lib/i18n';
 import type { EligibilityMap, SchemeInfo } from '../../lib/types';
 import { Card, Badge, Button } from '../ui';
 import { BookmarkIcon, ArrowRightIcon } from '../icons';
+import { toggleSaveSchemeId } from '../../lib/storage';
 
 interface SavedSchemesViewProps {
   t: Dict;
-  schemes: SchemeInfo[];
-  savedSchemeIds: string[];
-  onToggleSave: (schemeId: string) => void;
-  onSelectScheme: (schemeId: string) => void;
-  eligibility: EligibilityMap;
+  schemes?: SchemeInfo[];
+  savedSchemeIds?: string[];
+  onToggleSave?: (schemeId: string) => void;
+  onSelectScheme?: (schemeId: string) => void;
+  eligibility?: EligibilityMap;
 }
 
 export const SavedSchemesView: React.FC<SavedSchemesViewProps> = ({
   t,
-  schemes,
-  savedSchemeIds,
+  schemes = [],
+  savedSchemeIds = [],
   onToggleSave,
   onSelectScheme,
-  eligibility,
+  eligibility = {},
 }) => {
+  const router = useRouter();
   const savedSchemes = schemes.filter((s) => savedSchemeIds.includes(s.id));
+
+  const handleSelectScheme = (schemeId: string) => {
+    if (onSelectScheme) {
+      onSelectScheme(schemeId);
+    } else {
+      router.push(`/schemes/${schemeId}`);
+    }
+  };
+
+  const handleToggleSave = (schemeId: string) => {
+    if (onToggleSave) {
+      onToggleSave(schemeId);
+    } else {
+      toggleSaveSchemeId(schemeId);
+    }
+  };
 
   return (
     <div className="mx-auto max-w-4xl flex flex-col gap-6 pb-12">
@@ -73,14 +94,14 @@ export const SavedSchemesView: React.FC<SavedSchemesViewProps> = ({
                   <Button
                     variant="secondary"
                     className="text-xs"
-                    onClick={() => onToggleSave(scheme.id)}
+                    onClick={() => handleToggleSave(scheme.id)}
                   >
                     Remove
                   </Button>
                   <Button
                     variant="primary"
                     className="text-xs font-semibold"
-                    onClick={() => onSelectScheme(scheme.id)}
+                    onClick={() => handleSelectScheme(scheme.id)}
                   >
                     {t.viewDetails} <ArrowRightIcon className="h-3.5 w-3.5 ml-1 inline" />
                   </Button>

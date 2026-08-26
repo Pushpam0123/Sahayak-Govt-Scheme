@@ -1,3 +1,5 @@
+'use client';
+
 // Advanced, collapsible tool: keyword-search the indexed guideline chunks
 // and inspect their full text. Secondary to the citizen-facing dashboard.
 import { useState } from 'react';

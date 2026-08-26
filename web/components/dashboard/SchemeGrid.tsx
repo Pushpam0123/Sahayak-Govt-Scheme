@@ -1,3 +1,5 @@
+'use client';
+
 // Scheme directory with an eligibility filter, sorted eligible-first.
 import { useMemo, useState } from 'react';
 import type { Dict } from '../../lib/i18n';

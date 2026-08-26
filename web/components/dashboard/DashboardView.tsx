@@ -1,3 +1,5 @@
+'use client';
+
 // Citizen dashboard: summary tiles, profile form, eligibility charts,
 // scheme directory, and the advanced document explorer.
 import { useMemo } from 'react';

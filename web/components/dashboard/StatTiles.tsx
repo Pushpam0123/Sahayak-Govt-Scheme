@@ -1,3 +1,5 @@
+'use client';
+
 // KPI stat tiles — hero numbers summarising the eligibility scan.
 import type { ReactNode } from 'react';
 import { Card } from '../ui';

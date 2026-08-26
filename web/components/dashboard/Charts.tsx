@@ -1,3 +1,5 @@
+'use client';
+
 // Dashboard data-viz: an eligibility donut (status colours) and a
 // single-hue schemes-by-category bar chart. Colours come from design tokens
 // so both themes are covered; identity is never colour-alone (labels + counts).

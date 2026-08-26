@@ -1,4 +1,7 @@
+'use client';
+
 // A single scheme in the directory, with the citizen's eligibility verdict.
+import Link from 'next/link';
 import type { Dict } from '../../lib/i18n';
 import { categoryGlyph } from '../../lib/format';
 import type { EligibilityStatus, SchemeInfo } from '../../lib/types';
@@ -14,14 +17,13 @@ export function SchemeCard({
   scheme: SchemeInfo;
   eligibility?: EligibilityStatus;
 }) {
-  // "unknown" covers both a scheme the eligibility map has no entry for yet
-  // (no profile match run) and one the backend explicitly marked unknown
-  // (no verified rules for it). Both read the same way to the citizen: we
-  // don't have a verdict, not a soft "no".
   const status = eligibility?.status ?? 'unknown';
 
   return (
-    <div className="flex flex-col rounded-xl border border-border-subtle bg-surface p-4 transition-colors hover:border-border-strong">
+    <Link
+      href={`/schemes/${scheme.id}`}
+      className="flex flex-col rounded-xl border border-border-subtle bg-surface p-4 transition-colors hover:border-border-strong cursor-pointer"
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 items-start gap-2.5">
           <span
@@ -71,6 +73,6 @@ export function SchemeCard({
           <CheckIcon className="h-3.5 w-3.5" /> {t.matchesProfile}
         </p>
       ) : null}
-    </div>
+    </Link>
   );
 }

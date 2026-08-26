@@ -1,3 +1,5 @@
+'use client';
+
 // Citizen profile form — results update live as fields change.
 import type { Dict } from '../../lib/i18n';
 import { INDIAN_STATES } from '../../lib/i18n';
