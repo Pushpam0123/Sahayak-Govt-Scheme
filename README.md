@@ -8,7 +8,7 @@ Navigating scheme eligibility criteria involves handling scattered documents, co
 
 ## Key Features
 
-1. **Hybrid Retrieval Search Engine**: Combines Dense Vector Search (pgvector HNSW cosine distance) and Sparse Text Search (Postgres Full-Text Search) combined using Reciprocal Rank Fusion (RRF) to achieve a **94.00% Recall@5** on verified evaluation benchmarks.
+1. **Hybrid Retrieval Search Engine**: Combines Dense Vector Search (pgvector HNSW cosine distance) and Sparse Text Search (Postgres Full-Text Search) combined using Reciprocal Rank Fusion (RRF) for high-recall scheme document search.
 2. **Grounded Answer Synthesis & Citations**: Generates answers with precise sentence-level inline citations linked directly to official government documents.
 3. **Second-Pass Groundedness Evaluator**: Audits LLM claims against context sources, flagging unsupported or partially supported sentences with warning tags (⚠️) and descriptions.
 4. **Structured Eligibility Engine**: Automatically matches citizen profiles against structured rules defined in the database (age limits, state residence, gender, caste, income, and agricultural landholding size).
@@ -39,15 +39,10 @@ graph TD
 
 ## Evaluation Benchmark
 
-We measure retriever and generator capabilities continuously. The latest evaluation metrics are logged in `EVALS.md`:
+Retriever and generator capabilities are tracked in `EVALS.md`.
 
-| Metric | Target | Latest Score | Status |
-| --- | --- | --- | --- |
-| **Hybrid Recall@5** | > 80.00% | **94.00%** | Green |
-| **Citation Precision** | > 60.00% | **60.71%** | Green |
-| **Faithfulness** | > 90.00% | **100.00%** | Green |
-| **Groundedness Rate** | > 95.00% | **100.00%** | Green |
-| **Avg Query Latency** | < 100 ms | **89.43 ms** | Green |
+> [!NOTE]
+> Evaluation benchmarks are currently undergoing Phase 0 re-baselining against independently verified, live government guideline documents (Work Order 0.7b). Historical metrics measured on synthetic documents have been marked void in `EVALS.md`.
 
 ---
 
@@ -80,8 +75,8 @@ Seed the database, ingest guidelines, generate chunks/embeddings, and seed eligi
 # Run migrations inside the API container
 docker-compose -f infra/docker-compose.yml exec api alembic upgrade head
 
-# Ingest and embed guidelines documents
-docker-compose -f infra/docker-compose.yml exec api python ingest/embedder.py
+# Ingest, chunk, and embed verified guidelines documents
+docker-compose -f infra/docker-compose.yml exec api python ingest/run.py
 
 # Seed structured eligibility rules
 docker-compose -f infra/docker-compose.yml exec api python api/seed_eligibility.py
@@ -101,5 +96,5 @@ docker-compose -f infra/docker-compose.yml exec api python eval/run_eval.py
 ## Technical Design Decisions
 
 - **pgvector vs External Vector DB**: We chose pgvector to keep document Guidelines, Chunks, Embeddings, Schemes, Q&A Audit Logs, and Eligibility Rules in a single transactional Postgres database, eliminating sync latency and infrastructure overhead.
-- **RRF (Reciprocal Rank Fusion)**: Combines dense embeddings (which capture semantics) and sparse keyword indices (which capture specific names like PM-KISAN) to achieve 94% Recall@5.
+- **RRF (Reciprocal Rank Fusion)**: Combines dense embeddings (which capture semantics) and sparse keyword indices (which capture specific names like PM-KISAN).
 - **Two-Pass Verification**: Using a fast Haiku-class model for sentence claim auditing separates factual synthesis from validation, protecting against hallucinations.

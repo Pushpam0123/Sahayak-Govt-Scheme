@@ -207,9 +207,9 @@ export function ChatView({ t, lang, schemes, offline }: ChatViewProps) {
           <TextInput
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={offline ? t.chatOfflineMessage : t.chatPlaceholder}
+            placeholder={offline ? t.chatOfflinePlaceholder : t.chatPlaceholder}
             disabled={loading || offline}
-            aria-label={offline ? t.chatOfflineMessage : t.chatPlaceholder}
+            aria-label={offline ? t.chatOfflinePlaceholder : t.chatPlaceholder}
           />
           <Button
             type="submit"
