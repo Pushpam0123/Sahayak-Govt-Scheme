@@ -1,7 +1,7 @@
 import logging
 from typing import Dict, List, Optional, Tuple
 
-from sqlalchemy import func, select
+from sqlalchemy import ColumnElement, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.models.scheme import Chunk, Document, Scheme
@@ -9,6 +9,18 @@ from api.services.translation import HINDI_TO_ENGLISH, is_hindi
 from ingest.embedder import get_embedder
 
 logger = logging.getLogger("sahayak.api.services.retrieval")
+
+
+def is_document_verified() -> "ColumnElement[bool]":
+    """SQL predicate for 'this chunk's parent document was actually fetched
+    from a real URL', i.e. Document.verified_at IS NOT NULL.
+
+    This is the single source of truth for citability: a chunk belonging to
+    a document that was not fetched live (verified_at is null - cached,
+    failed, or otherwise unverified) must never be returned by retrieval.
+    Both get_vector_search and get_fts_search must apply this predicate.
+    """
+    return Document.verified_at.is_not(None)
 
 
 async def get_vector_search(
@@ -24,6 +36,7 @@ async def get_vector_search(
     query_embedding = embedder.embed_text(query_text)
 
     stmt = select(Chunk).join(Document).join(Scheme)
+    stmt = stmt.where(is_document_verified())
 
     # Apply optional metadata filters
     if state:
@@ -54,6 +67,7 @@ async def get_fts_search(
     """
     tsquery = func.websearch_to_tsquery("english", query_text)
     stmt = select(Chunk).join(Document).join(Scheme)
+    stmt = stmt.where(is_document_verified())
 
     # Concatenate chunk text, scheme name, and scheme id for matching
     combined_text = Chunk.text + " " + Scheme.name + " " + Scheme.id
