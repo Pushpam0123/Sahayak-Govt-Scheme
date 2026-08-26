@@ -43,19 +43,39 @@ async def load_golden_set(
     return cases
 
 
+def _normalize_whitespace(text: str) -> str:
+    """Collapses any run of whitespace (including the literal newlines PDF
+    extraction leaves at a line-wrap) to a single space, so a verbatim quote
+    that happens to fall across a wrapped line still matches."""
+    return re.sub(r"\s+", " ", text).strip()
+
+
 async def resolve_gold_chunk_ids(db: Any, scheme_id: str, quote: str) -> List[int]:
-    """Resolves a verbatim quote in a scheme to its database chunk IDs."""
+    """Resolves a verbatim quote in a scheme to its database chunk IDs.
+
+    Matches on whitespace-normalized text rather than a raw ILIKE. Chunk
+    text preserves the source PDF's line-wrap newlines verbatim, so a
+    quote that is genuinely verbatim in the document but happens to span
+    one of those wraps (e.g. "...offering life\ninsurance cover...") would
+    otherwise silently fail to resolve to any chunk under plain ILIKE,
+    undercounting real in-corpus cases rather than reflecting a retrieval
+    miss.
+    """
     if not scheme_id or not quote:
         return []
 
     stmt = (
-        select(Chunk.id)
+        select(Chunk.id, Chunk.text)
         .join(Document)
         .where(Document.scheme_id == scheme_id)
-        .where(Chunk.text.ilike(f"%{quote}%"))
     )
     result = await db.execute(stmt)
-    return list(result.scalars().all())
+    normalized_quote = _normalize_whitespace(quote)
+    return [
+        chunk_id
+        for chunk_id, text in result.all()
+        if normalized_quote in _normalize_whitespace(text)
+    ]
 
 
 async def sync_eval_cases(
