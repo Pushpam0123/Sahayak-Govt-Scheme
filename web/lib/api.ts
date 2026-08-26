@@ -3,6 +3,7 @@ import type {
   AdminStats,
   ChatFilters,
   ChatResponse,
+  ChunkResult,
   CitationInfo,
   CitizenProfile,
   EligibilityMap,
@@ -99,7 +100,7 @@ export function askChat(
 }
 
 export interface StreamChatHandlers {
-  onContext?: (data: { retrieved_chunks: any[]; citation_candidates: CitationInfo[] }) => void;
+  onContext?: (data: { retrieved_chunks: ChunkResult[]; citation_candidates: CitationInfo[] }) => void;
   onToken?: (token: string) => void;
   onDone?: (data: ChatResponse) => void;
   onError?: (err: Error) => void;
@@ -164,11 +165,12 @@ export async function streamChatAnswer(
         }
       }
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const errorObj = err instanceof Error ? err : new Error(String(err));
     if (handlers?.onError) {
-      handlers.onError(err);
+      handlers.onError(errorObj);
     } else {
-      throw err;
+      throw errorObj;
     }
   }
 }
@@ -188,11 +190,11 @@ export function fetchRulesQueue(adminToken: string): Promise<RulesQueueItem[]> {
 
 export function verifySchemeRules(
   schemeId: string,
-  rulesJson: Record<string, any>,
+  rulesJson: Record<string, unknown>,
   verifiedBy: string,
   notes: string,
   adminToken: string,
-): Promise<any> {
+): Promise<{ status: string; scheme_id: string }> {
   return postJson(
     `${V1}/admin/rules/${schemeId}/verify`,
     { rules_json: rulesJson, verified_by: verifiedBy, notes },

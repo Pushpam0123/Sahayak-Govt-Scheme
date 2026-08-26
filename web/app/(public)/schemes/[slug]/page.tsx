@@ -44,8 +44,9 @@ export async function generateStaticParams() {
     return schemes.map((s: { id: string }) => ({
       slug: s.id,
     }));
-  } catch (err: any) {
-    console.warn(`[generateStaticParams] API unreachable during build: ${err.message}. Falling back to empty static params.`);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn(`[generateStaticParams] API unreachable during build: ${msg}. Falling back to empty static params.`);
     return [];
   }
 }

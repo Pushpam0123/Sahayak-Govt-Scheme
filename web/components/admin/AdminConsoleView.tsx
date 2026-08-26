@@ -39,8 +39,9 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({ t }) => {
         setStats(statsData);
         setQueue(queueData);
       })
-      .catch((err) => {
-        setAuthError(err.message || 'Unauthorized: check your admin token.');
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : 'Unauthorized: check your admin token.';
+        setAuthError(msg);
       })
       .finally(() => setLoading(false));
   };
@@ -61,8 +62,9 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({ t }) => {
       setVerifySuccess(`Verified rules for ${item.scheme_name}!`);
       setTimeout(() => setVerifySuccess(null), 3000);
       loadData();
-    } catch (err: any) {
-      alert(`Verification failed: ${err.message}`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      alert(`Verification failed: ${msg}`);
     }
   };
 

@@ -112,8 +112,9 @@ export function ChatView({ t, lang, schemes, offline, initialQuery }: ChatViewPr
           },
         }
       );
-    } catch (err: any) {
-      setError(err.message || 'Failed to get an answer.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to get an answer.';
+      setError(msg);
       setLoading(false);
     }
   };
