@@ -38,6 +38,7 @@ export interface Dict {
   darkMode: string;
   offlineBanner: string;
   disclaimer: string;
+  unreviewedTranslationNotice: string;
 
   // Filters (shared)
   focusScheme: string;
@@ -156,6 +157,8 @@ const en: Dict = {
     'Backend not reachable — the schemes and eligibility figures shown below are sample data for demonstration only, not real scheme information. Chat answers are unavailable until the API is running.',
   disclaimer:
     'Information only — verify on the official portal before applying.',
+  unreviewedTranslationNotice:
+    'Note: This translation is machine-generated and not yet reviewed by a native speaker. Refer to official English or Hindi guideline texts in case of ambiguity.',
 
   focusScheme: 'Focus scheme',
   stateFilter: 'State',
@@ -272,6 +275,8 @@ const hi: Dict = {
     'बैकएंड उपलब्ध नहीं है — नीचे दिखाई गई योजनाएं और पात्रता आंकड़े केवल प्रदर्शन के लिए नमूना डेटा हैं, वास्तविक योजना जानकारी नहीं। API चालू होने तक चैट के उत्तर उपलब्ध नहीं होंगे।',
   disclaimer:
     'केवल जानकारी के लिए — आवेदन करने से पहले आधिकारिक पोर्टल पर सत्यापित करें।',
+  unreviewedTranslationNotice:
+    'नोट: यह अनुवाद मशीन द्वारा तैयार किया गया है और अभी तक किसी देशी वक्ता द्वारा समीक्षित नहीं किया गया है। संदेह होने पर आधिकारिक अंग्रेजी या हिंदी दिशानिर्देश देखें।',
 
   focusScheme: 'योजना चुनें',
   stateFilter: 'राज्य',
@@ -387,6 +392,8 @@ const bn: Dict = {
     'ব্যাকএন্ড অনুপলব্ধ — নিচে প্রদর্শিত যোজনা এবং যোগ্যতার তথ্য শুধুমাত্র প্রদর্শনের জন্য নমুনা তথ্য, প্রকৃত যোজনার তথ্য নয়। API চালু না হওয়া পর্যন্ত চ্যাট উত্তর পাওয়া যাবে না।',
   disclaimer:
     'শুধুমাত্র তথ্যের উদ্দেশ্যে — আবেদন করার আগে অফিসিয়াল পোর্টালে যাচাই করে নিন।',
+  unreviewedTranslationNotice:
+    'দ্রষ্টব্য: এই অনুবাদটি মেশিন দ্বারা তৈরি এবং কোনো স্থানীয় ভাষাবিদ দ্বারা এখনও পর্যালোচনা করা হয়নি। সন্দেহের ক্ষেত্রে অনুগ্রহ করে মূল ইংরেজি বা হিন্দি নির্দেশিকা দেখুন।',
 
   focusScheme: 'যোজনা নির্বাচন',
   stateFilter: 'রাজ্য',
@@ -503,6 +510,8 @@ const mr: Dict = {
     'बॅकएंड उपलब्ध नाही — खाली दाखवलेल्या योजना आणि आकडेवारी केवळ प्रात्यक्षिकासाठी नमुना डेटा आहेत. API सुरू होईपर्यंत चॅट उत्तरे उपलब्ध होणार नाहीत.',
   disclaimer:
     'केवळ माहितीसाठी — अर्ज करण्यापूर्वी अधिकृत पोर्टलवर पडताळणी करा.',
+  unreviewedTranslationNotice:
+    'टीप: हे भाषांतर मशीन-निर्मित असून अद्याप कोणत्याही मूळ वक्त्याकडून तपासले गेलेले नाही. शंका असल्यास कृपया अधिकृत इंग्रजी किंवा हिंदी मार्गदर्शक तत्त्वे पहा.',
 
   focusScheme: 'योजना निवडा',
   stateFilter: 'राज्य',
@@ -619,6 +628,8 @@ const te: Dict = {
     'బ్యాకెండ్ అందుబాటులో లేదు — క్రింద చూపబడిన పథకాలు మరియు అర్హత వివరాలు డెమో కొరకు మాత్రమే. API ప్రారంభమయ్యే వరకు చాట్ సమాధానాలు అందుబాటులో ఉండవు.',
   disclaimer:
     'సమాచార ప్రయోజనాల కొరకు మాత్రమే — దరఖాస్తు చేసుకునే ముందు అధికారిక పోర్టల్‌లో ధృవీకరించుకోండి.',
+  unreviewedTranslationNotice:
+    'గమనిక: ఈ అనువాదం మెషిన్ ద్వారా రూపొందించబడింది మరియు ఇంకా సమీక్షించబడలేదు. సందేహం ఉంటే దయచేసి అధికారిక ఇంగ్లీష్ లేదా హిందీ మార్గదర్శకాలను చూడండి.',
 
   focusScheme: 'పథకం ఎంచుకోండి',
   stateFilter: 'రాష్ట్రం',
@@ -735,6 +746,8 @@ const ta: Dict = {
     'சர்வர் கிடைக்கவில்லை — கீழே காட்டப்பட்டுள்ள திட்டங்கள் மற்றும் தகுதித் தகவல்கள் மாதிரி தரவு மட்டுமே. API தொடங்கும் வரை சாட் பதில்கள் கிடைக்காது.',
   disclaimer:
     'தகவல் நோக்கங்களுக்காக மட்டுமே — விண்ணப்பிக்கும் முன் அதிகாரப்பூர்வ போர்ட்டலில் சரிபார்க்கவும்.',
+  unreviewedTranslationNotice:
+    'குறிப்பு: இந்த மொழிபெயர்ப்பு இயந்திரத்தால் உருவாக்கப்பட்டது மற்றும் இன்னும் மதிப்பாய்வு செய்யப்படவில்லை. சந்தேகம் இருந்தால் அதிகாரப்பூர்வ ஆங்கிலம் அல்லது இந்தி வழிகாட்டுதல்களைப் பார்க்கவும்.',
 
   focusScheme: 'திட்டத்தைத் தேர்ந்தெடுக்கவும்',
   stateFilter: 'மாநிலம்',
