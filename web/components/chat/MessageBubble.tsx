@@ -2,13 +2,14 @@
 
 // Renders one chat message, including sentence-level citations and
 // groundedness (unsupported / partially-supported) annotations.
-import type { Dict } from '../../lib/i18n';
+import type { Dict, Lang } from '../../lib/i18n';
 import type {
   ChatMessage,
   CitationInfo,
   Groundedness,
 } from '../../lib/types';
-import { AlertIcon } from '../icons';
+import { AlertIcon, SpeakerIcon, StopIcon } from '../icons';
+import { useSpeechSynthesis } from '../../hooks/useSpeech';
 
 const REFUSAL_TEXT =
   "I don't have this information in the official documents I've indexed.";
@@ -82,14 +83,17 @@ function GroundednessMark({
 
 export function MessageBubble({
   t,
+  lang = 'en',
   msg,
   onSelectCitation,
 }: {
   t: Dict;
+  lang?: Lang;
   msg: ChatMessage;
   onSelectCitation: (c: CitationInfo) => void;
 }) {
   const isUser = msg.sender === 'user';
+  const speechSynth = useSpeechSynthesis({ lang });
 
   if (!isUser && msg.text === REFUSAL_TEXT) {
     return (
@@ -151,19 +155,52 @@ export function MessageBubble({
           </p>
         )}
 
-        {!isUser && msg.latency_ms != null ? (
-          <div className="mt-2.5 flex flex-wrap items-center gap-3 border-t border-border-subtle pt-2 font-mono text-[10px] text-faint">
-            <span>
-              {t.latency}: {msg.latency_ms.toFixed(0)}ms
-            </span>
-            {msg.usage ? (
-              <span>
-                {t.tokens}: ↑{msg.usage.input_tokens} ↓
-                {msg.usage.output_tokens}
-              </span>
-            ) : null}
+        {!isUser && (
+          <div className="mt-2.5 flex flex-wrap items-center justify-between gap-3 border-t border-border-subtle pt-2">
+            <div className="flex flex-wrap items-center gap-3 font-mono text-[10px] text-faint">
+              {msg.latency_ms != null && (
+                <span>
+                  {t.latency}: {msg.latency_ms.toFixed(0)}ms
+                </span>
+              )}
+              {msg.usage ? (
+                <span>
+                  {t.tokens}: ↑{msg.usage.input_tokens} ↓
+                  {msg.usage.output_tokens}
+                </span>
+              ) : null}
+            </div>
+
+            {speechSynth.isSupported && msg.text && !msg.isStreaming && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (speechSynth.isSpeaking) {
+                    speechSynth.stop();
+                  } else {
+                    const plainText = msg.text.replace(/\[\d+\]/g, '');
+                    speechSynth.speak(plainText);
+                  }
+                }}
+                className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-primary hover:bg-primary-soft transition-colors cursor-pointer"
+                aria-label={speechSynth.isSpeaking ? 'Stop reading aloud' : 'Read answer aloud'}
+                title={speechSynth.isSpeaking ? 'Stop reading aloud' : 'Read answer aloud'}
+              >
+                {speechSynth.isSpeaking ? (
+                  <>
+                    <StopIcon className="h-3.5 w-3.5 text-danger animate-pulse" />
+                    <span>Stop</span>
+                  </>
+                ) : (
+                  <>
+                    <SpeakerIcon className="h-3.5 w-3.5" />
+                    <span>Listen</span>
+                  </>
+                )}
+              </button>
+            )}
           </div>
-        ) : null}
+        )}
       </div>
     </div>
   );

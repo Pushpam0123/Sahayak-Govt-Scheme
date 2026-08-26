@@ -6,7 +6,9 @@ import type { Dict } from '../../lib/i18n';
 import { INDIAN_STATES } from '../../lib/i18n';
 import type { CitizenProfile, EligibilityMap, SchemeInfo } from '../../lib/types';
 import { Card, Badge, Button } from '../ui';
-import { SparklesIcon, ArrowRightIcon, CheckCircleIcon, XCircleIcon } from '../icons';
+import { SparklesIcon, ArrowRightIcon, CheckCircleIcon, XCircleIcon, SpeakerIcon, StopIcon } from '../icons';
+import { useLang } from '../../lib/theme';
+import { useSpeechSynthesis } from '../../hooks/useSpeech';
 
 interface EligibilityWizardProps {
   t: Dict;
@@ -38,6 +40,8 @@ export const EligibilityWizard: React.FC<EligibilityWizardProps> = ({
   onEditAnswers,
 }) => {
   const router = useRouter();
+  const { lang } = useLang();
+  const speechSynth = useSpeechSynthesis({ lang });
   const [step, setStep] = useState<number>(initialStep);
   const totalSteps = 6;
 
@@ -361,7 +365,42 @@ export const EligibilityWizard: React.FC<EligibilityWizardProps> = ({
                   Based on your age ({profile.age || '—'}), state ({profile.state || 'Any'}), gender ({profile.gender || 'Any'}).
                 </p>
               </div>
-              <Button variant="secondary" onClick={handleEditAnswers}>Edit Answers</Button>
+              <div className="flex items-center gap-2">
+                {speechSynth.isSupported && (
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      if (speechSynth.isSpeaking) {
+                        speechSynth.stop();
+                      } else {
+                        const eligNames = eligibleSchemes.map((s) => s.name).join(', ');
+                        const summary =
+                          eligibleSchemes.length > 0
+                            ? `You may qualify for ${eligibleSchemes.length} schemes: ${eligNames}.`
+                            : 'No direct scheme matches found for your current profile.';
+                        speechSynth.speak(summary);
+                      }
+                    }}
+                    className="flex items-center gap-1.5 text-xs font-semibold"
+                    aria-label={speechSynth.isSpeaking ? 'Stop reading results' : 'Listen to results summary'}
+                  >
+                    {speechSynth.isSpeaking ? (
+                      <>
+                        <StopIcon className="h-3.5 w-3.5 text-danger animate-pulse" />
+                        <span>Stop</span>
+                      </>
+                    ) : (
+                      <>
+                        <SpeakerIcon className="h-3.5 w-3.5" />
+                        <span>Listen to Summary</span>
+                      </>
+                    )}
+                  </Button>
+                )}
+                <Button variant="secondary" onClick={handleEditAnswers}>
+                  Edit Answers
+                </Button>
+              </div>
             </div>
 
             {/* Eligible Section */}

@@ -143,3 +143,23 @@ export const ChatIcon = (p: IconProps) => (
     <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
   </svg>
 );
+
+export const MicIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
+    <path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8" />
+  </svg>
+);
+
+export const SpeakerIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M11 5L6 9H2v6h4l5 4V5z" />
+    <path d="M15.54 8.46a5 5 0 010 7.07M19.07 4.93a10 10 0 010 14.14" />
+  </svg>
+);
+
+export const StopIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <rect x="6" y="6" width="12" height="12" rx="2" />
+  </svg>
+);

@@ -13,7 +13,8 @@ import type {
   SchemeInfo,
 } from '../../lib/types';
 import { Button, Card, Field, Select, Spinner, TextInput } from '../ui';
-import { SendIcon, SparkIcon } from '../icons';
+import { MicIcon, SendIcon, SparkIcon, StopIcon } from '../icons';
+import { useSpeechRecognition } from '../../hooks/useSpeech';
 import { CitationInspector } from './CitationInspector';
 import { MessageBubble } from './MessageBubble';
 
@@ -31,6 +32,13 @@ export function ChatView({ t, lang, schemes, offline, initialQuery }: ChatViewPr
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeCitation, setActiveCitation] = useState<CitationInfo | null>(null);
+
+  const speechRec = useSpeechRecognition({
+    lang,
+    onTranscript: (text) => {
+      setInput((prev) => (prev ? `${prev} ${text}` : text));
+    },
+  });
 
   const [schemeId, setSchemeId] = useState('');
   const [stateFilter, setStateFilter] = useState('');
@@ -189,6 +197,7 @@ export function ChatView({ t, lang, schemes, offline, initialQuery }: ChatViewPr
             <MessageBubble
               key={i}
               t={t}
+              lang={lang}
               msg={msg}
               onSelectCitation={setActiveCitation}
             />
@@ -239,15 +248,37 @@ export function ChatView({ t, lang, schemes, offline, initialQuery }: ChatViewPr
             e.preventDefault();
             send(input);
           }}
-          className="flex gap-3 border-t border-border-subtle bg-surface-2 p-4"
+          className="flex items-center gap-3 border-t border-border-subtle bg-surface-2 p-4"
         >
-          <TextInput
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={offline ? t.chatOfflinePlaceholder : t.chatPlaceholder}
-            disabled={loading || offline}
-            aria-label={offline ? t.chatOfflinePlaceholder : t.chatPlaceholder}
-          />
+          <div className="flex-1 relative flex items-center">
+            <TextInput
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={offline ? t.chatOfflinePlaceholder : t.chatPlaceholder}
+              disabled={loading || offline}
+              aria-label={offline ? t.chatOfflinePlaceholder : t.chatPlaceholder}
+              className="w-full"
+            />
+            {speechRec.isSupported && !offline && (
+              <button
+                type="button"
+                onClick={speechRec.isListening ? speechRec.stopListening : speechRec.startListening}
+                aria-label={speechRec.isListening ? 'Stop voice dictation' : 'Dictate question with voice'}
+                title={speechRec.isListening ? 'Stop voice dictation' : 'Dictate question with voice'}
+                className={`absolute right-3 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg transition-colors cursor-pointer ${
+                  speechRec.isListening
+                    ? 'bg-danger text-on-primary animate-pulse'
+                    : 'text-muted hover:text-content hover:bg-surface-3'
+                }`}
+              >
+                {speechRec.isListening ? (
+                  <StopIcon className="h-4 w-4" />
+                ) : (
+                  <MicIcon className="h-4 w-4" />
+                )}
+              </button>
+            )}
+          </div>
           <Button
             type="submit"
             disabled={loading || offline || !input.trim()}
