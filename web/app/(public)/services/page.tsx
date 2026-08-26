@@ -20,7 +20,7 @@ export default function ServicesPage() {
               Citizen Services
             </h1>
             <p className="mt-3 text-lg text-muted leading-relaxed">
-              Explore the four core services available in Sahayak to help you identify, verify, and apply for government welfare schemes.
+              Explore the four core services available in Sahayak to help you identify, verify, and prepare for government welfare schemes.
             </p>
           </div>
         </div>

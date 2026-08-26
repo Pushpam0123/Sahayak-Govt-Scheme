@@ -64,6 +64,22 @@ export const AUDIENCES: AudienceDefinition[] = [
       );
     },
   },
+  {
+    slug: 'students',
+    title: 'Government Schemes for Students',
+    shortTitle: 'Students',
+    description:
+      'Scholarships and educational support programs for students and scholars.',
+    predicate: (s: SchemeInfo) => {
+      const cat = s.category.toLowerCase();
+      const id = s.id.toLowerCase();
+      return (
+        cat.includes('education') ||
+        cat.includes('scholarship') ||
+        id.includes('scholarship')
+      );
+    },
+  },
 ];
 
 export function getAudienceBySlug(slug: string): AudienceDefinition | undefined {
