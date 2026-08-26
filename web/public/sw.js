@@ -100,14 +100,15 @@ self.addEventListener('fetch', (event) => {
             const cachedAt = new Date().toISOString();
 
             copy.text().then((htmlText) => {
-              // Inject provenance stamp into head
-              const metaStamp = `<meta name="sahayak-cached-at" content="${cachedAt}"><script id="sw-stamp">window.__SW_CACHED_AT__="${cachedAt}";</script></head>`;
+              // Inject provenance stamp into head scoped to the specific pathname
+              const metaStamp = `<meta name="sahayak-cached-at" content="${cachedAt}" data-path="${url.pathname}"><script id="sw-stamp">window.__SW_CACHED_AT__={time:"${cachedAt}",path:"${url.pathname}"};</script></head>`;
               const stampedHtml = htmlText.includes('</head>')
                 ? htmlText.replace('</head>', metaStamp)
-                : htmlText + `<meta name="sahayak-cached-at" content="${cachedAt}">`;
+                : htmlText + `<meta name="sahayak-cached-at" content="${cachedAt}" data-path="${url.pathname}">`;
 
               const headers = new Headers(copy.headers);
               headers.set('x-sahayak-cached-at', cachedAt);
+              headers.set('x-sahayak-cached-path', url.pathname);
               headers.set('Content-Type', 'text/html; charset=utf-8');
 
               const stampedResponse = new Response(stampedHtml, {
