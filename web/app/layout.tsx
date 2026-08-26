@@ -7,28 +7,28 @@ import { SITE_URL } from '../lib/site';
 const notoSans = Noto_Sans({
   subsets: ['latin', 'devanagari'],
   weight: ['400', '500', '600', '700', '800'],
-  variable: '--font-sans',
+  variable: '--font-noto-sans',
   display: 'swap',
 });
 
 const notoBengali = Noto_Sans_Bengali({
   subsets: ['bengali'],
   weight: ['400', '500', '600', '700', '800'],
-  variable: '--font-bengali',
+  variable: '--font-noto-bengali',
   display: 'swap',
 });
 
 const notoTelugu = Noto_Sans_Telugu({
   subsets: ['telugu'],
   weight: ['400', '500', '600', '700', '800'],
-  variable: '--font-telugu',
+  variable: '--font-noto-telugu',
   display: 'swap',
 });
 
 const notoTamil = Noto_Sans_Tamil({
   subsets: ['tamil'],
   weight: ['400', '500', '600', '700', '800'],
-  variable: '--font-tamil',
+  variable: '--font-noto-tamil',
   display: 'swap',
 });
 
