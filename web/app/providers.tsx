@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider, LangProvider } from '../lib/theme';
+import { ServiceWorkerRegister } from '../components/pwa/ServiceWorkerRegister';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -22,6 +23,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <ThemeProvider>
         <LangProvider>
           {children}
+          <ServiceWorkerRegister />
         </LangProvider>
       </ThemeProvider>
     </QueryClientProvider>
