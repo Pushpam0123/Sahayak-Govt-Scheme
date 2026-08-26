@@ -39,6 +39,7 @@ export interface Dict {
   latency: string;
   tokens: string;
   chatOfflineMessage: string;
+  chatOfflinePlaceholder: string;
 
   // Citation inspector
   citationInspector: string;
@@ -144,6 +145,7 @@ const en: Dict = {
     'This question falls outside the verified government-scheme documents I have indexed.',
   chatOfflineMessage:
     "I need a live connection to look up official guidelines — there's nothing I can answer without one. Start the API and refresh to continue.",
+  chatOfflinePlaceholder: 'Unavailable offline',
   latency: 'Latency',
   tokens: 'Tokens',
 
@@ -248,6 +250,7 @@ const hi: Dict = {
     'यह प्रश्न मेरे द्वारा अनुक्रमित सत्यापित सरकारी योजना दस्तावेज़ों के दायरे से बाहर है।',
   chatOfflineMessage:
     'आधिकारिक दिशा-निर्देश खोजने के लिए मुझे एक सक्रिय कनेक्शन चाहिए — इसके बिना मैं कुछ नहीं बता सकता। जारी रखने के लिए API चालू करें और पुनः लोड करें।',
+  chatOfflinePlaceholder: 'ऑफ़लाइन उपलब्ध नहीं',
   latency: 'लेटेंसी',
   tokens: 'टोकन',
 
