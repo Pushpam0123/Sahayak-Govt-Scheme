@@ -45,7 +45,14 @@ class Document(Base):
     doc_type = Column(String, nullable=False)  # 'pdf' or 'html'
     lang = Column(String, default="en", nullable=False)  # 'en' or 'hi'
     fetched_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    checksum = Column(String, nullable=False, unique=True)  # for idempotency checks
+    checksum = Column(String, nullable=False, unique=True)  # md5, for idempotency checks
+    fetch_status = Column(
+        String, nullable=False, server_default="fetched"
+    )  # 'fetched' | 'cached' | 'failed'
+    verified_at = Column(
+        DateTime, nullable=True
+    )  # set only when fetched live and successfully from a real URL
+    content_sha256 = Column(String, nullable=True)
 
     scheme = relationship("Scheme", back_populates="documents")
     chunks = relationship(
