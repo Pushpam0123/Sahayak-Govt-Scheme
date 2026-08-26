@@ -1,264 +1,295 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import type { Dict } from '../../lib/i18n';
-import type { EligibilityMap, SchemeInfo } from '../../lib/types';
-import { Card, Badge, Button } from '../ui';
-import { SparklesIcon, ShieldCheckIcon, DocumentTextIcon, ArrowRightIcon, BookmarkIcon } from '../icons';
-import { toggleSaveSchemeId } from '../../lib/storage';
+import { Section } from '../layout/Section';
+import { SchemeCard } from '../schemes/SchemeCard';
+import { INDIAN_STATES } from '../../lib/i18n';
+import { loadSavedProfile, saveProfile } from '../../lib/storage';
+import type { SchemeInfo } from '../../lib/types';
+import { ShieldCheckIcon, DocIcon, CheckIcon } from '../icons';
 
 interface LandingViewProps {
-  t: Dict;
-  schemes?: SchemeInfo[];
-  eligibility?: EligibilityMap;
-  onStartWizard?: () => void;
-  onSelectScheme?: (schemeId: string) => void;
-  onAskChat?: (initialQuery?: string) => void;
-  savedSchemeIds?: string[];
-  onToggleSave?: (schemeId: string) => void;
+  schemes: SchemeInfo[] | null;
 }
 
-export const LandingView: React.FC<LandingViewProps> = ({
-  t,
-  schemes = [],
-  eligibility = {},
-  onStartWizard,
-  onSelectScheme,
-  onAskChat,
-  savedSchemeIds = [],
-  onToggleSave,
-}) => {
+export function LandingView({ schemes }: LandingViewProps) {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedState, setSelectedState] = useState<string>('Madhya Pradesh');
+  const [age, setAge] = useState<string>('30');
 
-  const handleStartWizard = () => {
-    if (onStartWizard) {
-      onStartWizard();
-    } else {
-      router.push('/check');
-    }
+  const handleHeroSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const current = loadSavedProfile();
+    const parsedAge = parseInt(age, 10);
+    saveProfile({
+      ...current,
+      state: selectedState || 'Madhya Pradesh',
+      age: isNaN(parsedAge) ? 30 : parsedAge,
+    });
+    router.push('/check');
   };
 
-  const handleSelectScheme = (schemeId: string) => {
-    if (onSelectScheme) {
-      onSelectScheme(schemeId);
-    } else {
-      router.push(`/schemes/${schemeId}`);
-    }
-  };
-
-  const handleAskChat = (query?: string) => {
-    if (onAskChat) {
-      onAskChat(query);
-    } else {
-      router.push(query ? `/ask?q=${encodeURIComponent(query)}` : '/ask');
-    }
-  };
-
-  const handleToggleSave = (schemeId: string) => {
-    if (onToggleSave) {
-      onToggleSave(schemeId);
-    } else {
-      toggleSaveSchemeId(schemeId);
-    }
-  };
-
-  const filteredSchemes = schemes.filter((s) => {
-    const matchesSearch =
-      !searchQuery ||
-      s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (s.summary && s.summary.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (s.benefit_amount && s.benefit_amount.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesCategory = !selectedCategory || s.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
-
-  const categories = Array.from(new Set(schemes.map((s) => s.category))).filter(Boolean);
+  const featuredList = schemes ? schemes.slice(0, 6) : [];
 
   return (
-    <div className="flex flex-col gap-8 pb-12">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary-soft via-surface to-surface-2 p-6 md:p-10 border border-border-subtle shadow-sm">
-        <div className="max-w-2xl flex flex-col gap-4">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-              <SparklesIcon className="h-3.5 w-3.5" />
-              100% Verified Official Guidelines
-            </span>
+    <div className="flex flex-col w-full">
+      {/* 1. Hero Section */}
+      <Section bg="bg-page" className="py-12 sm:py-16 lg:py-20">
+        <div className="max-w-4xl mx-auto text-center flex flex-col items-center">
+          <div className="inline-flex items-center gap-2 rounded-full border border-border-strong bg-surface px-4 py-1.5 text-sm font-bold text-muted mb-6">
+            <span className="h-2 w-2 rounded-full bg-success" />
+            Deterministic rule matching against official gazettes
           </div>
 
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-content leading-tight">
-            Find the government benefits you are entitled to.
+          <h1 className="text-display-hero text-content text-balance">
+            Find out which government schemes will actually pay you.
           </h1>
 
-          <p className="text-base md:text-lg text-muted">
-            Answer a few simple questions. Sahayak matches your profile against authentic government rules and shows your benefits with exact citations.
+          <p className="mt-5 max-w-2xl text-lg sm:text-xl text-muted leading-relaxed">
+            Instant eligibility check across central and state welfare schemes with the exact line of the official guideline quoted behind every answer.
           </p>
 
-          <div className="flex flex-wrap items-center gap-3 pt-2">
-            <Button
-              variant="primary"
-              className="tap-target px-6 text-base font-semibold shadow-md flex items-center gap-2"
-              onClick={handleStartWizard}
-            >
-              Check My Eligibility
-              <ArrowRightIcon className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="secondary"
-              className="tap-target px-5 text-sm"
-              onClick={() => handleAskChat()}
-            >
-              {t.chatTab}
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Feature Pillars */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-5 flex flex-col gap-2.5">
-          <div className="h-9 w-9 rounded-xl bg-primary-soft text-primary flex items-center justify-center">
-            <ShieldCheckIcon className="h-5 w-5" />
-          </div>
-          <h3 className="text-base font-bold text-content">100% Verified Ground Truth</h3>
-          <p className="text-xs text-muted leading-relaxed">
-            Every rule and eligibility criteria is extracted directly from authentic Ministry gazettes and operational guidelines.
-          </p>
-        </Card>
-
-        <Card className="p-5 flex flex-col gap-2.5">
-          <div className="h-9 w-9 rounded-xl bg-success-soft text-success flex items-center justify-center">
-            <SparklesIcon className="h-5 w-5" />
-          </div>
-          <h3 className="text-base font-bold text-content">Exact Sentence Citations</h3>
-          <p className="text-xs text-muted leading-relaxed">
-            Ask any question in English or Hindi. Get answers with exact paragraph-level citations back to the source PDF.
-          </p>
-        </Card>
-
-        <Card className="p-5 flex flex-col gap-2.5">
-          <div className="h-9 w-9 rounded-xl bg-surface-2 text-content flex items-center justify-center">
-            <DocumentTextIcon className="h-5 w-5" />
-          </div>
-          <h3 className="text-base font-bold text-content">Private & Offline-Ready</h3>
-          <p className="text-xs text-muted leading-relaxed">
-            Compliant with DPDP Act 2023. Your personal income and landholding answers stay strictly in your browser.
-          </p>
-        </Card>
-      </div>
-
-      {/* Explore Directory Section */}
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h2 className="text-xl font-bold text-content">Official Schemes Directory</h2>
-            <p className="text-xs text-muted mt-0.5">Explore active welfare programs across India</p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              placeholder="Search schemes or benefits…"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="rounded-xl border border-border-strong bg-surface px-3 py-1.5 text-xs text-content focus:border-primary focus:outline-none w-full sm:w-64"
-            />
-          </div>
-        </div>
-
-        {/* Category Pills */}
-        <div className="flex flex-wrap gap-1.5">
-          <button
-            onClick={() => setSelectedCategory(null)}
-            className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
-              selectedCategory === null
-                ? 'bg-primary text-on-primary'
-                : 'bg-surface-2 text-muted hover:bg-surface-3'
-            }`}
+          {/* Inline First Step of Eligibility Screener */}
+          <form
+            onSubmit={handleHeroSubmit}
+            className="mt-10 w-full max-w-2xl rounded-2xl border border-border-strong bg-surface p-5 sm:p-7 shadow-md flex flex-col gap-4 text-left"
           >
-            All Categories
-          </button>
-          {categories.map((cat) => (
+            <div className="text-base font-bold text-content">
+              Start your eligibility check:
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="hero-state" className="block text-sm font-bold text-muted mb-1.5">
+                  Your State
+                </label>
+                <select
+                  id="hero-state"
+                  value={selectedState}
+                  onChange={(e) => setSelectedState(e.target.value)}
+                  className="w-full min-h-[48px] rounded-xl border border-border-strong bg-page px-3.5 py-2.5 text-base font-semibold text-content focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                >
+                  {INDIAN_STATES.map((st) => (
+                    <option key={st} value={st}>
+                      {st === 'Central' ? 'All India (Central Schemes)' : st}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="hero-age" className="block text-sm font-bold text-muted mb-1.5">
+                  Your Age (Years)
+                </label>
+                <input
+                  id="hero-age"
+                  type="number"
+                  min="18"
+                  max="100"
+                  value={age}
+                  onChange={(e) => setAge(e.target.value)}
+                  placeholder="e.g. 30"
+                  className="w-full min-h-[48px] rounded-xl border border-border-strong bg-page px-3.5 py-2.5 text-base font-semibold text-content focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                />
+              </div>
+            </div>
+
             <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
-                selectedCategory === cat
-                  ? 'bg-primary text-on-primary'
-                  : 'bg-surface-2 text-muted hover:bg-surface-3'
-              }`}
+              type="submit"
+              className="mt-2 w-full min-h-[48px] rounded-xl bg-primary px-6 py-3 text-base font-bold text-on-primary shadow-sm hover:bg-primary-hover transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 flex items-center justify-center gap-2"
             >
-              {cat}
+              <span>Check what I qualify for</span>
+              <span aria-hidden="true">→</span>
             </button>
-          ))}
+          </form>
         </div>
+      </Section>
 
-        {/* Scheme Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredSchemes.map((scheme) => {
-            const isEligible = eligibility[scheme.id]?.status === 'eligible';
-            const isIneligible = eligibility[scheme.id]?.status === 'ineligible';
+      {/* 2. The Differentiator, Stated Plainly */}
+      <Section bg="bg-surface" className="py-14 sm:py-18 border-y border-border-subtle">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center max-w-2xl mx-auto mb-10">
+            <h2 className="text-display-section text-content">
+              Why Sahayak is different
+            </h2>
+            <p className="mt-3 text-base text-muted">
+              We never guess, summarize without proof, or cite unverified third-party blogs.
+            </p>
+          </div>
 
-            return (
-              <Card
-                key={scheme.id}
-                className="p-5 flex flex-col justify-between gap-4 hover:border-primary/50 transition-all cursor-pointer"
-                onClick={() => handleSelectScheme(scheme.id)}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Link
+              href="/schemes"
+              className="group flex flex-col justify-between rounded-2xl border border-border-subtle bg-page p-6 sm:p-7 hover:border-border-strong transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              <div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-primary font-bold mb-4">
+                  <DocIcon className="h-5 w-5" />
+                </div>
+                <h3 className="text-xl font-bold text-content group-hover:text-primary transition-colors">
+                  Every answer quotes the exact line of the official guideline
+                </h3>
+                <p className="mt-3 text-base text-muted leading-relaxed">
+                  You see the exact paragraph, page number, and clause that determines eligibility. No fabricated summaries.
+                </p>
+              </div>
+              <div className="mt-6 text-sm font-bold text-primary group-hover:underline">
+                Explore guidelines →
+              </div>
+            </Link>
+
+            <Link
+              href="/schemes"
+              className="group flex flex-col justify-between rounded-2xl border border-border-subtle bg-page p-6 sm:p-7 hover:border-border-strong transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              <div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-primary font-bold mb-4">
+                  <CheckIcon className="h-5 w-5" />
+                </div>
+                <h3 className="text-xl font-bold text-content group-hover:text-primary transition-colors">
+                  You see the source document and when it was last verified
+                </h3>
+                <p className="mt-3 text-base text-muted leading-relaxed">
+                  Every scheme document is indexed directly from official government gazettes with transparent TLS certificate verification.
+                </p>
+              </div>
+              <div className="mt-6 text-sm font-bold text-primary group-hover:underline">
+                View verified schemes →
+              </div>
+            </Link>
+
+            <Link
+              href="/privacy"
+              className="group flex flex-col justify-between rounded-2xl border border-border-subtle bg-page p-6 sm:p-7 hover:border-border-strong transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              <div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-primary font-bold mb-4">
+                  <ShieldCheckIcon className="h-5 w-5" />
+                </div>
+                <h3 className="text-xl font-bold text-content group-hover:text-primary transition-colors">
+                  Your profile stays on your device
+                </h3>
+                <p className="mt-3 text-base text-muted leading-relaxed">
+                  DPDP Act 2023 compliant. Your age, income, and personal details remain strictly in local browser storage and are never uploaded to remote user databases.
+                </p>
+              </div>
+              <div className="mt-6 text-sm font-bold text-primary group-hover:underline">
+                Read privacy policy →
+              </div>
+            </Link>
+          </div>
+        </div>
+      </Section>
+
+      {/* 3. Featured Schemes (Rendered ONLY when API is reachable and has schemes) */}
+      {featuredList.length > 0 ? (
+        <Section bg="bg-page" className="py-14 sm:py-18">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+              <div>
+                <div className="text-sm font-bold uppercase tracking-wider text-muted mb-1">
+                  Corpus Directory
+                </div>
+                <h2 className="text-display-section text-content">
+                  Featured government schemes
+                </h2>
+              </div>
+
+              <Link
+                href="/schemes"
+                className="inline-flex items-center gap-1.5 text-base font-bold text-primary hover:underline"
               >
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <Badge variant="neutral">{scheme.category}</Badge>
-                    {isEligible ? (
-                      <Badge variant="success">Eligible</Badge>
-                    ) : isIneligible ? (
-                      <Badge variant="danger">Review</Badge>
-                    ) : (
-                      <Badge variant="neutral">{scheme.state}</Badge>
-                    )}
-                  </div>
+                <span>View all {schemes ? `${schemes.length} schemes` : 'schemes'}</span>
+                <span aria-hidden="true">→</span>
+              </Link>
+            </div>
 
-                  <h3 className="text-base font-bold text-content leading-snug">{scheme.name}</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {featuredList.map((scheme) => (
+                <SchemeCard key={scheme.id} scheme={scheme} />
+              ))}
+            </div>
+          </div>
+        </Section>
+      ) : null}
 
-                  <p className="text-xs text-muted line-clamp-2">
-                    {scheme.summary || 'Official central/state government scheme.'}
-                  </p>
-                </div>
+      {/* 4. How It Works */}
+      <Section bg="bg-surface" className="py-14 sm:py-18 border-t border-border-subtle">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <div className="text-sm font-bold uppercase tracking-wider text-muted mb-1">
+              Process
+            </div>
+            <h2 className="text-display-section text-content">
+              How eligibility evaluation works
+            </h2>
+            <p className="mt-3 text-base text-muted">
+              Deterministic matching built on official government rule sets.
+            </p>
+          </div>
 
-                <div className="flex flex-col gap-3 pt-3 border-t border-border-subtle">
-                  {scheme.benefit_amount ? (
-                    <div className="flex items-baseline justify-between">
-                      <span className="text-[10px] font-semibold uppercase text-faint">Benefit</span>
-                      <span className="text-sm font-extrabold text-primary tabular-nums">
-                        {scheme.benefit_amount}
-                      </span>
-                    </div>
-                  ) : null}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="flex flex-col rounded-2xl border border-border-subtle bg-page p-6 sm:p-7">
+              <div className="text-3xl font-extrabold text-muted mb-3 font-mono">
+                01
+              </div>
+              <h3 className="text-xl font-bold text-content mb-2">
+                Answer a few questions
+              </h3>
+              <p className="text-base text-muted leading-relaxed">
+                Provide your basic profile details such as age, state of residence, landholding size, and annual household income.
+              </p>
+            </div>
 
-                  <div className="flex items-center justify-between gap-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleToggleSave(scheme.id);
-                      }}
-                      className="text-xs text-muted hover:text-primary transition-colors flex items-center gap-1 cursor-pointer"
-                    >
-                      <BookmarkIcon className={`h-3.5 w-3.5 ${savedSchemeIds.includes(scheme.id) ? 'text-primary' : ''}`} />
-                      {savedSchemeIds.includes(scheme.id) ? 'Saved' : 'Save'}
-                    </button>
+            <div className="flex flex-col rounded-2xl border border-border-subtle bg-page p-6 sm:p-7">
+              <div className="text-3xl font-extrabold text-muted mb-3 font-mono">
+                02
+              </div>
+              <h3 className="text-xl font-bold text-content mb-2">
+                See what you qualify for
+              </h3>
+              <p className="text-base text-muted leading-relaxed">
+                Instant evaluation against all central and state rules with clear passes and exact failing criteria when disqualified.
+              </p>
+            </div>
 
-                    <span className="text-xs font-semibold text-primary flex items-center gap-1">
-                      {t.viewDetails} →
-                    </span>
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
+            {/* Differentiator step: Most visual weight */}
+            <div className="flex flex-col rounded-2xl border-2 border-primary bg-primary-soft p-6 sm:p-7 shadow-sm">
+              <div className="text-3xl font-extrabold text-primary mb-3 font-mono">
+                03
+              </div>
+              <h3 className="text-xl font-bold text-content mb-2">
+                Read the exact guideline line
+              </h3>
+              <p className="text-base text-muted leading-relaxed">
+                Inspect the original government document clause that decided your verdict. Verify benefits with confidence before applying.
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
+      </Section>
+
+      {/* 5. Closing Call to Action */}
+      <Section bg="bg-page" className="py-16 sm:py-20 border-t border-border-subtle">
+        <div className="max-w-4xl mx-auto rounded-3xl border border-border-strong bg-surface p-8 sm:p-12 text-center flex flex-col items-center gap-6 shadow-md">
+          <h2 className="text-display-section text-content">
+            Ready to find schemes you qualify for?
+          </h2>
+          <p className="max-w-xl text-base sm:text-lg text-muted leading-relaxed">
+            Take 2 minutes to check your eligibility against verified central and state welfare programs.
+          </p>
+
+          <Link
+            href="/check"
+            className="min-h-[48px] rounded-xl bg-primary px-8 py-3.5 text-base font-bold text-on-primary shadow-sm hover:bg-primary-hover transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 flex items-center gap-2"
+          >
+            <span>Start Eligibility Check</span>
+            <span aria-hidden="true">→</span>
+          </Link>
+        </div>
+      </Section>
     </div>
   );
-};
+}

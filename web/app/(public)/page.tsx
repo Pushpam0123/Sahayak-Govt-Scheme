@@ -1,27 +1,31 @@
-'use client';
-
-import { useSahayak } from '../../hooks/useSahayak';
-import { useLang } from '../../lib/theme';
-import { TRANSLATIONS } from '../../lib/i18n';
+import type { Metadata } from 'next';
 import { LandingView } from '../../components/home/LandingView';
+import { getApiBase } from '../../lib/server-env';
+import type { SchemeInfo } from '../../lib/types';
 
-export default function HomePage() {
-  const { lang } = useLang();
-  const t = TRANSLATIONS[lang];
-  const {
-    schemes,
-    eligibility,
-    savedSchemeIds,
-    toggleSaveScheme,
-  } = useSahayak();
+export const revalidate = 3600;
 
-  return (
-    <LandingView
-      t={t}
-      schemes={schemes}
-      eligibility={eligibility}
-      savedSchemeIds={savedSchemeIds}
-      onToggleSave={toggleSaveScheme}
-    />
-  );
+export const metadata: Metadata = {
+  title: 'Sahayak — Find Government Schemes You Qualify For',
+  description:
+    'Search Indian central and state welfare schemes, check your eligibility, and read the exact line of the official guideline behind every answer.',
+};
+
+async function getFeaturedSchemes(): Promise<SchemeInfo[] | null> {
+  try {
+    const apiBase = getApiBase();
+    const res = await fetch(`${apiBase}/api/v1/schemes`, {
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as SchemeInfo[];
+  } catch {
+    return null;
+  }
+}
+
+export default async function HomePage() {
+  const schemes = await getFeaturedSchemes();
+
+  return <LandingView schemes={schemes} />;
 }
