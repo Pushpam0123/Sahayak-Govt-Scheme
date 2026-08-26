@@ -331,4 +331,20 @@ Rejected: React Router on Vite (cheap, but leaves the app client-rendered and in
 
 **Decision on languages:** four more, done properly. Announcing twelve and shipping two is how the current gap happened.
 
-**Sequencing:** A before B. Not building a new frontend on a pipeline that trusts any server claiming to be a government.
+**Sequencing (amended 2026-08-26): A and B run in parallel**, on the user's instruction — Sonnet continues A, `gemini_agent` starts B.
+
+This required a scope change, because as originally written the two collide. A1 said to surface `tls_verified` in the citation inspector and scheme detail view; B relocates every file under `web/` into the Next.js `app/` structure. Both agents would have been editing the same frontend files.
+
+**Resolution — disjoint file ownership:**
+
+| Owner | Paths |
+| --- | --- |
+| Sonnet (A) | `ingest/**` · `api/**` · `eval/**` · `EVALS.md` · `README.md` · `infra/migrations/**` |
+| gemini_agent (B) | `web/**` · `infra/Dockerfile.web` · the `web` service in `infra/docker-compose.yml` |
+| Opus | `PLAN.md` · `HANDOFF.md` · `agent_instruction.md` |
+
+The UI portion of A1 moved into B. A now stops at **exposing `tls_verified` in the API response** — scheme detail and citation metadata — and B renders it. That field is the single contract between the two work orders, and B is instructed to treat it as optional so it can be built before A lands: absent or `true` renders nothing, explicit `false` renders a plain note that the source could not be certificate-verified.
+
+Branches: A stays on `phase-0-truth`; B works on `phase-b-nextjs` branched from its current HEAD. Because the file sets are disjoint the merge is mechanical.
+
+The original reasoning for A-before-B still stands on its merits — not building a new frontend on a pipeline that trusts any server claiming to be a government — but parallelising is acceptable here because B cannot make the TLS problem worse, and A's fix lands well before anything ships.
