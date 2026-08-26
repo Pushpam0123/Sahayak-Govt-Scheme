@@ -327,7 +327,8 @@ Rejected: React Router on Vite (cheap, but leaves the app client-rendered and in
 | **A** | Fix what's broken — TLS verification with per-scheme opt-in, re-fetch and hash-verify all nine documents, run the eval and publish real numbers, correct the `pm-jjby` quote, README scheme count. | ~3 days | in progress |
 | **B** | Migrate to Next.js App Router + TanStack Query. Port existing views rather than rewriting them. Static generation, sitemap, structured data, metadata. Nothing visual changes. | ~1.5 wk | done (B, B2) — one open regression, C0 |
 | **C** | Build the public surfaces — homepage, services, browse, audience pages, privacy. Motion, share cards, OG images, designed dark mode. | ~1.5 wk | done — C1 + C2 complete and accepted 2026-08-26. `/for/students` defined but non-generating until the corpus has a scholarship |
-| **D** | Close the skipped non-negotiables — voice in/out, four more languages (Bengali, Marathi, Telugu, Tamil) done properly rather than twelve announced, a real service worker, font-size and contrast controls. | ~1.5 wk | D-2, D-3, D-5 accepted 2026-08-26. D-1 and D-4 rejected — D-FIX dispatched |
+| **D** | Close the skipped non-negotiables — voice in/out, four more languages (Bengali, Marathi, Telugu, Tamil) done properly rather than twelve announced, a real service worker, font-size and contrast controls. | ~1.5 wk | **done** — D-FIX-1 and D-FIX-2 accepted 2026-08-26 |
+| **E** | Frontend close-out — provenance banner scoped to cache stamp, DPDP deletion controls, consent as an affirmative wizard step, 16px floor on disclosure copy. | ~2 days | **done** — accepted 2026-08-26 |
 
 **Decision on languages:** four more, done properly. Announcing twelve and shipping two is how the current gap happened.
 
