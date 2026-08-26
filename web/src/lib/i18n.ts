@@ -18,6 +18,7 @@ export interface Dict {
   lightMode: string;
   darkMode: string;
   offlineBanner: string;
+  disclaimer: string;
 
   // Filters (shared)
   focusScheme: string;
@@ -37,6 +38,7 @@ export interface Dict {
   refusalBody: string;
   latency: string;
   tokens: string;
+  chatOfflineMessage: string;
 
   // Citation inspector
   citationInspector: string;
@@ -120,7 +122,9 @@ const en: Dict = {
   lightMode: 'Light mode',
   darkMode: 'Dark mode',
   offlineBanner:
-    'Backend not reachable — live scheme data and answers are unavailable. Start the API to see real results.',
+    'Backend not reachable — the schemes and eligibility figures shown below are sample data for demonstration only, not real scheme information. Chat answers are unavailable until the API is running.',
+  disclaimer:
+    'Information only — verify on the official portal before applying.',
 
   focusScheme: 'Focus scheme',
   stateFilter: 'State',
@@ -138,6 +142,8 @@ const en: Dict = {
   refusalTitle: 'Outside the official corpus',
   refusalBody:
     'This question falls outside the verified government-scheme documents I have indexed.',
+  chatOfflineMessage:
+    "I need a live connection to look up official guidelines — there's nothing I can answer without one. Start the API and refresh to continue.",
   latency: 'Latency',
   tokens: 'Tokens',
 
@@ -220,7 +226,9 @@ const hi: Dict = {
   lightMode: 'लाइट मोड',
   darkMode: 'डार्क मोड',
   offlineBanner:
-    'बैकएंड उपलब्ध नहीं है — वास्तविक योजना डेटा और उत्तर उपलब्ध नहीं हैं। असली परिणाम देखने के लिए API चालू करें।',
+    'बैकएंड उपलब्ध नहीं है — नीचे दिखाई गई योजनाएं और पात्रता आंकड़े केवल प्रदर्शन के लिए नमूना डेटा हैं, वास्तविक योजना जानकारी नहीं। API चालू होने तक चैट के उत्तर उपलब्ध नहीं होंगे।',
+  disclaimer:
+    'केवल जानकारी के लिए — आवेदन करने से पहले आधिकारिक पोर्टल पर सत्यापित करें।',
 
   focusScheme: 'योजना चुनें',
   stateFilter: 'राज्य',
@@ -238,6 +246,8 @@ const hi: Dict = {
   refusalTitle: 'आधिकारिक दायरे से बाहर',
   refusalBody:
     'यह प्रश्न मेरे द्वारा अनुक्रमित सत्यापित सरकारी योजना दस्तावेज़ों के दायरे से बाहर है।',
+  chatOfflineMessage:
+    'आधिकारिक दिशा-निर्देश खोजने के लिए मुझे एक सक्रिय कनेक्शन चाहिए — इसके बिना मैं कुछ नहीं बता सकता। जारी रखने के लिए API चालू करें और पुनः लोड करें।',
   latency: 'लेटेंसी',
   tokens: 'टोकन',
 

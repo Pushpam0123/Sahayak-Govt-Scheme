@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { DisclaimerStrip } from './components/DisclaimerStrip';
 import { Header } from './components/Header';
 import { OfflineBanner } from './components/OfflineBanner';
 import { TabBar, type TabKey } from './components/TabBar';
@@ -42,6 +43,8 @@ function App() {
       />
 
       <TabBar t={t} active={tab} onChange={setTab} />
+
+      <DisclaimerStrip t={t} />
 
       {offline ? <OfflineBanner t={t} /> : null}
 
