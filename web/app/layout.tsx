@@ -25,6 +25,24 @@ export const metadata: Metadata = {
   },
 };
 
+const themeAndLangScript = `
+(function() {
+  try {
+    var storedTheme = localStorage.getItem('sahayak-theme');
+    var isDark = storedTheme === 'dark' || (!storedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    var storedLang = localStorage.getItem('sahayak-lang');
+    if (storedLang === 'hi' || storedLang === 'en') {
+      document.documentElement.lang = storedLang;
+    }
+  } catch (e) {}
+})();
+`;
+
 export default function RootLayout({
   children,
 }: {
@@ -32,6 +50,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={notoSans.variable} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeAndLangScript }} />
+      </head>
       <body className="min-h-screen bg-page text-content font-sans antialiased">
         <Providers>
           {children}

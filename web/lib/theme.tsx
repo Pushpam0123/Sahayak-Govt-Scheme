@@ -1,10 +1,9 @@
 'use client';
 
 // Theme + language hooks and contexts with localStorage persistence and SSR safety.
-// Default theme is light (citizen portal); the `.dark` class on <html>
-// activates the dark console palette defined in globals.css.
+// Initial values are resolved synchronously by <head> inline script to prevent flash of wrong theme/lang.
 
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useState } from 'react';
 import type { Lang } from './i18n';
 
 export type Theme = 'light' | 'dark';
@@ -41,19 +40,12 @@ function applyTheme(theme: Theme) {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('light');
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(THEME_KEY);
-      if (stored === 'light' || stored === 'dark') {
-        setThemeState(stored);
-        applyTheme(stored);
-      }
-    } catch {
-      // Ignore
+  const [theme, setThemeState] = useState<Theme>(() => {
+    if (typeof document !== 'undefined') {
+      return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
     }
-  }, []);
+    return 'light';
+  });
 
   const setTheme = useCallback((next: Theme) => {
     setThemeState(next);
@@ -86,21 +78,21 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function LangProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLangState] = useState<Lang>('en');
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(LANG_KEY);
-      if (stored === 'hi' || stored === 'en') {
-        setLangState(stored);
+  const [lang, setLangState] = useState<Lang>(() => {
+    if (typeof document !== 'undefined') {
+      const docLang = document.documentElement.lang;
+      if (docLang === 'hi' || docLang === 'en') {
+        return docLang;
       }
-    } catch {
-      // Ignore
     }
-  }, []);
+    return 'en';
+  });
 
   const setLang = useCallback((next: Lang) => {
     setLangState(next);
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = next;
+    }
     try {
       localStorage.setItem(LANG_KEY, next);
     } catch {
