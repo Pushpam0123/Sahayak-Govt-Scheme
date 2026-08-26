@@ -28,7 +28,7 @@ cases:
 
   - question: "What is the annual premium for PMJJBY?"
     scheme_id: "pm-jjby"
-    gold_quote: "Full Annual Premium of Rs.436/- collected"
+    gold_quote: "Full Annual Premium of Rs.436/- is payable"
     category: "exact_name"
     gold_answer: "The full annual premium for PMJJBY is Rs. 436 per annum per member auto-debited from the subscriber's bank account."
 
