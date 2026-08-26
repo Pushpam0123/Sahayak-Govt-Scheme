@@ -5,11 +5,12 @@ import Link from 'next/link';
 import { useTheme, useLang } from '../../lib/theme';
 import { TRANSLATIONS } from '../../lib/i18n';
 import { Button } from '../../components/ui';
+import { LanguageSelect } from '../../components/ui/LanguageSelect';
 import { MoonIcon, SunIcon } from '../../components/icons';
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   const { theme, toggleTheme } = useTheme();
-  const { lang, setLang } = useLang();
+  const { lang } = useLang();
   const t = TRANSLATIONS[lang];
 
   return (
@@ -38,7 +39,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                 href="/schemes"
                 className="rounded-lg px-2 py-1 hover:text-content transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
-                Schemes
+                {t.schemesTab}
               </Link>
               <Link
                 href="/services"
@@ -50,19 +51,14 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                 href="/ask"
                 className="rounded-lg px-2 py-1 hover:text-content transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
-                Ask Assistant
+                {t.chatTab}
               </Link>
             </nav>
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => setLang(lang === 'hi' ? 'en' : 'hi')}
-              className="min-h-[44px] rounded-xl border border-border-strong px-3 py-1.5 text-sm font-bold text-content hover:bg-surface-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-              aria-label={`Switch to ${lang === 'hi' ? 'English' : 'Hindi'}`}
-            >
-              {lang === 'hi' ? 'English' : 'हिंदी'}
-            </button>
+            <LanguageSelect />
+
             <Button
               variant="ghost"
               onClick={toggleTheme}

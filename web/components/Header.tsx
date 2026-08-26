@@ -1,9 +1,10 @@
 'use client';
 
-// Top app bar: brand, language toggle, theme toggle, and API/DB status.
+// Top app bar: brand, language selector, theme toggle, and API/DB status.
 import type { Dict, Lang } from '../lib/i18n';
 import type { Theme } from '../lib/theme';
-import { IconButton, Segmented, Spinner } from './ui';
+import { IconButton, Spinner } from './ui';
+import { LanguageSelect } from './ui/LanguageSelect';
 import { MoonIcon, RefreshIcon, SunIcon } from './icons';
 
 interface HeaderProps {
@@ -32,8 +33,6 @@ function StatusDot({ ok, label }: { ok: boolean; label: string }) {
 
 export function Header({
   t,
-  lang,
-  setLang,
   theme,
   toggleTheme,
   healthLoading,
@@ -58,26 +57,18 @@ export function Header({
 
       {/* Controls */}
       <div className="flex flex-wrap items-center gap-3">
-        <Segmented<Lang>
-          ariaLabel="Language"
-          size="sm"
-          value={lang}
-          onChange={setLang}
-          options={[
-            { value: 'en', label: 'EN' },
-            { value: 'hi', label: 'हिं' },
-          ]}
-        />
+        <LanguageSelect />
 
         <IconButton
           onClick={toggleTheme}
           aria-label={theme === 'dark' ? t.lightMode : t.darkMode}
           title={theme === 'dark' ? t.lightMode : t.darkMode}
+          className="min-h-[48px] min-w-[48px]"
         >
           {theme === 'dark' ? (
-            <SunIcon className="h-4.5 w-4.5" />
+            <SunIcon className="h-5 w-5" />
           ) : (
-            <MoonIcon className="h-4.5 w-4.5" />
+            <MoonIcon className="h-5 w-5" />
           )}
         </IconButton>
 

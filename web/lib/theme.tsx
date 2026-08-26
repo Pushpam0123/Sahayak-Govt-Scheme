@@ -80,8 +80,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 export function LangProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLangState] = useState<Lang>(() => {
     if (typeof document !== 'undefined') {
-      const docLang = document.documentElement.lang;
-      if (docLang === 'hi' || docLang === 'en') {
+      const docLang = document.documentElement.lang as Lang;
+      if (['en', 'hi', 'bn', 'mr', 'te', 'ta'].includes(docLang)) {
         return docLang;
       }
     }
