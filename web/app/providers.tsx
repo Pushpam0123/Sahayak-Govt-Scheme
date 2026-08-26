@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider, LangProvider } from '../lib/theme';
+import { AccessibilityProvider } from '../lib/accessibility';
 import { ServiceWorkerRegister } from '../components/pwa/ServiceWorkerRegister';
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -22,8 +23,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <LangProvider>
-          {children}
-          <ServiceWorkerRegister />
+          <AccessibilityProvider>
+            {children}
+            <ServiceWorkerRegister />
+          </AccessibilityProvider>
         </LangProvider>
       </ThemeProvider>
     </QueryClientProvider>

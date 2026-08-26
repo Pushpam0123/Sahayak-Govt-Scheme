@@ -6,6 +6,7 @@ import { useTheme, useLang } from '../../lib/theme';
 import { TRANSLATIONS } from '../../lib/i18n';
 import { Button } from '../../components/ui';
 import { LanguageSelect } from '../../components/ui/LanguageSelect';
+import { AccessibilityControls } from '../../components/ui/AccessibilityControls';
 import { MoonIcon, SunIcon } from '../../components/icons';
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
@@ -56,14 +57,15 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             </nav>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <AccessibilityControls />
             <LanguageSelect />
 
             <Button
               variant="ghost"
               onClick={toggleTheme}
               aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-              className="flex h-11 w-11 items-center justify-center p-0 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              className="flex h-12 w-12 items-center justify-center p-0 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             >
               {theme === 'dark' ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
             </Button>

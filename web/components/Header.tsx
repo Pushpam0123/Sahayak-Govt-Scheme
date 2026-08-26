@@ -1,10 +1,11 @@
 'use client';
 
-// Top app bar: brand, language selector, theme toggle, and API/DB status.
+// Top app bar: brand, accessibility, language selector, theme toggle, and API/DB status.
 import type { Dict, Lang } from '../lib/i18n';
 import type { Theme } from '../lib/theme';
 import { IconButton, Spinner } from './ui';
 import { LanguageSelect } from './ui/LanguageSelect';
+import { AccessibilityControls } from './ui/AccessibilityControls';
 import { MoonIcon, RefreshIcon, SunIcon } from './icons';
 
 interface HeaderProps {
@@ -56,7 +57,8 @@ export function Header({
       </div>
 
       {/* Controls */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        <AccessibilityControls />
         <LanguageSelect />
 
         <IconButton

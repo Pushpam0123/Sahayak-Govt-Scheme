@@ -144,6 +144,25 @@
   color-scheme: dark;
 }
 
+/* ---- High Contrast Overrides (Light & Dark) ---- */
+html.high-contrast,
+html[data-contrast="high"] {
+  --border-subtle: #64748b;
+  --border-strong: #1e293b;
+  --content: #000000;
+  --muted: #0f172a;
+  --faint: #334155;
+}
+
+html.dark.high-contrast,
+html.dark[data-contrast="high"] {
+  --border-subtle: #64748b;
+  --border-strong: #e2e8f0;
+  --content: #ffffff;
+  --muted: #f8fafc;
+  --faint: #e2e8f0;
+}
+
 @layer base {
   html {
     scroll-behavior: smooth;

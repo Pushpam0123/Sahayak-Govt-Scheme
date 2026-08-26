@@ -60,6 +60,21 @@ const themeAndLangScript = `
     if (storedLang && ['en', 'hi', 'bn', 'mr', 'te', 'ta'].indexOf(storedLang) !== -1) {
       document.documentElement.lang = storedLang;
     }
+    var storedScale = localStorage.getItem('sahayak-font-scale');
+    if (storedScale === 'large') {
+      document.documentElement.style.setProperty('--font-scale', '1.15');
+    } else if (storedScale === 'larger') {
+      document.documentElement.style.setProperty('--font-scale', '1.3');
+    } else {
+      document.documentElement.style.setProperty('--font-scale', '1');
+    }
+    var storedContrast = localStorage.getItem('sahayak-contrast');
+    var isHighContrast = storedContrast === 'high' || (!storedContrast && window.matchMedia('(prefers-contrast: more)').matches);
+    if (isHighContrast) {
+      document.documentElement.classList.add('high-contrast');
+    } else {
+      document.documentElement.classList.remove('high-contrast');
+    }
   } catch (e) {}
 })();
 `;
