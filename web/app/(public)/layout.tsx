@@ -7,6 +7,7 @@ import { TRANSLATIONS } from '../../lib/i18n';
 import { Button } from '../../components/ui';
 import { LanguageSelect } from '../../components/ui/LanguageSelect';
 import { AccessibilityControls } from '../../components/ui/AccessibilityControls';
+import { OfflineProvenanceBanner } from '../../components/layout/OfflineProvenanceBanner';
 import { MoonIcon, SunIcon } from '../../components/icons';
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
@@ -72,6 +73,9 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           </div>
         </div>
       </header>
+
+      {/* Offline Provenance Banner for cached pages */}
+      <OfflineProvenanceBanner />
 
       {/* Main content allowing full-bleed and contained sections */}
       <main className="flex-1 w-full flex flex-col">

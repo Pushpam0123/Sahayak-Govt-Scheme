@@ -11,6 +11,32 @@ const PRECACHE_ASSETS = [
   '/manifest.json',
 ];
 
+const OFFLINE_FALLBACK_PAGE = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Not Available Offline — Sahayak</title>
+  <style>
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #090d16; color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 24px; box-sizing: border-box; }
+    .card { max-width: 460px; width: 100%; text-align: center; background-color: #111827; border: 1px solid #1f2937; border-radius: 20px; padding: 36px 28px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .badge { display: inline-flex; align-items: center; gap: 6px; background-color: #451a03; color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 9999px; margin-bottom: 18px; }
+    h1 { font-size: 22px; font-weight: 800; margin: 0 0 10px 0; color: #f8fafc; }
+    p { font-size: 15px; color: #94a3b8; line-height: 1.6; margin: 0 0 24px 0; }
+    .btn { display: inline-block; background-color: #3b82f6; color: #ffffff; text-decoration: none; font-weight: 700; font-size: 15px; padding: 12px 24px; border-radius: 12px; transition: background-color 0.15s ease; }
+    .btn:hover { background-color: #2563eb; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge">Offline</div>
+    <h1>Page Not Saved Offline</h1>
+    <p>This government scheme page has not been cached on this device yet. Please connect to the internet to load its official eligibility rules and guidelines.</p>
+    <a href="/" class="btn">Return to Home</a>
+  </div>
+</body>
+</html>`;
+
 // Install: precache app shell and static routes.
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -64,69 +90,57 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 3. Scheme API endpoints: Network-first falling back to timestamped cache
-  if (url.pathname.startsWith('/api/v1/schemes')) {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          if (response && response.status === 200) {
-            const copy = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              // Append timestamp header to the cached response
-              copy.blob().then((blob) => {
-                const headers = new Headers(copy.headers);
-                headers.set('x-sahayak-cached-at', new Date().toISOString());
-                const timestampedResponse = new Response(blob, {
-                  status: copy.status,
-                  statusText: copy.statusText,
-                  headers,
-                });
-                cache.put(request, timestampedResponse);
-              });
-            });
-          }
-          return response;
-        })
-        .catch(() => {
-          return caches.match(request).then((cached) => {
-            if (cached) {
-              return cached;
-            }
-            return new Response(
-              JSON.stringify({ error: 'Network unavailable and scheme not cached.' }),
-              {
-                status: 503,
-                headers: { 'Content-Type': 'application/json' },
-              }
-            );
-          });
-        })
-    );
-    return;
-  }
-
-  // 4. HTML Navigation requests: Network-first falling back to cache
+  // 3. HTML Navigation requests: Network-first, stamping cached responses with provenance timestamp
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
         .then((response) => {
           if (response && response.status === 200) {
             const copy = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+            const cachedAt = new Date().toISOString();
+
+            copy.text().then((htmlText) => {
+              // Inject provenance stamp into head
+              const metaStamp = `<meta name="sahayak-cached-at" content="${cachedAt}"><script id="sw-stamp">window.__SW_CACHED_AT__="${cachedAt}";</script></head>`;
+              const stampedHtml = htmlText.includes('</head>')
+                ? htmlText.replace('</head>', metaStamp)
+                : htmlText + `<meta name="sahayak-cached-at" content="${cachedAt}">`;
+
+              const headers = new Headers(copy.headers);
+              headers.set('x-sahayak-cached-at', cachedAt);
+              headers.set('Content-Type', 'text/html; charset=utf-8');
+
+              const stampedResponse = new Response(stampedHtml, {
+                status: copy.status,
+                statusText: copy.statusText,
+                headers,
+              });
+
+              caches.open(CACHE_NAME).then((cache) => {
+                cache.put(request, stampedResponse);
+              });
+            }).catch((err) => {
+              console.warn('[SW] Stamping navigation cache failed:', err);
+            });
           }
           return response;
         })
         .catch(() => {
           return caches.match(request).then((cached) => {
             if (cached) return cached;
-            return caches.match('/');
+
+            // Return truthful offline message page (never return homepage at scheme URL)
+            return new Response(OFFLINE_FALLBACK_PAGE, {
+              status: 503,
+              headers: { 'Content-Type': 'text/html; charset=utf-8' },
+            });
           });
         })
     );
     return;
   }
 
-  // 5. Static assets: Stale-while-revalidate
+  // 4. Static assets (_next/static, fonts, icons): Stale-while-revalidate
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
       const fetchPromise = fetch(request).then((networkResponse) => {

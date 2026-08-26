@@ -38,23 +38,6 @@ export function SchemeBrowseView({ initialSchemes }: SchemeBrowseViewProps) {
     router.push(pathname);
   };
 
-  // Cache provenance tracking for offline display
-  const [cachedAtDate, setCachedAtDate] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    if (initialSchemes && initialSchemes.length > 0) {
-      try {
-        localStorage.setItem('sahayak-schemes-cached-at', new Date().toISOString());
-      } catch {}
-    }
-    if (typeof window !== 'undefined' && !navigator.onLine) {
-      const stored = localStorage.getItem('sahayak-schemes-cached-at');
-      if (stored) {
-        setCachedAtDate(stored);
-      }
-    }
-  }, [initialSchemes]);
-
   // Filter schemes if initialSchemes exists
   const filteredSchemes = useMemo(() => {
     if (!initialSchemes) return [];
@@ -197,15 +180,6 @@ export function SchemeBrowseView({ initialSchemes }: SchemeBrowseViewProps) {
           ) : (
             /* 3. Grid of Schemes with Count */
             <div>
-              {cachedAtDate && (
-                <div className="mb-6 rounded-2xl border border-warn/30 bg-warn-soft p-4 text-xs font-semibold text-warn flex items-center gap-2">
-                  <AlertIcon className="h-4 w-4 shrink-0" />
-                  <span>
-                    Showing schemes saved on {new Date(cachedAtDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })} (offline mode).
-                  </span>
-                </div>
-              )}
-
               <div className="flex items-center justify-between gap-4 mb-6">
                 <div className="text-base font-bold text-muted">
                   Showing <span className="text-content font-extrabold">{filteredSchemes.length}</span>{' '}
