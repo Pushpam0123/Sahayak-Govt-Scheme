@@ -1,9 +1,9 @@
 'use client';
 
-import { useSahayak } from '../../hooks/useSahayak';
-import { useLang } from '../../lib/theme';
-import { TRANSLATIONS } from '../../lib/i18n';
-import { EligibilityWizard } from '../../components/wizard/EligibilityWizard';
+import { useSahayak } from '../../../hooks/useSahayak';
+import { useLang } from '../../../lib/theme';
+import { TRANSLATIONS } from '../../../lib/i18n';
+import { EligibilityWizard } from '../../../components/wizard/EligibilityWizard';
 
 export default function CheckPage() {
   const { lang } = useLang();

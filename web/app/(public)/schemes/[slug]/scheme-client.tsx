@@ -1,10 +1,10 @@
 'use client';
 
-import { useSahayak } from '../../../hooks/useSahayak';
-import { useLang } from '../../../lib/theme';
-import { TRANSLATIONS } from '../../../lib/i18n';
-import { SchemeDetailView } from '../../../components/schemes/SchemeDetailView';
-import type { SchemeDetail } from '../../../lib/types';
+import { useSahayak } from '../../../../hooks/useSahayak';
+import { useLang } from '../../../../lib/theme';
+import { TRANSLATIONS } from '../../../../lib/i18n';
+import { SchemeDetailView } from '../../../../components/schemes/SchemeDetailView';
+import type { SchemeDetail } from '../../../../lib/types';
 
 export function SchemeClient({
   slug,

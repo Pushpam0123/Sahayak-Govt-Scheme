@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { SchemeClient } from './scheme-client';
-import { SITE_URL } from '../../../lib/site';
-import type { SchemeDetail } from '../../../lib/types';
+import { SITE_URL } from '../../../../lib/site';
+import type { SchemeDetail } from '../../../../lib/types';
 
 export const dynamicParams = true;
 export const revalidate = 3600;

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
-import { Card } from '../../components/ui';
-import { ShieldCheckIcon } from '../../components/icons';
+import { Card } from '../../../components/ui';
+import { ShieldCheckIcon } from '../../../components/icons';
 
 export const metadata: Metadata = {
   title: 'Privacy Notice — DPDP Act 2023 Compliance | Sahayak',

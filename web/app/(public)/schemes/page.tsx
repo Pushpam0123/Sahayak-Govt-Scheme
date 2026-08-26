@@ -1,9 +1,9 @@
 'use client';
 
-import { useSahayak } from '../../hooks/useSahayak';
-import { useLang } from '../../lib/theme';
-import { TRANSLATIONS } from '../../lib/i18n';
-import { DashboardView } from '../../components/dashboard/DashboardView';
+import { useSahayak } from '../../../hooks/useSahayak';
+import { useLang } from '../../../lib/theme';
+import { TRANSLATIONS } from '../../../lib/i18n';
+import { DashboardView } from '../../../components/dashboard/DashboardView';
 
 export default function SchemesPage() {
   const { lang } = useLang();

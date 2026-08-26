@@ -3,25 +3,25 @@
 import { useSahayak } from '../../hooks/useSahayak';
 import { useLang } from '../../lib/theme';
 import { TRANSLATIONS } from '../../lib/i18n';
-import { SavedSchemesView } from '../../components/saved/SavedSchemesView';
+import { LandingView } from '../../components/home/LandingView';
 
-export default function SavedPage() {
+export default function HomePage() {
   const { lang } = useLang();
   const t = TRANSLATIONS[lang];
   const {
     schemes,
+    eligibility,
     savedSchemeIds,
     toggleSaveScheme,
-    eligibility,
   } = useSahayak();
 
   return (
-    <SavedSchemesView
+    <LandingView
       t={t}
       schemes={schemes}
+      eligibility={eligibility}
       savedSchemeIds={savedSchemeIds}
       onToggleSave={toggleSaveScheme}
-      eligibility={eligibility}
     />
   );
 }

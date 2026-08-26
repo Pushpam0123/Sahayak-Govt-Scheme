@@ -2,10 +2,10 @@
 
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useSahayak } from '../../hooks/useSahayak';
-import { useLang } from '../../lib/theme';
-import { TRANSLATIONS } from '../../lib/i18n';
-import { ChatView } from '../../components/chat/ChatView';
+import { useSahayak } from '../../../hooks/useSahayak';
+import { useLang } from '../../../lib/theme';
+import { TRANSLATIONS } from '../../../lib/i18n';
+import { ChatView } from '../../../components/chat/ChatView';
 
 function ChatContent() {
   const searchParams = useSearchParams();

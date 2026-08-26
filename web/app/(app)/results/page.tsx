@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSahayak } from '../../hooks/useSahayak';
-import { useLang } from '../../lib/theme';
-import { TRANSLATIONS } from '../../lib/i18n';
-import { EligibilityWizard } from '../../components/wizard/EligibilityWizard';
-import { loadSavedProfile } from '../../lib/storage';
+import { useSahayak } from '../../../hooks/useSahayak';
+import { useLang } from '../../../lib/theme';
+import { TRANSLATIONS } from '../../../lib/i18n';
+import { EligibilityWizard } from '../../../components/wizard/EligibilityWizard';
+import { loadSavedProfile } from '../../../lib/storage';
 
 export default function ResultsPage() {
   const router = useRouter();
