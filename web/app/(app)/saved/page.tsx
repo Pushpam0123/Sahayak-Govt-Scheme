@@ -13,6 +13,7 @@ export default function SavedPage() {
     savedSchemeIds,
     toggleSaveScheme,
     eligibility,
+    clearCitizenProfile,
   } = useSahayak();
 
   return (
@@ -21,6 +22,7 @@ export default function SavedPage() {
       schemes={schemes}
       savedSchemeIds={savedSchemeIds}
       onToggleSave={toggleSaveScheme}
+      onClearAllData={clearCitizenProfile}
       eligibility={eligibility}
     />
   );

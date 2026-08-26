@@ -14,6 +14,7 @@ import {
 } from '../lib/demo';
 import {
   DEFAULT_PROFILE,
+  clearCitizenData,
   loadDocumentChecklist,
   loadSavedProfile,
   loadSavedSchemeIds,
@@ -39,12 +40,12 @@ export function useSahayak() {
   useEffect(() => {
     const p = loadSavedProfile();
     setProfileState({
-      age: p.age ?? 30,
-      state: p.state ?? 'Madhya Pradesh',
-      gender: p.gender ?? 'Female',
-      caste: p.caste ?? 'General',
-      annual_income: p.annual_income ?? 180000,
-      landholding_acres: p.landholding_acres ?? 2.5,
+      age: p.age ?? null,
+      state: p.state ?? null,
+      gender: p.gender ?? null,
+      caste: p.caste ?? null,
+      annual_income: p.annual_income ?? null,
+      landholding_acres: p.landholding_acres ?? null,
     });
     setSavedSchemeIds(loadSavedSchemeIds());
     setCheckedDocs(loadDocumentChecklist());
@@ -65,6 +66,14 @@ export function useSahayak() {
     setProfileState(DEFAULT_PROFILE);
     saveProfile(DEFAULT_PROFILE);
   }, []);
+
+  const clearCitizenProfile = useCallback(() => {
+    clearCitizenData();
+    setProfileState(DEFAULT_PROFILE);
+    setSavedSchemeIds([]);
+    setCheckedDocs({});
+    queryClient.removeQueries({ queryKey: ['eligibility'] });
+  }, [queryClient]);
 
   const handleToggleSave = useCallback((schemeId: string) => {
     const updated = toggleSaveSchemeId(schemeId);
@@ -110,10 +119,16 @@ export function useSahayak() {
   const schemes: SchemeInfo[] = remoteSchemes ?? (isSchemesError ? DEMO_SCHEMES : []);
 
   // TanStack Query: Eligibility Matching
+  const hasProfileData =
+    profile.age !== null ||
+    profile.state !== null ||
+    profile.gender !== null ||
+    profile.annual_income !== null;
+
   const { data: eligibilityData } = useQuery({
     queryKey: ['eligibility', profile],
     queryFn: () => matchEligibility(profile),
-    enabled: !offline && Boolean(remoteSchemes),
+    enabled: !offline && Boolean(remoteSchemes) && hasProfileData,
     retry: 1,
   });
 
@@ -136,6 +151,7 @@ export function useSahayak() {
     profile,
     setProfileField,
     resetProfile,
+    clearCitizenProfile,
     savedSchemeIds,
     toggleSaveScheme: handleToggleSave,
     checkedDocs,
