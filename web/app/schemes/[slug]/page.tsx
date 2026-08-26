@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { SchemeClient } from './scheme-client';
+import { SITE_URL } from '../../../lib/site';
 import type { SchemeDetail } from '../../../lib/types';
 
 export const dynamicParams = true;
@@ -78,7 +79,7 @@ export async function generateMetadata({
     (scheme.benefit_amount
       ? `Government welfare scheme ${scheme.name} in ${scheme.state}. Benefit amount: ${scheme.benefit_amount}.`
       : `Government welfare scheme ${scheme.name} in ${scheme.state}.`);
-  const canonicalUrl = `https://sahayak.gov.in/schemes/${slug}`;
+  const canonicalUrl = `${SITE_URL}/schemes/${slug}`;
 
   return {
     title,

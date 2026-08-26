@@ -1,31 +1,8 @@
 import type { MetadataRoute } from 'next';
-
-const KNOWN_SCHEME_SLUGS = [
-  'pm-kisan',
-  'pm-fby',
-  'pm-jjby',
-  'pm-sby',
-  'atal-pension-yojana',
-  'pm-matru-vandana',
-  'stand-up-india',
-  'mp-ladli-behna',
-  'ka-gruha-jyothi',
-];
+import { SITE_URL } from '../lib/site';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://sahayak.gov.in';
-
-  let slugs = KNOWN_SCHEME_SLUGS;
-  try {
-    const apiBase = process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, '') ?? 'http://localhost:8000';
-    const res = await fetch(`${apiBase}/api/v1/schemes`, { next: { revalidate: 3600 } });
-    if (res.ok) {
-      const data = await res.json();
-      slugs = data.map((s: { id: string }) => s.id);
-    }
-  } catch {
-    // API unreachable; fall back to known verified slugs
-  }
+  const baseUrl = SITE_URL;
 
   const staticRoutes: MetadataRoute.Sitemap = [
     {
@@ -54,12 +31,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  const schemeRoutes: MetadataRoute.Sitemap = slugs.map((slug) => ({
-    url: `${baseUrl}/schemes/${slug}`,
-    lastModified: new Date(),
-    changeFrequency: 'weekly',
-    priority: 0.8,
-  }));
+  let schemeRoutes: MetadataRoute.Sitemap = [];
+  try {
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, '') ?? 'http://localhost:8000';
+    const res = await fetch(`${apiBase}/api/v1/schemes`, { next: { revalidate: 3600 } });
+    if (res.ok) {
+      const data = await res.json();
+      schemeRoutes = data.map((s: { id: string }) => ({
+        url: `${baseUrl}/schemes/${s.id}`,
+        lastModified: new Date(),
+        changeFrequency: 'weekly' as const,
+        priority: 0.8,
+      }));
+    }
+  } catch {
+    // API unreachable: return only static routes (do not emit hardcoded or guessing slugs)
+  }
 
   return [...staticRoutes, ...schemeRoutes];
 }

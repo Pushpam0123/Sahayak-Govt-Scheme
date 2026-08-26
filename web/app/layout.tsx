@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Noto_Sans } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
+import { SITE_URL } from '../lib/site';
 
 const notoSans = Noto_Sans({
   subsets: ['latin', 'devanagari'],
@@ -11,12 +12,14 @@ const notoSans = Noto_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'Sahayak — Official Government Scheme Assistance',
-  description: 'Find official central and state government welfare schemes in India with exact grounded citations and eligibility checks.',
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
+  title: 'Sahayak — Find Government Schemes You Qualify For',
+  description:
+    'Search Indian central and state welfare schemes, check your eligibility, and read the exact line of the official guideline behind every answer.',
+  metadataBase: new URL(SITE_URL),
   openGraph: {
-    title: 'Sahayak — Official Government Scheme Assistance',
-    description: 'Find official central and state government welfare schemes in India with exact grounded citations and eligibility checks.',
+    title: 'Sahayak — Find Government Schemes You Qualify For',
+    description:
+      'Search Indian central and state welfare schemes, check your eligibility, and read the exact line of the official guideline behind every answer.',
     siteName: 'Sahayak',
     type: 'website',
   },

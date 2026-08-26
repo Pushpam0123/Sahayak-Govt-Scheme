@@ -54,7 +54,7 @@ export const AdminConsoleView: React.FC<AdminConsoleViewProps> = ({ t }) => {
       await verifySchemeRules(
         item.scheme_id,
         item.rules_json,
-        'operator@sahayak.gov.in',
+        'operator@sahayak.example',
         'Verified in admin console',
         adminToken
       );
