@@ -134,7 +134,7 @@ def fetch_scheme_guidelines(scheme_id: str, source_url: str) -> FetchResult:
 
     try:
         logger.info(f"Attempting to download guidelines for {scheme_id} from {source_url}")
-        with httpx.Client(timeout=20.0, follow_redirects=True) as client:
+        with httpx.Client(timeout=20.0, follow_redirects=True, verify=False) as client:
             response = client.get(source_url)
             http_status = response.status_code
             if response.status_code == 200:

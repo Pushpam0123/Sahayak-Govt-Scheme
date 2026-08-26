@@ -5,79 +5,8 @@ schemes:
     ministry: Ministry of Agriculture and Farmers Welfare
     category: Agriculture
     official_url: https://pmkisan.gov.in
-    source_url: https://pmkisan.gov.in/Documents/RevisedGuidelines.pdf
-
-  - id: pm-jay
-    name: Ayushman Bharat Pradhan Mantri Jan Arogya Yojana
-    state: Central
-    ministry: Ministry of Health and Family Welfare
-    category: Health
-    official_url: https://pmjay.gov.in
-    source_url: https://dashboard.pmjay.gov.in/pmjayguideline.pdf
-
-  - id: pmay-g
-    name: Pradhan Mantri Awas Yojana - Gramin
-    state: Central
-    ministry: Ministry of Rural Development
-    category: Housing
-    official_url: https://pmayg.nic.in
-    source_url: https://rural.nic.in/sites/default/files/PMAYG_Guidelines_English.pdf
-
-  - id: nsp-post-matric
-    name: National Scholarship Portal Post-Matric Scholarship for SC Students
-    state: Central
-    ministry: Ministry of Social Justice and Empowerment
-    category: Education
-    official_url: https://scholarships.gov.in
-    source_url: https://socialjustice.gov.in/writereaddata/UploadFile/Post-Matric-Scholarship-SC-2023.pdf
-
-  - id: pm-svanidhi
-    name: PM Street Vendor's AtmaNirbhar Nidhi
-    state: Central
-    ministry: Ministry of Housing and Urban Affairs
-    category: Business & Self-Employment
-    official_url: https://pmsvanidhi.mohua.gov.in
-    source_url: https://pmsvanidhi.mohua.gov.in/Default/ViewFile?path=Guidelines/Scheme_Guidelines.pdf
-
-  - id: atal-pension-yojana
-    name: Atal Pension Yojana
-    state: Central
-    ministry: Ministry of Finance
-    category: Pension
-    official_url: https://www.npscra.nsdl.co.in/scheme-details.php
-    source_url: https://www.npscra.nsdl.co.in/download/pdf/APY-Scheme-Details.pdf
-
-  - id: pm-matru-vandana
-    name: Pradhan Mantri Matru Vandana Yojana
-    state: Central
-    ministry: Ministry of Women and Child Development
-    category: Women & Child Development
-    official_url: https://wcd.nic.in
-    source_url: https://wcd.nic.in/sites/default/files/PMMVY_Guidelines_0.pdf
-
-  - id: pm-jjby
-    name: Pradhan Mantri Jeevan Jyoti Bima Yojana
-    state: Central
-    ministry: Ministry of Finance
-    category: Insurance
-    official_url: https://financialservices.gov.in
-    source_url: https://financialservices.gov.in/sites/default/files/PMJJBY_Rules.pdf
-
-  - id: pm-sby
-    name: Pradhan Mantri Suraksha Bima Yojana
-    state: Central
-    ministry: Ministry of Finance
-    category: Insurance
-    official_url: https://financialservices.gov.in
-    source_url: https://financialservices.gov.in/sites/default/files/PMSBY_Rules.pdf
-
-  - id: stand-up-india
-    name: Stand-Up India Scheme
-    state: Central
-    ministry: Ministry of Finance
-    category: Finance & Business
-    official_url: https://www.standupmitra.in
-    source_url: https://www.standupmitra.in/Home/StandUpIndiaGuidelines.pdf
+    source_url: https://pmkisan.gov.in/Documents/RevisedPM-KISANOperationalGuidelines(English).pdf
+    verified_on: 2026-08-26
 
   - id: pm-fby
     name: Pradhan Mantri Fasal Bima Yojana
@@ -86,14 +15,52 @@ schemes:
     category: Agriculture
     official_url: https://pmfby.gov.in
     source_url: https://pmfby.gov.in/pdf/Revised_Operational_Guidelines.pdf
+    verified_on: 2026-08-26
 
-  - id: mid-day-meal
-    name: Pradhan Mantri Poshan Shakti Nirman (Mid-Day Meal Scheme)
+  - id: pm-jjby
+    name: Pradhan Mantri Jeevan Jyoti Bima Yojana
     state: Central
-    ministry: Ministry of Education
-    category: Education
-    official_url: https://education.gov.in
-    source_url: https://education.gov.in/sites/upload_files/mhrd/files/MidDayMeal_Guidelines.pdf
+    ministry: Ministry of Finance
+    category: Insurance
+    official_url: https://www.jansuraksha.gov.in
+    source_url: https://www.jansuraksha.gov.in/Files/PMJJBY/English/Rules.pdf
+    verified_on: 2026-08-26
+
+  - id: pm-sby
+    name: Pradhan Mantri Suraksha Bima Yojana
+    state: Central
+    ministry: Ministry of Finance
+    category: Insurance
+    official_url: https://www.jansuraksha.gov.in
+    source_url: https://www.jansuraksha.gov.in/Files/PMSBY/English/Rules.pdf
+    verified_on: 2026-08-26
+
+  - id: atal-pension-yojana
+    name: Atal Pension Yojana
+    state: Central
+    ministry: Ministry of Finance
+    category: Pension
+    official_url: https://www.jansuraksha.gov.in
+    source_url: https://www.jansuraksha.gov.in/Files/APY/English/Rules.pdf
+    verified_on: 2026-08-26
+
+  - id: pm-matru-vandana
+    name: Pradhan Mantri Matru Vandana Yojana
+    state: Central
+    ministry: Ministry of Women and Child Development
+    category: Women & Child Development
+    official_url: https://pmmvy.wcd.gov.in
+    source_url: https://pmmvy.wcd.gov.in/Content/assets/PDF/MissionShaktiGuidelines.pdf
+    verified_on: 2026-08-26
+
+  - id: stand-up-india
+    name: Stand-Up India Scheme
+    state: Central
+    ministry: Ministry of Finance
+    category: Finance & Business
+    official_url: https://www.standupmitra.in
+    source_url: https://www.standupmitra.in/Default/DownloadFile/Stand%20Up%20India%20-%20Brochure%20-%20English.pdf
+    verified_on: 2026-08-26
 
   - id: mp-ladli-behna
     name: Mukhyamantri Ladli Behna Yojana (Madhya Pradesh)
@@ -101,39 +68,8 @@ schemes:
     ministry: Department of Women and Child Development
     category: Women & Child Development
     official_url: https://cmladlibahna.mp.gov.in
-    source_url: https://cmladlibahna.mp.gov.in/guidelines.html
-
-  - id: ts-rythu-bandhu
-    name: Rythu Bandhu Scheme (Telangana)
-    state: Telangana
-    ministry: Department of Agriculture
-    category: Agriculture
-    official_url: https://rythubandhu.telangana.gov.in
-    source_url: https://rythubandhu.telangana.gov.in/guidelines.html
-
-  - id: wb-kanyashree
-    name: Kanyashree Prakalpa (West Bengal)
-    state: West Bengal
-    ministry: Department of Women Development and Social Welfare
-    category: Education & Girls Welfare
-    official_url: https://www.wbkanyashree.gov.in
-    source_url: https://www.wbkanyashree.gov.in/readwrite/publications/000084.pdf
-
-  - id: ap-ysr-cheyutha
-    name: YSR Cheyutha Scheme (Andhra Pradesh)
-    state: Andhra Pradesh
-    ministry: Department of Social Welfare
-    category: Women & Livelihood Welfare
-    official_url: https://ysrcheyutha.ap.gov.in
-    source_url: https://ysrcheyutha.ap.gov.in/guidelines.html
-
-  - id: odisha-kalia
-    name: Krushak Assistance for Livelihood and Income Augmentation (KALIA)
-    state: Odisha
-    ministry: Department of Agriculture and Farmers Empowerment
-    category: Agriculture
-    official_url: https://kalia.odisha.gov.in
-    source_url: https://kalia.odisha.gov.in/pdf/KALIA_Guidelines.pdf
+    source_url: https://cmladlibahna.mp.gov.in/Uploaded%20Document/UpcomingEvents/25072023014055LBY%20sanshodhit%20guideline.pdf
+    verified_on: 2026-08-26
 
   - id: ka-gruha-jyothi
     name: Gruha Jyothi Scheme (Karnataka)
@@ -141,20 +77,5 @@ schemes:
     ministry: Department of Energy
     category: Power & Welfare
     official_url: https://sevasindhugs.karnataka.gov.in
-    source_url: https://sevasindhugs.karnataka.gov.in/gruhajyothi-rules.html
-
-  - id: mh-shravan-bal
-    name: Shravanbal Seva State Pension Scheme (Maharashtra)
-    state: Maharashtra
-    ministry: Social Justice and Special Assistance Department
-    category: Pension & Senior Citizens
-    official_url: https://sjsa.maharashtra.gov.in
-    source_url: https://sjsa.maharashtra.gov.in/en/shravanbal-scheme.html
-
-  - id: bihar-student-credit-card
-    name: Bihar Student Credit Card Yojana
-    state: Bihar
-    ministry: Education Department
-    category: Education & Finance
-    official_url: https://www.7nischay-yuvaupmission.bihar.gov.in
-    source_url: https://www.7nischay-yuvaupmission.bihar.gov.in/studentCardGuidelines.pdf
+    source_url: https://sevasindhugs.karnataka.gov.in/PDF/Gruha_Jyothi_Kannada.pdf
+    verified_on: 2026-08-26
