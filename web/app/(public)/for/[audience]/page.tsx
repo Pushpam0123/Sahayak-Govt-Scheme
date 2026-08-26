@@ -8,7 +8,7 @@ import { getApiBase } from '../../../../lib/server-env';
 import { SITE_URL } from '../../../../lib/site';
 import type { SchemeInfo } from '../../../../lib/types';
 
-export const dynamicParams = false;
+export const dynamicParams = true;
 export const revalidate = 3600;
 
 async function getSchemes(): Promise<SchemeInfo[]> {
