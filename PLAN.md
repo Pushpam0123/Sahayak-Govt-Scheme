@@ -182,15 +182,32 @@ Consequences:
 
 | # | Title | Scope | Status |
 | --- | --- | --- | --- |
-| **0.1** | Remove the fabrication path | Delete `generate_mock_guidelines()`. `fetch_scheme_guidelines` returns an explicit outcome (`fetched` / `cached` / `failed`) instead of inventing content. Failures are logged and skipped, never indexed. | pending |
-| **0.2** | Document verification state | Migration adding `documents.fetch_status`, `documents.verified_at`, `documents.content_sha256`. Ingest populates them. | pending |
-| **0.3** | Retrieval guard | Vector and FTS search exclude any chunk whose document is not verified. A chunk that cannot be traced to a real fetched document can never be cited. | pending |
+| **0.1** | Remove the fabrication path | Delete `generate_mock_guidelines()`. `fetch_scheme_guidelines` returns an explicit outcome (`fetched` / `cached` / `failed`) instead of inventing content. Failures are logged and skipped, never indexed. | **done** — `f3faccc` |
+| **0.2** | Document verification state | Migration adding `documents.fetch_status`, `documents.verified_at`, `documents.content_sha256`. Ingest populates them. | **done** — `ff3fdd1`, rev `eeef26b00837` |
+| **0.3** | Retrieval guard | Vector and FTS search exclude any chunk whose document is not verified. A chunk that cannot be traced to a real fetched document can never be cited. | **done** — `ff9615f` |
+| **0.3b** | Review corrections | See §5.2. Cached-provenance sidecar, stronger content validation, idempotency refresh, `lxml_html_clean` dependency. | in progress |
 | **0.4** | Eligibility three-state | `unknown` replaces the `eligible: True` default. API returns `status: "eligible" \| "ineligible" \| "unknown"`. Frontend renders three visually distinct states. | pending |
 | **0.5** | **Re-source the corpus** | **Critical path — see §5.1.** Find the real, live guidelines document for each scheme. Drop what cannot be sourced. | pending |
 | **0.6** | Honest UI | Standing disclaimer ("information only — verify on the official portal before applying"). `lib/demo.ts::demoChat()` either removed or labelled unmistakably as sample data. | pending |
 | **0.7** | Re-baseline | Re-run the eval against real documents. Rewrite `EVALS.md` from zero. Correct the accuracy claims in `README.md`. | pending |
 
 **Definition of done for Phase 0:** every citation in the product traces to a document that was actually fetched from a URL that actually resolves, and `EVALS.md` contains numbers measured against those documents. The numbers will be worse than the ones currently in the README. That is the point — they will be the first ones that mean anything.
+
+### 5.2 Review of 0.1–0.3, and work order 0.3b
+
+Diff reviewed in full on 2026-08-26 — `ingest/fetcher.py`, `ingest/run.py`, `api/services/retrieval.py` and the new tests read directly rather than accepted on the implementer's summary. Implementation was clean and to spec; the guard predicate lives in one helper as required, and the tests assert the real invariant (no `Document` created on a failed fetch) rather than restating the implementation. Three corrections followed.
+
+**Correction 1 — the cached-document trap. This was a defect in the spec, not the implementation.** The original work order said `verified_at` is set "only when fetched live and successfully". Since `ingest_scheme` deletes and recreates the `Document` row on every run, the consequence is: ingest once on a good network (corpus citable) → ingest again on a flaky one → every document returns `cached` → `verified_at = None` → the 0.3 guard excludes everything → **search silently returns nothing with no error surfaced anywhere.**
+
+The intended semantic for `verified_at` is *"this exact content was confirmed to have come from this URL at time T."* A cached file written by a prior successful fetch satisfies that; the original design simply discarded the evidence. Fix: write a `.meta.json` sidecar on every successful fetch recording `source_url`, `fetched_at`, `http_status` and `content_sha256`. A cached load restores `fetched_at` from the sidecar only if the URL and content hash both still match; otherwise the file is treated as unverified, because a file of unknown origin in `data/raw/` is not evidence of anything. `run.py` then sets `verified_at = fetch_result.fetched_at` unconditionally, and one line carries the whole rule.
+
+**Correction 2 — content validation too weak.** Only a completely empty HTML body was rejected. The real junk responses in the audit are 103 bytes (`mp-ladli-behna`), 196 bytes (`ka-gruha-jyothi`), 956 bytes of HTML where a PDF was promised (`stand-up-india`) and 15 bytes of `application/x-javascript` (`pm-svanidhi`) — several would pass. Added minimum size floors (`MIN_PDF_BYTES = 10_000`, `MIN_HTML_BYTES = 2_000`) and a `Content-Type` check for HTML. `%PDF` magic bytes stay the authoritative PDF test, since servers mislabel content types but magic bytes don't lie.
+
+**Correction 3 — idempotency skips verification refresh.** When a checksum matches and `force` is false, `ingest_scheme` returns early. A row stored during a cached run (`verified_at = None`) whose bytes later fetch successfully is skipped and stays permanently uncitable. The early return now refreshes `fetch_status`, `verified_at` and `content_sha256` first.
+
+**Correction 4 — scope extension, authorised.** `lxml_html_clean` is a transitive dependency of `trafilatura`/`justext` that isn't pinned, so a fresh clone cannot run the test suite. Added to dev dependencies.
+
+**Approved as-is:** setting `db_scheme.status = "active"` on a successful re-fetch (without it, a scheme that failed once stays `unverified` forever).
 
 ### 5.1 Work order 0.5 in detail — re-sourcing the corpus
 
@@ -223,3 +240,4 @@ Consequences:
 | --- | --- | --- |
 | 2026-08-26 | Plan created. Design direction selected (Warm Civic). Phase 0 work orders defined. | Opus |
 | 2026-08-26 | Full 20-URL corpus audit run. Only 1 URL yields a real document, not the 13 the spot-check implied. Work order 0.5 promoted from cleanup to critical path; §5.1 added with a decided source strategy. myScheme API scraping explicitly ruled out; formal access request added as a business action. | Opus |
+| 2026-08-26 | 0.1–0.3 delivered and reviewed. Three corrections issued as 0.3b (§5.2). Correction 1 fixes a defect in the original spec that would have silently emptied the corpus on any cached ingestion run. | Opus |
