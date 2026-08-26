@@ -1,6 +1,6 @@
 # Sahayak (government-scheme RAG assistant)
 
-Sahayak is a production-grade, cited Retrieval-Augmented Generation (RAG) assistant and eligibility matchmaking engine designed to help citizens navigate complex Indian government scheme guidelines. 
+Sahayak is a production-grade, cited Retrieval-Augmented Generation (RAG) assistant and eligibility matchmaking engine designed to help citizens navigate complex Indian government scheme guidelines. The corpus currently covers **nine schemes**, each backed by a guideline document that was fetched live from its official government source, hashed, and provenance-recorded — no scheme is indexed on a document that wasn't actually and verifiably retrieved. See [`docs/corpus-audit.md`](docs/corpus-audit.md) for the full per-scheme audit.
 
 Navigating scheme eligibility criteria involves handling scattered documents, complex rules (age limits, caste categories, income bands, land ownership restrictions), and language barriers. Sahayak addresses these challenges through a grounded assistant that synthesizes accurate answers, matches citizen demographics directly against guidelines, and audits claim veracity.
 
@@ -42,7 +42,7 @@ graph TD
 Retriever and generator capabilities are tracked in `EVALS.md`.
 
 > [!NOTE]
-> Evaluation benchmarks are currently undergoing Phase 0 re-baselining against independently verified, live government guideline documents (Work Order 0.7b). Historical metrics measured on synthetic documents have been marked void in `EVALS.md`.
+> Historical metrics measured on synthetic documents have been marked void in `EVALS.md`. A real baseline against the nine verified schemes requires a live `ANTHROPIC_API_KEY` and `VOYAGE_API_KEY` to run the full retrieval + generation harness (`eval/run_eval.py`); it has not yet been published for that reason — see `EVALS.md` for status.
 
 ---
 
