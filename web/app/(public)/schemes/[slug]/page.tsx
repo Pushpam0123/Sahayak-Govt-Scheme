@@ -2,13 +2,14 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { SchemeClient } from './scheme-client';
 import { SITE_URL } from '../../../../lib/site';
+import { getApiBase } from '../../../../lib/server-env';
 import type { SchemeDetail } from '../../../../lib/types';
 
 export const dynamicParams = true;
 export const revalidate = 3600;
 
 async function getSchemeData(slug: string): Promise<SchemeDetail | null> {
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, '') ?? 'http://localhost:8000';
+  const apiBase = getApiBase();
   let res: Response;
   try {
     res = await fetch(`${apiBase}/api/v1/schemes/${slug}`, {
@@ -31,7 +32,7 @@ async function getSchemeData(slug: string): Promise<SchemeDetail | null> {
 
 export async function generateStaticParams() {
   try {
-    const apiBase = process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, '') ?? 'http://localhost:8000';
+    const apiBase = getApiBase();
     const res = await fetch(`${apiBase}/api/v1/schemes`, {
       next: { revalidate: 3600 },
     });

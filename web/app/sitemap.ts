@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { SITE_URL } from '../lib/site';
+import { getApiBase } from '../lib/server-env';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = SITE_URL;
@@ -33,7 +34,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   let schemeRoutes: MetadataRoute.Sitemap = [];
   try {
-    const apiBase = process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, '') ?? 'http://localhost:8000';
+    const apiBase = getApiBase();
     const res = await fetch(`${apiBase}/api/v1/schemes`, { next: { revalidate: 3600 } });
     if (res.ok) {
       const data = await res.json();
