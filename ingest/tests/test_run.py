@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -64,3 +65,47 @@ async def test_ingest_scheme_marks_existing_scheme_unverified_on_failed_fetch() 
     # No Document was created for the existing scheme either.
     added_objects = [call.args[0] for call in mock_db.add.call_args_list]
     assert not any(isinstance(obj, Document) for obj in added_objects)
+
+
+@pytest.mark.asyncio
+async def test_ingest_scheme_upgrades_verified_at_on_idempotent_checksum_match() -> None:
+    """A document that was previously stored from a cached (unverified)
+    fetch must be upgraded to verified once we confirm the identical bytes
+    live - even though the checksum match means we skip re-chunking it."""
+    mock_db = AsyncMock(spec=AsyncSession)
+
+    existing_doc = Document(
+        id=1,
+        scheme_id="some-scheme",
+        title="Some Scheme",
+        source_url="https://example.gov.in/guidelines.html",
+        doc_type="html",
+        checksum="matching-checksum",
+        fetch_status="cached",
+        verified_at=None,
+        content_sha256="old-sha256",
+    )
+    mock_doc_result = MagicMock()
+    mock_doc_result.scalars().first.return_value = existing_doc
+    mock_db.execute.return_value = mock_doc_result
+
+    verified_time = datetime(2026, 8, 26, 12, 0, 0, tzinfo=timezone.utc)
+    fetched_result = FetchResult(
+        status="fetched",
+        file_path="data/raw/some-scheme.html",
+        doc_type="html",
+        checksum="matching-checksum",
+        content_sha256="new-sha256",
+        http_status=200,
+        fetched_at=verified_time,
+    )
+
+    with patch("ingest.run.fetch_scheme_guidelines", return_value=fetched_result):
+        await ingest_scheme(mock_db, SCHEME_DATA, force=False)
+
+    assert existing_doc.fetch_status == "fetched"
+    assert existing_doc.verified_at == verified_time
+    assert existing_doc.content_sha256 == "new-sha256"
+    # No new Document (or anything else) was created - this was an
+    # in-place upgrade of the existing row.
+    mock_db.add.assert_not_called()
