@@ -188,10 +188,11 @@ Consequences:
 | **0.3b** | Review corrections | See §5.2. Cached-provenance sidecar, stronger content validation, idempotency refresh, `lxml_html_clean` dependency. | **done** — `c09e2e9`…`1ef4991` |
 | **0.3c** | Correction 5 | `verified_at` may only be upgraded, never downgraded, on the idempotent path. | **done** — `b865f80` |
 | **0.4** | Eligibility three-state | `unknown` replaces the `eligible: True` default. API returns `status: "eligible" \| "ineligible" \| "unknown"`. Frontend renders three visually distinct states. | **done** — `696807c`…`1a3322d` |
-| **0.4b** | Correction 6 | Surface the "not yet assessed" count on the dashboard; it was computed but never displayed. | in progress |
+| **0.4b** | Correction 6 | Surface the "not yet assessed" count on the dashboard; it was computed but never displayed. | **done** — `6960de4` |
 | **0.5** | **Re-source the corpus** | **Critical path — see §5.1.** Find the real, live guidelines document for each scheme. Drop what cannot be sourced. | pending |
-| **0.6** | Honest UI | Standing disclaimer strip under the TabBar. `demoChat()` **removed** — offline chat refuses to answer rather than fabricating. Sample data kept but explicitly labelled. | in progress |
-| **0.7** | Re-baseline | Re-run the eval against real documents. Rewrite `EVALS.md` from zero. Correct the accuracy claims in `README.md`. | pending |
+| **0.6** | Honest UI | Standing disclaimer strip under the TabBar. `demoChat()` **removed** — offline chat refuses to answer rather than fabricating. Sample data kept but explicitly labelled. | **done** — `45a7234`, `e56661f` |
+| **0.7a** | Retract false claims | Withdraw the synthetic-corpus metrics from `README.md`; mark the historical `EVALS.md` rows void without deleting them. Unblocked. | in progress |
+| **0.7b** | Re-baseline | Re-run the eval against the verified corpus and publish real numbers. **Blocked on 0.5.** | blocked |
 
 **Definition of done for Phase 0:** every citation in the product traces to a document that was actually fetched from a URL that actually resolves, and `EVALS.md` contains numbers measured against those documents. The numbers will be worse than the ones currently in the README. That is the point — they will be the first ones that mean anything.
 
@@ -257,3 +258,4 @@ Approved. `routers/eligibility.py` defaults every scheme to `"unknown"` with no 
 | 2026-08-26 | 0.1–0.3 delivered and reviewed. Three corrections issued as 0.3b (§5.2). Correction 1 fixes a defect in the original spec that would have silently emptied the corpus on any cached ingestion run. | Opus |
 | 2026-08-26 | 0.3b delivered and reviewed; approved. Correction 5 issued (§5.2) — `verified_at` must only be upgraded, never downgraded. Work order 0.4 dispatched. | Opus |
 | 2026-08-26 | Correction 5 and 0.4 delivered and reviewed; approved. Correction 6 issued (§5.3) — the unknown count was computed but never displayed, leaving the dashboard tiles unable to add up. Work order 0.6 dispatched, with `demoChat()` scoped to removal rather than relabelling. | Opus |
+| 2026-08-26 | Correction 6 and 0.6 delivered and reviewed; approved. 0.7 split: **0.7a** (retract the synthetic-corpus claims) is unblocked and dispatched; **0.7b** (publish real numbers) stays blocked on 0.5. Withdrawing a false number does not have to wait for a true one. | Opus |
