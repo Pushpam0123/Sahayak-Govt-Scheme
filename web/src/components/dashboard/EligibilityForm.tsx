@@ -1,14 +1,14 @@
 // Citizen profile form — results update live as fields change.
 import type { Dict } from '../../lib/i18n';
 import { INDIAN_STATES } from '../../lib/i18n';
-import type { ProfileForm } from '../../hooks/useSahayak';
+import type { CitizenProfile } from '../../lib/types';
 import { Card, CardHeader, Field, Select, TextInput } from '../ui';
 import { UserIcon } from '../icons';
 
 interface Props {
   t: Dict;
-  profile: ProfileForm;
-  setField: (field: keyof ProfileForm, value: string) => void;
+  profile: CitizenProfile;
+  setField: <K extends keyof CitizenProfile>(field: K, value: CitizenProfile[K]) => void;
 }
 
 export function EligibilityForm({ t, profile, setField }: Props) {
@@ -27,15 +27,15 @@ export function EligibilityForm({ t, profile, setField }: Props) {
               id="age"
               type="number"
               min="0"
-              value={profile.age}
-              onChange={(e) => setField('age', e.target.value)}
+              value={profile.age ?? ''}
+              onChange={(e) => setField('age', e.target.value ? Number(e.target.value) : null)}
             />
           </Field>
           <Field label={t.state} htmlFor="state">
             <Select
               id="state"
-              value={profile.state}
-              onChange={(e) => setField('state', e.target.value)}
+              value={profile.state ?? ''}
+              onChange={(e) => setField('state', e.target.value || null)}
             >
               {INDIAN_STATES.map((s) => (
                 <option key={s} value={s}>
@@ -50,8 +50,8 @@ export function EligibilityForm({ t, profile, setField }: Props) {
           <Field label={t.gender} htmlFor="gender">
             <Select
               id="gender"
-              value={profile.gender}
-              onChange={(e) => setField('gender', e.target.value)}
+              value={profile.gender ?? 'Female'}
+              onChange={(e) => setField('gender', e.target.value || null)}
             >
               <option value="Female">{t.female}</option>
               <option value="Male">{t.male}</option>
@@ -61,8 +61,8 @@ export function EligibilityForm({ t, profile, setField }: Props) {
           <Field label={t.caste} htmlFor="caste">
             <Select
               id="caste"
-              value={profile.caste}
-              onChange={(e) => setField('caste', e.target.value)}
+              value={profile.caste ?? 'General'}
+              onChange={(e) => setField('caste', e.target.value || null)}
             >
               <option value="General">{t.general}</option>
               <option value="OBC">{t.obc}</option>
@@ -78,8 +78,10 @@ export function EligibilityForm({ t, profile, setField }: Props) {
             type="number"
             min="0"
             placeholder="e.g. 180000"
-            value={profile.income}
-            onChange={(e) => setField('income', e.target.value)}
+            value={profile.annual_income ?? ''}
+            onChange={(e) =>
+              setField('annual_income', e.target.value ? Number(e.target.value) : null)
+            }
           />
         </Field>
 
@@ -90,8 +92,10 @@ export function EligibilityForm({ t, profile, setField }: Props) {
             step="0.1"
             min="0"
             placeholder="e.g. 2.5"
-            value={profile.landholding}
-            onChange={(e) => setField('landholding', e.target.value)}
+            value={profile.landholding_acres ?? ''}
+            onChange={(e) =>
+              setField('landholding_acres', e.target.value ? Number(e.target.value) : null)
+            }
           />
         </Field>
       </div>

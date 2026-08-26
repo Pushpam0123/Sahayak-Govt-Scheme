@@ -1,7 +1,7 @@
-// Grounded Q&A surface: filters, message thread, suggested prompts, input,
-// and the citation inspector.
+// Grounded Q&A surface with real-time SSE streaming, filters, message thread,
+// suggested prompts, input, and the citation inspector.
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { askChat } from '../../lib/api';
+import { streamChatAnswer } from '../../lib/api';
 import { SUGGESTED_PROMPTS_EN, SUGGESTED_PROMPTS_HI } from '../../lib/demo';
 import type { Dict, Lang } from '../../lib/i18n';
 import { INDIAN_STATES, SCHEME_CATEGORIES } from '../../lib/i18n';
@@ -20,60 +20,98 @@ interface ChatViewProps {
   lang: Lang;
   schemes: SchemeInfo[];
   offline: boolean;
+  initialQuery?: string;
 }
 
-export function ChatView({ t, lang, schemes, offline }: ChatViewProps) {
+export function ChatView({ t, lang, schemes, offline, initialQuery }: ChatViewProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState(initialQuery || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeCitation, setActiveCitation] = useState<CitationInfo | null>(
-    null,
-  );
+  const [activeCitation, setActiveCitation] = useState<CitationInfo | null>(null);
 
   const [schemeId, setSchemeId] = useState('');
   const [stateFilter, setStateFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [sessionId] = useState(() => `session-${Math.random().toString(36).slice(2, 10)}`);
 
   const endRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
+  useEffect(() => {
+    if (initialQuery) {
+      setInput(initialQuery);
+    }
+  }, [initialQuery]);
+
   const prompts = lang === 'hi' ? SUGGESTED_PROMPTS_HI : SUGGESTED_PROMPTS_EN;
 
   const send = async (question: string) => {
     const q = question.trim();
-    // Offline is checked here too, not just on the input/button disabled
-    // state, so nothing (a suggested-prompt chip, a stray Enter) can ever
-    // reach the network layer or fabricate a reply while disconnected.
     if (!q || loading || offline) return;
     setInput('');
     setError(null);
     setLoading(true);
-    setMessages((prev) => [...prev, { sender: 'user', text: q }]);
+
+    const userMessage: ChatMessage = { sender: 'user', text: q };
+    const assistantPlaceholder: ChatMessage = {
+      sender: 'assistant',
+      text: '',
+      isStreaming: true,
+    };
+
+    setMessages((prev) => [...prev, userMessage, assistantPlaceholder]);
 
     try {
-      const data = await askChat(q, {
-        state: stateFilter || null,
-        category: categoryFilter || null,
-        scheme_id: schemeId || null,
-      });
-
-      setMessages((prev) => [
-        ...prev,
+      await streamChatAnswer(
+        q,
         {
-          sender: 'assistant',
-          text: data.answer,
-          sentences: data.sentences,
-          citations: data.citations,
-          usage: data.usage,
-          latency_ms: data.latency_ms,
+          state: stateFilter || null,
+          category: categoryFilter || null,
+          scheme_id: schemeId || null,
         },
-      ]);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to get an answer.');
-    } finally {
+        sessionId,
+        {
+          onToken: (token) => {
+            setMessages((prev) => {
+              const lastIdx = prev.length - 1;
+              if (lastIdx < 0) return prev;
+              const updated = [...prev];
+              updated[lastIdx] = {
+                ...updated[lastIdx],
+                text: updated[lastIdx].text + token,
+              };
+              return updated;
+            });
+          },
+          onDone: (data) => {
+            setMessages((prev) => {
+              const lastIdx = prev.length - 1;
+              if (lastIdx < 0) return prev;
+              const updated = [...prev];
+              updated[lastIdx] = {
+                sender: 'assistant',
+                text: data.answer,
+                sentences: data.sentences,
+                citations: data.citations,
+                usage: data.usage,
+                latency_ms: data.latency_ms,
+                isStreaming: false,
+              };
+              return updated;
+            });
+            setLoading(false);
+          },
+          onError: (err) => {
+            setError(err.message || 'Failed to stream answer.');
+            setLoading(false);
+          },
+        }
+      );
+    } catch (err: any) {
+      setError(err.message || 'Failed to get an answer.');
       setLoading(false);
     }
   };
@@ -129,8 +167,6 @@ export function ChatView({ t, lang, schemes, offline }: ChatViewProps) {
 
         {/* Thread */}
         <div className="flex-1 space-y-4 overflow-y-auto p-4 scrollbar-thin">
-          {/* Greeting, or a plain refusal when there's no connection to
-              look anything up with - never a fabricated answer. */}
           <div className="flex justify-start">
             <div className="flex max-w-[85%] items-start gap-2.5 rounded-2xl rounded-bl-sm border border-border-subtle bg-surface px-4 py-3">
               <span
@@ -155,7 +191,7 @@ export function ChatView({ t, lang, schemes, offline }: ChatViewProps) {
             />
           ))}
 
-          {loading ? (
+          {loading && messages.length > 0 && messages[messages.length - 1].isStreaming && !messages[messages.length - 1].text ? (
             <div className="flex justify-start">
               <div className="flex items-center gap-2.5 rounded-2xl rounded-bl-sm border border-border-subtle bg-surface px-4 py-3">
                 <Spinner className="h-4 w-4" />
@@ -172,8 +208,6 @@ export function ChatView({ t, lang, schemes, offline }: ChatViewProps) {
             </div>
           ) : null}
 
-          {/* Suggested prompts (only before first question, and only
-              when there's a connection to actually answer with) */}
           {isEmpty && !loading && !offline ? (
             <div className="pt-2">
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-faint">

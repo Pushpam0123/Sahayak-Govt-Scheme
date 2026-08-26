@@ -10,6 +10,40 @@ export interface SchemeInfo {
   name: string;
   state: string;
   category: string;
+  ministry?: string;
+  summary?: string;
+  benefit_amount?: string;
+  benefit_type?: string;
+  application_mode?: string;
+  official_url?: string;
+  status?: string;
+  tags?: string[];
+}
+
+export interface SchemeDocument {
+  id: number;
+  title: string;
+  source_url?: string;
+  doc_type: string;
+  fetch_status: string;
+  verified_at?: string;
+  content_sha256?: string;
+}
+
+export interface SchemeEligibilityInfo {
+  is_verified: boolean;
+  rules: Record<string, any> | null;
+  verified_by?: string;
+  verified_at?: string;
+}
+
+export interface SchemeDetail extends SchemeInfo {
+  required_documents: string[];
+  application_url?: string;
+  deadlines?: string;
+  helpline?: string;
+  eligibility_rules?: SchemeEligibilityInfo | null;
+  documents: SchemeDocument[];
 }
 
 export interface ChunkResult {
@@ -53,15 +87,18 @@ export interface ChatUsage {
 }
 
 export interface ChatMessage {
+  id?: string;
   sender: 'user' | 'assistant';
   text: string;
   sentences?: SentenceInfo[];
   citations?: CitationInfo[];
   usage?: ChatUsage;
   latency_ms?: number;
+  isStreaming?: boolean;
 }
 
 export interface ChatResponse {
+  id?: number;
   answer: string;
   sentences?: SentenceInfo[];
   citations?: CitationInfo[];
@@ -88,7 +125,35 @@ export interface CitizenProfile {
 }
 
 export interface ChatFilters {
-  state: string | null;
-  category: string | null;
-  scheme_id: string | null;
+  state?: string | null;
+  category?: string | null;
+  scheme_id?: string | null;
+}
+
+export interface AdminStats {
+  catalogue: {
+    total_schemes: number;
+    active_schemes: number;
+    total_documents: number;
+    verified_documents: number;
+    total_chunks: number;
+    unverified_rules_in_queue: number;
+  };
+  usage: {
+    total_questions_served: number;
+    total_cost_usd: number;
+  };
+}
+
+export interface RulesQueueItem {
+  id: number;
+  scheme_id: string;
+  scheme_name: string;
+  state: string;
+  category: string;
+  rules_json: Record<string, any>;
+  extracted_by?: string;
+  extracted_at?: string;
+  is_verified: boolean;
+  notes?: string;
 }

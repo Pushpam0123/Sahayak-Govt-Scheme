@@ -1,9 +1,8 @@
 // Citizen dashboard: summary tiles, profile form, eligibility charts,
 // scheme directory, and the advanced document explorer.
 import { useMemo } from 'react';
-import type { ProfileForm } from '../../hooks/useSahayak';
 import type { Dict } from '../../lib/i18n';
-import type { EligibilityMap, SchemeInfo } from '../../lib/types';
+import type { CitizenProfile, EligibilityMap, SchemeInfo } from '../../lib/types';
 import { CheckIcon, DocIcon, AlertIcon, HelpIcon } from '../icons';
 import { DashboardCharts, type CategoryDatum } from './Charts';
 import { DocumentExplorer } from './DocumentExplorer';
@@ -15,8 +14,8 @@ interface Props {
   t: Dict;
   schemes: SchemeInfo[];
   eligibility: EligibilityMap;
-  profile: ProfileForm;
-  setField: (field: keyof ProfileForm, value: string) => void;
+  profile: CitizenProfile;
+  setField: <K extends keyof CitizenProfile>(field: K, value: CitizenProfile[K]) => void;
   offline: boolean;
 }
 
@@ -82,7 +81,7 @@ export function DashboardView({
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-12">
       <div>
         <h2 className="text-lg font-bold text-content">{t.dashboardTitle}</h2>
         <p className="mt-0.5 text-sm text-muted">{t.dashboardSubtitle}</p>

@@ -1,13 +1,15 @@
 // Thin API client for the Sahayak backend.
-// Base URL is configurable via VITE_API_BASE so the app is not pinned to
-// localhost in every environment.
-
 import type {
+  AdminStats,
   ChatFilters,
   ChatResponse,
+  CitationInfo,
   CitizenProfile,
   EligibilityMap,
   HealthResponse,
+  RulesQueueItem,
+  SchemeDetail,
+  SchemeInfo,
   SearchResponse,
 } from './types';
 
@@ -16,16 +18,16 @@ export const API_BASE: string =
 
 const V1 = `${API_BASE}/api/v1`;
 
-async function getJson<T>(url: string): Promise<T> {
-  const res = await fetch(url);
+async function getJson<T>(url: string, headers?: Record<string, string>): Promise<T> {
+  const res = await fetch(url, { headers });
   if (!res.ok) throw new Error(`Request failed (${res.status})`);
   return res.json() as Promise<T>;
 }
 
-async function postJson<T>(url: string, body: unknown): Promise<T> {
+async function postJson<T>(url: string, body: unknown, headers?: Record<string, string>): Promise<T> {
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(headers || {}) },
     body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error(`Request failed (${res.status})`);
@@ -33,7 +35,27 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
 }
 
 export function fetchHealth(): Promise<HealthResponse> {
-  return getJson<HealthResponse>(`${V1}/health`);
+  return getJson<HealthResponse>(`${V1}/healthz`);
+}
+
+export interface SchemeFilterParams {
+  state?: string;
+  category?: string;
+  benefit_type?: string;
+  status?: string;
+}
+
+export function fetchSchemes(params?: SchemeFilterParams): Promise<SchemeInfo[]> {
+  const q = new URLSearchParams();
+  if (params?.state) q.append('state', params.state);
+  if (params?.category) q.append('category', params.category);
+  if (params?.benefit_type) q.append('benefit_type', params.benefit_type);
+  if (params?.status) q.append('status', params.status);
+  return getJson<SchemeInfo[]>(`${V1}/schemes?${q.toString()}`);
+}
+
+export function fetchSchemeDetail(schemeId: string): Promise<SchemeDetail> {
+  return getJson<SchemeDetail>(`${V1}/schemes/${schemeId}`);
 }
 
 export interface SearchParams {
@@ -62,7 +84,118 @@ export function matchEligibility(
 
 export function askChat(
   question: string,
-  filters: ChatFilters,
+  filters?: ChatFilters,
+  sessionId?: string,
 ): Promise<ChatResponse> {
-  return postJson<ChatResponse>(`${V1}/chat`, { question, filters });
+  return postJson<ChatResponse>(`${V1}/chat`, {
+    question,
+    session_id: sessionId,
+    filters: {
+      state: filters?.state ?? null,
+      category: filters?.category ?? null,
+      scheme_id: filters?.scheme_id ?? null,
+    },
+  });
+}
+
+export interface StreamChatHandlers {
+  onContext?: (data: { retrieved_chunks: any[]; citation_candidates: CitationInfo[] }) => void;
+  onToken?: (token: string) => void;
+  onDone?: (data: ChatResponse) => void;
+  onError?: (err: Error) => void;
+}
+
+export async function streamChatAnswer(
+  question: string,
+  filters?: ChatFilters,
+  sessionId?: string,
+  handlers?: StreamChatHandlers,
+): Promise<void> {
+  try {
+    const res = await fetch(`${V1}/chat/stream`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        question,
+        session_id: sessionId,
+        filters: {
+          state: filters?.state ?? null,
+          category: filters?.category ?? null,
+          scheme_id: filters?.scheme_id ?? null,
+        },
+      }),
+    });
+
+    if (!res.ok || !res.body) {
+      throw new Error(`Streaming failed: HTTP ${res.status}`);
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let buffer = '';
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      let currentEvent = '';
+      for (const line of lines) {
+        if (line.startsWith('event:')) {
+          currentEvent = line.replace('event:', '').trim();
+        } else if (line.startsWith('data:')) {
+          const dataStr = line.replace('data:', '').trim();
+          if (!dataStr) continue;
+          try {
+            const data = JSON.parse(dataStr);
+            if (currentEvent === 'context' && handlers?.onContext) {
+              handlers.onContext(data);
+            } else if (currentEvent === 'token' && handlers?.onToken) {
+              handlers.onToken(data.token);
+            } else if (currentEvent === 'done' && handlers?.onDone) {
+              handlers.onDone(data);
+            }
+          } catch {
+            // malformed json line ignored
+          }
+        }
+      }
+    }
+  } catch (err: any) {
+    if (handlers?.onError) {
+      handlers.onError(err);
+    } else {
+      throw err;
+    }
+  }
+}
+
+// Admin API
+export function fetchAdminStats(adminToken: string): Promise<AdminStats> {
+  return getJson<AdminStats>(`${V1}/admin/stats`, {
+    'X-Admin-Token': adminToken,
+  });
+}
+
+export function fetchRulesQueue(adminToken: string): Promise<RulesQueueItem[]> {
+  return getJson<RulesQueueItem[]>(`${V1}/admin/rules/queue`, {
+    'X-Admin-Token': adminToken,
+  });
+}
+
+export function verifySchemeRules(
+  schemeId: string,
+  rulesJson: Record<string, any>,
+  verifiedBy: string,
+  notes: string,
+  adminToken: string,
+): Promise<any> {
+  return postJson(
+    `${V1}/admin/rules/${schemeId}/verify`,
+    { rules_json: rulesJson, verified_by: verifiedBy, notes },
+    { 'X-Admin-Token': adminToken },
+  );
 }

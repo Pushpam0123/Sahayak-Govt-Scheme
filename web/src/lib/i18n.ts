@@ -1,14 +1,17 @@
 // Internationalisation dictionary (English + Hindi).
-// Keys are grouped by surface; every key must exist in both languages.
-
 export type Lang = 'en' | 'hi';
 
 export interface Dict {
   // Chrome / header
   appName: string;
   tagline: string;
+  homeTab: string;
+  wizardTab: string;
+  schemesTab: string;
   chatTab: string;
   dashboardTab: string;
+  savedTab: string;
+  consoleTab: string;
   apiLabel: string;
   dbLabel: string;
   online: string;
@@ -74,7 +77,7 @@ export interface Dict {
   income: string;
   landholding: string;
 
-  // Scheme directory
+  // Scheme directory & detail
   verifiedSchemes: string;
   directory: string;
   eligible: string;
@@ -84,6 +87,12 @@ export interface Dict {
   matchesProfile: string;
   emptySchemes: string;
   emptySchemesDesc: string;
+  viewDetails: string;
+  applyNow: string;
+  requiredDocs: string;
+  helpline: string;
+  deadlines: string;
+  benefitHero: string;
 
   // Document explorer (advanced)
   advancedTools: string;
@@ -112,8 +121,13 @@ export interface Dict {
 const en: Dict = {
   appName: 'Sahayak',
   tagline: 'Government Scheme Assistant',
-  chatTab: 'Ask Sahayak',
-  dashboardTab: 'My Dashboard',
+  homeTab: 'Home',
+  wizardTab: 'Check Eligibility',
+  schemesTab: 'Schemes',
+  chatTab: 'Ask Assistant',
+  dashboardTab: 'Analytics',
+  savedTab: 'Saved Schemes',
+  consoleTab: 'Console',
   apiLabel: 'API',
   dbLabel: 'Database',
   online: 'Online',
@@ -191,6 +205,12 @@ const en: Dict = {
   emptySchemes: 'No schemes loaded',
   emptySchemesDesc:
     'Connect the backend to load the verified scheme directory.',
+  viewDetails: 'View Details',
+  applyNow: 'Apply on Official Portal',
+  requiredDocs: 'Required Documents',
+  helpline: 'Official Helpline',
+  deadlines: 'Deadlines',
+  benefitHero: 'Benefit Amount',
 
   advancedTools: 'Document explorer',
   auditingFilter: 'Search filter',
@@ -217,8 +237,13 @@ const en: Dict = {
 const hi: Dict = {
   appName: 'सहायक',
   tagline: 'सरकारी योजना सहायक',
+  homeTab: 'होम',
+  wizardTab: 'पात्रता जांचें',
+  schemesTab: 'योजनाएं',
   chatTab: 'सहायक से पूछें',
-  dashboardTab: 'मेरा डैशबोर्ड',
+  dashboardTab: 'एनालिटिक्स',
+  savedTab: 'सहेजी गई',
+  consoleTab: 'कंसोल',
   apiLabel: 'एपीआई',
   dbLabel: 'डेटाबेस',
   online: 'ऑनलाइन',
@@ -295,6 +320,12 @@ const hi: Dict = {
   matchesProfile: 'आपके विवरण से मेल खाता है',
   emptySchemes: 'कोई योजना लोड नहीं हुई',
   emptySchemesDesc: 'सत्यापित योजना सूची लोड करने के लिए बैकएंड जोड़ें।',
+  viewDetails: 'विवरण देखें',
+  applyNow: 'आधिकारिक पोर्टल पर आवेदन करें',
+  requiredDocs: 'आवश्यक दस्तावेज़',
+  helpline: 'आधिकारिक हेल्पलाइन',
+  deadlines: 'समय सीमा',
+  benefitHero: 'लाभ राशि',
 
   advancedTools: 'दस्तावेज़ एक्सप्लोरर',
   auditingFilter: 'खोज फ़िल्टर',
@@ -336,6 +367,8 @@ export const SCHEME_CATEGORIES = [
   'Agriculture',
   'Welfare',
   'Pension',
-  'Education',
+  'Insurance',
+  'Finance & Business',
   'Women & Child Development',
+  'Power & Welfare',
 ];

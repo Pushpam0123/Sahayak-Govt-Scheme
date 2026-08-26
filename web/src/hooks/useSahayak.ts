@@ -1,50 +1,28 @@
-// Central data hook: health, scheme directory, and eligibility matching,
-// with a graceful fall back to labelled sample data when the API is down.
-
+// Central data hook: health, scheme directory, persistence, and eligibility matching.
 import { useCallback, useEffect, useState } from 'react';
 import {
   fetchHealth,
-  fetchSearch,
+  fetchSchemes,
   matchEligibility,
 } from '../lib/api';
 import {
   DEMO_ELIGIBILITY,
   DEMO_SCHEMES,
 } from '../lib/demo';
+import {
+  DEFAULT_PROFILE,
+  loadDocumentChecklist,
+  loadSavedProfile,
+  loadSavedSchemeIds,
+  saveProfile,
+  setDocumentChecked,
+  toggleSaveSchemeId,
+} from '../lib/storage';
 import type {
   CitizenProfile,
   EligibilityMap,
   SchemeInfo,
 } from '../lib/types';
-
-export interface ProfileForm {
-  age: string;
-  state: string;
-  gender: string;
-  caste: string;
-  income: string;
-  landholding: string;
-}
-
-const DEFAULT_PROFILE: ProfileForm = {
-  age: '30',
-  state: 'Madhya Pradesh',
-  gender: 'Female',
-  caste: 'General',
-  income: '180000',
-  landholding: '2.5',
-};
-
-function toCitizenProfile(p: ProfileForm): CitizenProfile {
-  return {
-    age: p.age ? parseInt(p.age, 10) : null,
-    state: p.state || null,
-    gender: p.gender || null,
-    caste: p.caste || null,
-    annual_income: p.income ? parseFloat(p.income) : null,
-    landholding_acres: p.landholding ? parseFloat(p.landholding) : null,
-  };
-}
 
 export function useSahayak() {
   const [healthLoading, setHealthLoading] = useState(true);
@@ -55,18 +33,55 @@ export function useSahayak() {
   const [schemes, setSchemes] = useState<SchemeInfo[]>([]);
   const [eligibility, setEligibility] = useState<EligibilityMap>({});
 
-  const [profile, setProfile] = useState<ProfileForm>(DEFAULT_PROFILE);
+  // Client-persisted state
+  const [profile, setProfileState] = useState<CitizenProfile>(() => {
+    const p = loadSavedProfile();
+    return {
+      age: p.age ?? 30,
+      state: p.state ?? 'Madhya Pradesh',
+      gender: p.gender ?? 'Female',
+      caste: p.caste ?? 'General',
+      annual_income: p.annual_income ?? 180000,
+      landholding_acres: p.landholding_acres ?? 2.5,
+    };
+  });
+
+  const [savedSchemeIds, setSavedSchemeIds] = useState<string[]>(() => loadSavedSchemeIds());
+  const [checkedDocs, setCheckedDocs] = useState<Record<string, boolean>>(() => loadDocumentChecklist());
   const [tick, setTick] = useState(0);
 
   const setProfileField = useCallback(
-    (field: keyof ProfileForm, value: string) =>
-      setProfile((prev) => ({ ...prev, [field]: value })),
-    [],
+    <K extends keyof CitizenProfile>(field: K, value: CitizenProfile[K]) => {
+      setProfileState((prev) => {
+        const next = { ...prev, [field]: value };
+        saveProfile(next);
+        return next;
+      });
+    },
+    []
   );
+
+  const resetProfile = useCallback(() => {
+    setProfileState(DEFAULT_PROFILE);
+    saveProfile(DEFAULT_PROFILE);
+  }, []);
+
+  const handleToggleSave = useCallback((schemeId: string) => {
+    const updated = toggleSaveSchemeId(schemeId);
+    setSavedSchemeIds(updated);
+  }, []);
+
+  const handleToggleDocChecked = useCallback((docKey: string) => {
+    setCheckedDocs((prev) => {
+      const nextVal = !prev[docKey];
+      const updated = setDocumentChecked(docKey, nextVal);
+      return updated;
+    });
+  }, []);
 
   const refresh = useCallback(() => setTick((n) => n + 1), []);
 
-  // Health + scheme directory (re-run on refresh)
+  // Health + scheme directory
   useEffect(() => {
     let cancelled = false;
     setHealthLoading(true);
@@ -84,15 +99,14 @@ export function useSahayak() {
       })
       .finally(() => !cancelled && setHealthLoading(false));
 
-    fetchSearch({ limit: 1 })
+    fetchSchemes()
       .then((data) => {
         if (cancelled) return;
-        setSchemes(data.schemes);
+        setSchemes(data);
         setOffline(false);
       })
       .catch(() => {
         if (cancelled) return;
-        // Backend unreachable — show labelled sample data.
         setSchemes(DEMO_SCHEMES);
         setEligibility(DEMO_ELIGIBILITY);
         setOffline(true);
@@ -103,15 +117,13 @@ export function useSahayak() {
     };
   }, [tick]);
 
-  // Eligibility matching whenever the profile changes (live backend only).
+  // Eligibility matching
   useEffect(() => {
     if (offline) return;
     let cancelled = false;
-    matchEligibility(toCitizenProfile(profile))
+    matchEligibility(profile)
       .then((map) => !cancelled && setEligibility(map))
-      .catch(() => {
-        /* leave previous results in place */
-      });
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
@@ -126,6 +138,11 @@ export function useSahayak() {
     eligibility,
     profile,
     setProfileField,
+    resetProfile,
+    savedSchemeIds,
+    toggleSaveScheme: handleToggleSave,
+    checkedDocs,
+    toggleDocChecked: handleToggleDocChecked,
     refresh,
   };
 }

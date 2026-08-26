@@ -1,14 +1,13 @@
 @import "tailwindcss";
 
 /*
-  Sahayak design system (Tailwind v4)
-  ----------------------------------
-  Theming is driven by CSS variables so the same utilities work in both
-  light and dark. `:root` holds the light (default, citizen-portal) palette;
-  the `.dark` class on <html> swaps in the dark (console) palette.
-
-  `dark:` utilities are wired to the `.dark` class instead of the OS setting
-  so the in-app toggle is the single source of truth.
+  Sahayak "Warm Civic" Design System (Tailwind v4)
+  -------------------------------------------------
+  Accessible, high-contrast, citizen-centric government scheme portal.
+  - Warm neutrals for human accessibility
+  - Large tabular numerals for benefit amounts
+  - Strictly semantic status colors (green/amber/slate)
+  - 48px minimum touch targets
 */
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -49,86 +48,86 @@
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
 
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
-    Roboto, "Noto Sans", "Noto Sans Devanagari", sans-serif;
+  --font-sans: "Noto Sans", "Inter", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Noto Sans Devanagari", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
 
-  /* Patched legacy shades used by the old markup (not in Tailwind's scale).
-     Kept so the UI renders correctly while components are migrated. */
+  /* Patched legacy shades */
   --color-sky-650: #0d84cf;
   --color-sky-850: #0a4a76;
   --color-slate-850: #172032;
 }
 
-/* ---- Light (default): friendly citizen portal ---- */
+/* ---- Light (default): Warm Civic friendly citizen portal ---- */
 :root {
-  --page: #eef2f8;
+  --page: #f8fafc;
   --surface: #ffffff;
-  --surface-2: #f4f7fb;
-  --surface-3: #e9eff6;
+  --surface-2: #f1f5f9;
+  --surface-3: #e2e8f0;
   --border-subtle: #e2e8f0;
   --border-strong: #cbd5e1;
 
-  --content: #0f1b2d;
-  --muted: #566079;
-  --faint: #8a94a8;
+  --content: #0f172a;
+  --muted: #475569;
+  --faint: #94a3b8;
 
-  --primary: #1d63d1;
-  --primary-hover: #1750ad;
-  --primary-soft: #e7effc;
+  --primary: #1d4ed8;
+  --primary-hover: #1e40af;
+  --primary-soft: #eff6ff;
   --on-primary: #ffffff;
 
-  --saffron: #e07b00;
-  --leaf: #167a3c;
+  --saffron: #d97706;
+  --leaf: #15803d;
 
   --success: #15803d;
-  --success-soft: #e5f6ec;
+  --success-soft: #f0fdf4;
   --warn: #b45309;
-  --warn-soft: #fdf0dc;
-  --danger: #c02626;
-  --danger-soft: #fdeaea;
+  --warn-soft: #fffbeb;
+  --danger: #b91c1c;
+  --danger-soft: #fef2f2;
 
-  --chart-1: #1d63d1;
-  --chart-2: #e07b00;
-  --chart-3: #167a3c;
+  --chart-1: #1d4ed8;
+  --chart-2: #d97706;
+  --chart-3: #15803d;
   --chart-4: #7c3aed;
-  --chart-5: #0e9aa7;
+  --chart-5: #0891b2;
 
   color-scheme: light;
 }
 
-/* ---- Dark: polished console ---- */
+/* ---- Dark: Polished operator & admin console ---- */
 .dark {
-  --page: #0a0f1c;
-  --surface: #111a2c;
-  --surface-2: #0e1626;
-  --surface-3: #16223a;
+  --page: #0b1120;
+  --surface: #131d31;
+  --surface-2: #1e293b;
+  --surface-3: #2d3b55;
   --border-subtle: #1e293b;
-  --border-strong: #2b3a52;
+  --border-strong: #334155;
 
-  --content: #e8edf6;
-  --muted: #9aa7bd;
-  --faint: #64718a;
+  --content: #f8fafc;
+  --muted: #94a3b8;
+  --faint: #64748b;
 
-  --primary: #4b8bf5;
-  --primary-hover: #6fa3f8;
-  --primary-soft: #16294b;
+  --primary: #3b82f6;
+  --primary-hover: #60a5fa;
+  --primary-soft: #172554;
   --on-primary: #ffffff;
 
-  --saffron: #fbb040;
-  --leaf: #4ade80;
+  --saffron: #f59e0b;
+  --leaf: #22c55e;
 
-  --success: #34d399;
-  --success-soft: #0f2a20;
+  --success: #22c55e;
+  --success-soft: #052e16;
   --warn: #fbbf24;
-  --warn-soft: #2a220c;
-  --danger: #fb7185;
-  --danger-soft: #2a1116;
+  --warn-soft: #2e1d05;
+  --danger: #ef4444;
+  --danger-soft: #381014;
 
-  --chart-1: #4b8bf5;
-  --chart-2: #fbb040;
-  --chart-3: #4ade80;
-  --chart-4: #a78bfa;
-  --chart-5: #22d3ee;
+  --chart-1: #3b82f6;
+  --chart-2: #f59e0b;
+  --chart-3: #22c55e;
+  --chart-4: #a855f7;
+  --chart-5: #06b6d4;
 
   color-scheme: dark;
 }
@@ -136,20 +135,24 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
   body {
     background-color: var(--page);
     color: var(--content);
+    font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    font-size: 1rem;
+    line-height: 1.6;
   }
 
-  /* Theme transition — colours ease when the toggle flips */
+  /* Theme transition */
   body,
   body * {
-    transition: background-color 0.2s ease, border-color 0.2s ease,
-      color 0.2s ease;
+    transition: background-color 0.15s ease, border-color 0.15s ease,
+      color 0.15s ease;
   }
   @media (prefers-reduced-motion: reduce) {
     body,
@@ -158,7 +161,6 @@
     }
   }
 
-  /* Consistent focus ring across themes */
   :focus-visible {
     outline: 2px solid var(--primary);
     outline-offset: 2px;
@@ -166,14 +168,22 @@
 }
 
 @layer utilities {
-  /* Thin scrollbar used throughout the panels */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tap-target {
+    min-height: 48px;
+    min-width: 48px;
+  }
+
   .scrollbar-thin {
     scrollbar-width: thin;
     scrollbar-color: var(--border-strong) transparent;
   }
   .scrollbar-thin::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
   }
   .scrollbar-thin::-webkit-scrollbar-thumb {
     background-color: var(--border-strong);

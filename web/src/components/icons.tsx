@@ -37,6 +37,8 @@ export const DocIcon = (p: IconProps) => (
   </svg>
 );
 
+export const DocumentTextIcon = DocIcon;
+
 export const ExternalIcon = (p: IconProps) => (
   <svg {...base(p)}>
     <path d="M14 4h6v6M20 4l-9 9M18 13v5a1 1 0 01-1 1H6a1 1 0 01-1-1V7a1 1 0 011-1h5" />
@@ -81,6 +83,8 @@ export const SparkIcon = (p: IconProps) => (
   </svg>
 );
 
+export const SparklesIcon = SparkIcon;
+
 export const SendIcon = (p: IconProps) => (
   <svg {...base(p)}>
     <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
@@ -98,5 +102,38 @@ export const HelpIcon = (p: IconProps) => (
     <circle cx="12" cy="12" r="9" />
     <path d="M9.5 9a2.5 2.5 0 114.2 1.8c-.7.6-1.7 1-1.7 2.2" />
     <path d="M12 17h.01" />
+  </svg>
+);
+
+export const ShieldCheckIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    <path d="M9 12l2 2 4-4" />
+  </svg>
+);
+
+export const ArrowRightIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M5 12h14M12 5l7 7-7 7" />
+  </svg>
+);
+
+export const CheckCircleIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="12" r="10" />
+    <path d="M9 12l2 2 4-4" />
+  </svg>
+);
+
+export const XCircleIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="12" r="10" />
+    <path d="M15 9l-6 6M9 9l6 6" />
+  </svg>
+);
+
+export const BookmarkIcon = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
   </svg>
 );

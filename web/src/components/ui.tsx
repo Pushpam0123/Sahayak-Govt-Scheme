@@ -1,6 +1,7 @@
 // Reusable, theme-aware UI primitives built on the design-system tokens.
 import type {
   ButtonHTMLAttributes,
+  HTMLAttributes,
   ReactNode,
   SelectHTMLAttributes,
 } from 'react';
@@ -10,7 +11,8 @@ export function Card({
   children,
   className = '',
   as: Tag = 'div',
-}: {
+  ...rest
+}: HTMLAttributes<HTMLDivElement> & {
   children: ReactNode;
   className?: string;
   as?: 'div' | 'section' | 'aside';
@@ -18,6 +20,7 @@ export function Card({
   return (
     <Tag
       className={`bg-surface border border-border-subtle rounded-2xl shadow-sm ${className}`}
+      {...rest}
     >
       {children}
     </Tag>
@@ -45,11 +48,13 @@ export function CardHeader({
 }
 
 // ---------- Button ----------
-type ButtonVariant = 'primary' | 'ghost' | 'subtle' | 'danger';
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'subtle' | 'danger';
 
 const buttonVariants: Record<ButtonVariant, string> = {
   primary:
     'bg-primary text-on-primary hover:bg-primary-hover shadow-sm disabled:opacity-50',
+  secondary:
+    'bg-surface-2 text-content hover:bg-surface-3 border border-border-strong disabled:opacity-50',
   ghost:
     'bg-transparent text-muted hover:text-content hover:bg-surface-2 border border-transparent',
   subtle:
@@ -89,7 +94,7 @@ export function IconButton({
 }
 
 // ---------- Badge ----------
-type BadgeTone = 'success' | 'danger' | 'neutral' | 'primary' | 'warn';
+export type BadgeTone = 'success' | 'danger' | 'neutral' | 'primary' | 'warn';
 
 const badgeTones: Record<BadgeTone, string> = {
   success: 'bg-success-soft text-success',
@@ -100,20 +105,23 @@ const badgeTones: Record<BadgeTone, string> = {
 };
 
 export function Badge({
-  tone = 'neutral',
+  tone,
+  variant,
   children,
   className = '',
   title,
 }: {
   tone?: BadgeTone;
+  variant?: BadgeTone;
   children: ReactNode;
   className?: string;
   title?: string;
 }) {
+  const activeTone = variant || tone || 'neutral';
   return (
     <span
       title={title}
-      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${badgeTones[tone]} ${className}`}
+      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${badgeTones[activeTone]} ${className}`}
     >
       {children}
     </span>
