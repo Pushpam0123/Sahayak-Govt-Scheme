@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Section } from '../../../components/layout/Section';
 import { SchemeCard } from '../../../components/schemes/SchemeCard';

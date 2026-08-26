@@ -2,17 +2,17 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Card, Button } from '../../../../components/ui';
-import { AlertIcon } from '../../../../components/icons';
+import { Card, Button } from '../../../components/ui';
+import { AlertIcon } from '../../../components/icons';
 
-export default function SchemeError({
+export default function SchemesSegmentError({
   reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {
   return (
-    <div className="mx-auto max-w-xl py-12 px-4">
+    <div className="mx-auto max-w-xl py-16 px-4">
       <Card className="p-8 text-center flex flex-col items-center gap-4">
         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-warn-soft text-warn">
           <AlertIcon className="h-6 w-6" />
