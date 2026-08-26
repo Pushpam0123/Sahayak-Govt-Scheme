@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -6,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.db import get_db
 
+logger = logging.getLogger("sahayak.health")
 router = APIRouter()
 
 
@@ -22,9 +24,10 @@ async def readiness_probe(db: AsyncSession = Depends(get_db)) -> Dict[str, Any]:
         await db.execute(text("SELECT 1"))
         return {"status": "ready", "database": "connected"}
     except Exception as e:
+        logger.error("Database readiness check failed: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"Database readiness check failed: {str(e)}",
+            detail="Database readiness check failed.",
         )
 
 
@@ -35,6 +38,8 @@ async def health_check(db: AsyncSession = Depends(get_db)) -> Dict[str, Any]:
         await db.execute(text("SELECT 1"))
         return {"status": "ok", "database": "connected"}
     except Exception as e:
+        logger.error("Database health check failed: %s", e, exc_info=True)
         raise HTTPException(
-            status_code=500, detail=f"Database connection failed: {str(e)}"
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database connection failed.",
         )

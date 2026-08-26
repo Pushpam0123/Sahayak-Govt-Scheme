@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -8,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.db import get_db
 from api.services.chat import get_grounded_answer, stream_grounded_answer
 
+logger = logging.getLogger("sahayak.chat")
 router = APIRouter()
 
 
@@ -30,7 +32,6 @@ async def chat(
 ) -> Dict[str, Any]:
     """Generates a grounded cited answer for the user query."""
     try:
-        # Extract filters
         state = None
         category = None
         scheme_id = None
@@ -39,7 +40,6 @@ async def chat(
             category = request.filters.category
             scheme_id = request.filters.scheme_id
 
-        # Execute grounded answering service
         result = await get_grounded_answer(
             db=db,
             query=request.question,
@@ -50,9 +50,10 @@ async def chat(
         )
         return result
     except Exception as e:
+        logger.error("Chat generation failed: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Chat generation failed: {str(e)}",
+            detail="Chat generation failed due to an internal processing error.",
         )
 
 

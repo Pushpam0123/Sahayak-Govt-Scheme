@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -7,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.db import get_db
 from api.models.chat import QALog
 
+logger = logging.getLogger("sahayak.usage")
 router = APIRouter()
 
 
@@ -43,7 +45,8 @@ async def get_usage_summary(
             "avg_latency_ms": float(row.avg_latency_ms or 0.0),
         }
     except Exception as e:
+        logger.error("Failed to fetch usage: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch usage: {str(e)}",
+            detail="Failed to retrieve analytics usage summary.",
         )

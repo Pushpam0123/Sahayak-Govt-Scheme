@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -10,6 +11,7 @@ from api.models.eligibility import SchemeEligibilityRules
 from api.models.scheme import Scheme
 from api.services.matcher import match_citizen_profile
 
+logger = logging.getLogger("sahayak.eligibility")
 router = APIRouter()
 
 
@@ -61,7 +63,8 @@ async def match_all_schemes(
         return results
 
     except Exception as e:
+        logger.error("Eligibility matching failed: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Eligibility matching failed: {str(e)}",
+            detail="Eligibility matching failed due to an internal processing error.",
         )
