@@ -1,13 +1,13 @@
 // Sample data used ONLY when the backend is unreachable, so the interface
 // can be demonstrated offline. It is always surfaced behind an explicit
 // "sample data" banner in the UI — never presented as live results.
+//
+// There is deliberately no offline chat fallback here. A fabricated chat
+// answer dressed in the citation UI is indistinguishable from a real,
+// grounded one - that's the exact defect 0.1 removed from the backend.
+// When offline, ChatView refuses to answer instead of inventing a reply.
 
-import type {
-  ChatResponse,
-  ChunkResult,
-  EligibilityMap,
-  SchemeInfo,
-} from './types';
+import type { ChunkResult, EligibilityMap, SchemeInfo } from './types';
 
 export const DEMO_SCHEMES: SchemeInfo[] = [
   { id: 'pm-kisan', name: 'PM-KISAN Samman Nidhi', state: 'Central', category: 'Agriculture' },
@@ -79,50 +79,6 @@ export const DEMO_CHUNKS: ChunkResult[] = [
     tokens: 36,
   },
 ];
-
-export function demoChat(question: string): ChatResponse {
-  return {
-    answer:
-      'Under PM-KISAN, all landholding farmer families with cultivable land receive ₹6,000 per year in three equal instalments [1]. However, income-tax payers and institutional landholders are excluded from the benefit [2].',
-    sentences: [
-      {
-        text: 'Under PM-KISAN, all landholding farmer families with cultivable land receive ₹6,000 per year in three equal instalments [1].',
-        citations: [1],
-        groundedness: { status: 'supported', reasoning: 'Directly stated in the operational guidelines.' },
-      },
-      {
-        text: 'However, income-tax payers and institutional landholders are excluded from the benefit [2].',
-        citations: [2],
-        groundedness: {
-          status: 'partial',
-          reasoning:
-            'Exclusions are listed in the guidelines, but the full list is longer than quoted here.',
-        },
-      },
-    ],
-    citations: [
-      {
-        n: 1,
-        chunk_id: 101,
-        source_url: 'https://pmkisan.gov.in/',
-        heading_path: 'Eligibility > Beneficiary Definition',
-        quote:
-          'All landholding farmer families, which have cultivable land, are eligible to receive ₹6,000 per year in three equal instalments under the scheme.',
-      },
-      {
-        n: 2,
-        chunk_id: 102,
-        source_url: 'https://pmkisan.gov.in/',
-        heading_path: 'Eligibility > Exclusions',
-        quote:
-          'Income-tax payers and institutional landholders are excluded from the benefit.',
-      },
-    ],
-    usage: { input_tokens: 1240, output_tokens: 96 },
-    latency_ms: 88,
-    _demoQuestion: question,
-  } as ChatResponse & { _demoQuestion: string };
-}
 
 export const SUGGESTED_PROMPTS_EN = [
   'Am I eligible for PM-KISAN?',

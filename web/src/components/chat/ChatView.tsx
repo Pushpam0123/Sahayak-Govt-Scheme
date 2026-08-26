@@ -2,7 +2,7 @@
 // and the citation inspector.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { askChat } from '../../lib/api';
-import { demoChat, SUGGESTED_PROMPTS_EN, SUGGESTED_PROMPTS_HI } from '../../lib/demo';
+import { SUGGESTED_PROMPTS_EN, SUGGESTED_PROMPTS_HI } from '../../lib/demo';
 import type { Dict, Lang } from '../../lib/i18n';
 import { INDIAN_STATES, SCHEME_CATEGORIES } from '../../lib/i18n';
 import type {
@@ -44,22 +44,21 @@ export function ChatView({ t, lang, schemes, offline }: ChatViewProps) {
 
   const send = async (question: string) => {
     const q = question.trim();
-    if (!q || loading) return;
+    // Offline is checked here too, not just on the input/button disabled
+    // state, so nothing (a suggested-prompt chip, a stray Enter) can ever
+    // reach the network layer or fabricate a reply while disconnected.
+    if (!q || loading || offline) return;
     setInput('');
     setError(null);
     setLoading(true);
     setMessages((prev) => [...prev, { sender: 'user', text: q }]);
 
     try {
-      const data = offline
-        ? await new Promise<ReturnType<typeof demoChat>>((res) =>
-            setTimeout(() => res(demoChat(q)), 500),
-          )
-        : await askChat(q, {
-            state: stateFilter || null,
-            category: categoryFilter || null,
-            scheme_id: schemeId || null,
-          });
+      const data = await askChat(q, {
+        state: stateFilter || null,
+        category: categoryFilter || null,
+        scheme_id: schemeId || null,
+      });
 
       setMessages((prev) => [
         ...prev,
@@ -130,14 +129,19 @@ export function ChatView({ t, lang, schemes, offline }: ChatViewProps) {
 
         {/* Thread */}
         <div className="flex-1 space-y-4 overflow-y-auto p-4 scrollbar-thin">
-          {/* Greeting */}
+          {/* Greeting, or a plain refusal when there's no connection to
+              look anything up with - never a fabricated answer. */}
           <div className="flex justify-start">
             <div className="flex max-w-[85%] items-start gap-2.5 rounded-2xl rounded-bl-sm border border-border-subtle bg-surface px-4 py-3">
-              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary">
+              <span
+                className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
+                  offline ? 'bg-surface-2 text-muted' : 'bg-primary-soft text-primary'
+                }`}
+              >
                 <SparkIcon className="h-3.5 w-3.5" />
               </span>
               <p className="text-sm leading-relaxed text-content">
-                {t.greeting}
+                {offline ? t.chatOfflineMessage : t.greeting}
               </p>
             </div>
           </div>
@@ -168,8 +172,9 @@ export function ChatView({ t, lang, schemes, offline }: ChatViewProps) {
             </div>
           ) : null}
 
-          {/* Suggested prompts (only before first question) */}
-          {isEmpty && !loading ? (
+          {/* Suggested prompts (only before first question, and only
+              when there's a connection to actually answer with) */}
+          {isEmpty && !loading && !offline ? (
             <div className="pt-2">
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-faint">
                 {t.suggestedTitle}
@@ -202,13 +207,13 @@ export function ChatView({ t, lang, schemes, offline }: ChatViewProps) {
           <TextInput
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={t.chatPlaceholder}
-            disabled={loading}
-            aria-label={t.chatPlaceholder}
+            placeholder={offline ? t.chatOfflineMessage : t.chatPlaceholder}
+            disabled={loading || offline}
+            aria-label={offline ? t.chatOfflineMessage : t.chatPlaceholder}
           />
           <Button
             type="submit"
-            disabled={loading || !input.trim()}
+            disabled={loading || offline || !input.trim()}
             aria-label={t.ask}
           >
             <SendIcon className="h-4 w-4" />
