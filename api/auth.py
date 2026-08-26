@@ -3,11 +3,11 @@ import hmac
 import secrets
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import bcrypt
 import jwt
-from fastapi import Depends, Header, HTTPException, Security, status
+from fastapi import Depends, HTTPException, Security, status
 from fastapi.security import APIKeyHeader, HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -57,7 +57,7 @@ def generate_api_key(prefix: str = "shk_live_") -> tuple[str, str, str]:
 
 # --- JWT Token Management ---
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
     """Issues a signed JWT access token."""
     if not settings.JWT_SECRET:
         raise ValueError("JWT_SECRET is not configured.")
@@ -67,16 +67,17 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
         expires_delta or timedelta(minutes=settings.JWT_EXPIRE_MINUTES)
     )
     to_encode.update({"exp": expire, "iat": datetime.now(timezone.utc)})
-    return jwt.encode(to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+    token_str: str = jwt.encode(to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+    return token_str
 
 
-def decode_access_token(token: str) -> dict:
+def decode_access_token(token: str) -> Dict[str, Any]:
     """Decodes and validates a JWT token. Raises HTTPException(401) on failure."""
     if not settings.JWT_SECRET:
         raise ValueError("JWT_SECRET is not configured.")
 
     try:
-        payload = jwt.decode(
+        payload: Dict[str, Any] = jwt.decode(
             token,
             settings.JWT_SECRET,
             algorithms=[settings.JWT_ALGORITHM],
@@ -149,13 +150,13 @@ async def get_current_principal(
     # 1. API Key Auth Path
     if key_str:
         hashed = hash_api_key(key_str)
-        stmt = (
+        stmt_key = (
             select(APIKey)
             .options(selectinload(APIKey.organization))
             .where(APIKey.key_hash == hashed, APIKey.is_active == True)
         )
-        result = await db.execute(stmt)
-        api_key_rec = result.scalars().first()
+        result_key = await db.execute(stmt_key)
+        api_key_rec = result_key.scalars().first()
 
         if not api_key_rec:
             raise HTTPException(
@@ -185,15 +186,15 @@ async def get_current_principal(
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        stmt = (
+        stmt_user = (
             select(User)
             .options(selectinload(User.organization))
             .where(User.id == user_id, User.is_active == True)
         )
-        result = await db.execute(stmt)
-        user = result.scalars().first()
+        result_user = await db.execute(stmt_user)
+        user_rec = result_user.scalars().first()
 
-        if not user:
+        if not user_rec:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="User account not found or deactivated.",
@@ -201,8 +202,8 @@ async def get_current_principal(
             )
 
         return AuthPrincipal(
-            user=user,
-            organization=user.organization,
+            user=user_rec,
+            organization=user_rec.organization,
             auth_type="jwt",
         )
 

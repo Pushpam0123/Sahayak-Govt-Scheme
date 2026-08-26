@@ -1,6 +1,6 @@
 import re
 import uuid
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
@@ -95,7 +95,12 @@ async def register(
     fetch_stmt = select(User).options(selectinload(User.organization)).where(User.id == user.id)
     fetch_res = await db.execute(fetch_stmt)
     created_user = fetch_res.scalars().first()
-    return created_user  # type: ignore[return-value]
+    if created_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve created user record.",
+        )
+    return UserResponse.model_validate(created_user)
 
 
 @router.post(
@@ -147,7 +152,7 @@ async def login(
 )
 async def get_me(
     principal: AuthPrincipal = Depends(get_current_principal),
-) -> dict:
+) -> Dict[str, Any]:
     if principal.auth_type == "jwt" and principal.user:
         return {
             "auth_type": "jwt",
@@ -242,4 +247,4 @@ async def list_api_keys(
     stmt = stmt.order_by(APIKey.created_at.desc())
     result = await db.execute(stmt)
     keys = result.scalars().all()
-    return list(keys)  # type: ignore[return-value]
+    return [APIKeyListItem.model_validate(k) for k in keys]
