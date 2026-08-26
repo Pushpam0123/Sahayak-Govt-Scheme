@@ -1,8 +1,9 @@
-from datetime import datetime
+from datetime import datetime, timezone
+from typing import Any, Optional
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
-from sqlalchemy.dialects.postgresql import TSVECTOR
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, TSVECTOR
 from sqlalchemy.orm import relationship
 
 from api.db import Base
@@ -21,6 +22,17 @@ class Scheme(Base):
     summary = Column(Text, nullable=True)
     official_url = Column(String, nullable=True)
     status = Column(String, default="active", nullable=False)  # active, stale, draft
+
+    # Rich citizen fields (Phase 2)
+    benefit_amount = Column(String, nullable=True)  # e.g., '₹6,000 / year'
+    benefit_type = Column(String, nullable=True)  # e.g., 'Direct Benefit Transfer (DBT)', 'Insurance', 'Pension'
+    required_documents: Any = Column(JSONB, nullable=True)  # list of strings
+    application_mode = Column(String, nullable=True)  # 'online' | 'offline' | 'hybrid' | 'csc'
+    application_url = Column(String, nullable=True)
+    deadlines = Column(String, nullable=True)  # e.g., 'Rolling'
+    helpline = Column(String, nullable=True)
+    last_verified_at = Column(DateTime, nullable=True)
+    tags: Any = Column(ARRAY(String), nullable=True)
 
     documents = relationship(
         "Document", back_populates="scheme", cascade="all, delete-orphan"
@@ -44,7 +56,7 @@ class Document(Base):
     source_url = Column(String, nullable=True)
     doc_type = Column(String, nullable=False)  # 'pdf' or 'html'
     lang = Column(String, default="en", nullable=False)  # 'en' or 'hi'
-    fetched_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    fetched_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     checksum = Column(String, nullable=False, unique=True)  # md5, for idempotency checks
     fetch_status = Column(
         String, nullable=False, server_default="fetched"

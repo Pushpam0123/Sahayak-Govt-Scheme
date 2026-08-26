@@ -4,8 +4,20 @@ schemes:
     state: Central
     ministry: Ministry of Agriculture and Farmers Welfare
     category: Agriculture
-    official_url: https://pmkisan.gov.in
-    source_url: https://pmkisan.gov.in/Documents/RevisedPM-KISANOperationalGuidelines(English).pdf
+    summary: Financial assistance of ₹6,000 per year payable in three equal four-monthly installments to all landholding farmer families.
+    benefit_amount: "₹6,000 / year"
+    benefit_type: "Direct Benefit Transfer (DBT)"
+    required_documents:
+      - "Aadhaar Card"
+      - "Bank Account Passbook (DBT-enabled)"
+      - "Land Ownership Record (Khatian / ROR)"
+      - "Citizenship Proof"
+    application_mode: "online"
+    application_url: "https://pmkisan.gov.in/RegistrationFormNew.aspx"
+    deadlines: "Rolling throughout the year"
+    helpline: "155261 / 011-24300606"
+    official_url: "https://pmkisan.gov.in"
+    source_url: "https://pmkisan.gov.in/Documents/RevisedPM-KISANOperationalGuidelines(English).pdf"
     verified_on: 2026-08-26
 
   - id: pm-fby
@@ -13,8 +25,20 @@ schemes:
     state: Central
     ministry: Ministry of Agriculture and Farmers Welfare
     category: Agriculture
-    official_url: https://pmfby.gov.in
-    source_url: https://pmfby.gov.in/pdf/Revised_Operational_Guidelines.pdf
+    summary: Comprehensive crop insurance protecting farmers against yield loss due to non-preventable natural risks with heavily subsidized farmer premium rates.
+    benefit_amount: "Full Crop Loss Insurance Cover"
+    benefit_type: "Subsidized Crop Insurance"
+    required_documents:
+      - "Aadhaar Card"
+      - "Land Revenue Receipt / Land Possession Certificate"
+      - "Crop Sowing Certificate / Self-Declaration"
+      - "Bank Account Passbook"
+    application_mode: "hybrid"
+    application_url: "https://pmfby.gov.in"
+    deadlines: "Kharif: July 31 | Rabi: Dec 31"
+    helpline: "14447 / 1800-180-1551"
+    official_url: "https://pmfby.gov.in"
+    source_url: "https://pmfby.gov.in/pdf/Revised_Operational_Guidelines.pdf"
     verified_on: 2026-08-26
 
   - id: pm-jjby
@@ -22,8 +46,19 @@ schemes:
     state: Central
     ministry: Ministry of Finance
     category: Insurance
-    official_url: https://www.jansuraksha.gov.in
-    source_url: https://www.jansuraksha.gov.in/Files/PMJJBY/English/Rules.pdf
+    summary: One-year renewable life insurance scheme offering ₹2 Lakh death cover for any reason to individuals aged 18 to 50 years.
+    benefit_amount: "₹2,00,000 Life Insurance"
+    benefit_type: "Life Insurance Cover"
+    required_documents:
+      - "Aadhaar Card"
+      - "Savings Bank Account with Auto-Debit Consent"
+      - "KYC Identity Proof"
+    application_mode: "hybrid"
+    application_url: "https://www.jansuraksha.gov.in"
+    deadlines: "Annual renewal by May 31 (Premium: ₹436/year)"
+    helpline: "1800-180-1111 / 1800-110-001"
+    official_url: "https://www.jansuraksha.gov.in"
+    source_url: "https://www.jansuraksha.gov.in/Files/PMJJBY/English/Rules.pdf"
     verified_on: 2026-08-26
 
   - id: pm-sby
@@ -31,8 +66,18 @@ schemes:
     state: Central
     ministry: Ministry of Finance
     category: Insurance
-    official_url: https://www.jansuraksha.gov.in
-    source_url: https://www.jansuraksha.gov.in/Files/PMSBY/English/Rules.pdf
+    summary: One-year accidental death and disability cover of up to ₹2 Lakh for an annual premium of only ₹20 per member.
+    benefit_amount: "₹2,00,000 Accidental Cover"
+    benefit_type: "Accidental Insurance Cover"
+    required_documents:
+      - "Aadhaar Card"
+      - "Savings Bank Account with Auto-Debit Consent"
+    application_mode: "hybrid"
+    application_url: "https://www.jansuraksha.gov.in"
+    deadlines: "Annual renewal by May 31 (Premium: ₹20/year)"
+    helpline: "1800-180-1111 / 1800-110-001"
+    official_url: "https://www.jansuraksha.gov.in"
+    source_url: "https://www.jansuraksha.gov.in/Files/PMSBY/English/Rules.pdf"
     verified_on: 2026-08-26
 
   - id: atal-pension-yojana
@@ -40,8 +85,19 @@ schemes:
     state: Central
     ministry: Ministry of Finance
     category: Pension
-    official_url: https://www.jansuraksha.gov.in
-    source_url: https://www.jansuraksha.gov.in/Files/APY/English/Rules.pdf
+    summary: Guaranteed minimum monthly pension of ₹1,000 to ₹5,000 starting from age 60 for subscribers joining between 18 and 40 years.
+    benefit_amount: "₹1,000 – ₹5,000 / month pension"
+    benefit_type: "Government Guaranteed Pension"
+    required_documents:
+      - "Aadhaar Card"
+      - "Savings Bank Account"
+      - "Mobile Number"
+    application_mode: "hybrid"
+    application_url: "https://enps.nsdl.com"
+    deadlines: "Rolling registration (Age 18–40)"
+    helpline: "1800-110-069"
+    official_url: "https://www.jansuraksha.gov.in"
+    source_url: "https://www.jansuraksha.gov.in/Files/APY/English/Rules.pdf"
     verified_on: 2026-08-26
 
   - id: pm-matru-vandana
@@ -49,8 +105,21 @@ schemes:
     state: Central
     ministry: Ministry of Women and Child Development
     category: Women & Child Development
-    official_url: https://pmmvy.wcd.gov.in
-    source_url: https://pmmvy.wcd.gov.in/Content/assets/PDF/MissionShaktiGuidelines.pdf
+    summary: Conditional maternity cash incentive of ₹5,000 for the first child and ₹6,000 if the second child is female, promoting maternal and child health.
+    benefit_amount: "₹5,000 – ₹6,000 DBT"
+    benefit_type: "Maternity Cash Benefit (DBT)"
+    required_documents:
+      - "Mother's Aadhaar Card"
+      - "Father's Aadhaar Card"
+      - "MCP (Mother and Child Protection) Card"
+      - "Bank Account Passbook"
+      - "Child Birth Certificate"
+    application_mode: "hybrid"
+    application_url: "https://pmmvy.wcd.gov.in"
+    deadlines: "Within 270 days of LMP"
+    helpline: "1098 / 011-23382393"
+    official_url: "https://pmmvy.wcd.gov.in"
+    source_url: "https://pmmvy.wcd.gov.in/Content/assets/PDF/MissionShaktiGuidelines.pdf"
     verified_on: 2026-08-26
 
   - id: stand-up-india
@@ -58,8 +127,20 @@ schemes:
     state: Central
     ministry: Ministry of Finance
     category: Finance & Business
-    official_url: https://www.standupmitra.in
-    source_url: https://www.standupmitra.in/Default/DownloadFile/Stand%20Up%20India%20-%20Brochure%20-%20English.pdf
+    summary: Bank loans between ₹10 Lakh and ₹100 Lakh for setting up a greenfield enterprise in manufacturing, services, agri-allied or trading sectors by SC/ST or women borrowers.
+    benefit_amount: "₹10 Lakh – ₹1 Crore Loan"
+    benefit_type: "Subsidized Enterprise Loan"
+    required_documents:
+      - "PAN Card & Aadhaar Card"
+      - "SC/ST Certificate (if applicable)"
+      - "Detailed Project Report (DPR)"
+      - "Proof of Business Premises / Land"
+    application_mode: "online"
+    application_url: "https://www.standupmitra.in"
+    deadlines: "Rolling application"
+    helpline: "1800-180-1159"
+    official_url: "https://www.standupmitra.in"
+    source_url: "https://www.standupmitra.in/Default/DownloadFile/Stand%20Up%20India%20-%20Brochure%20-%20English.pdf"
     verified_on: 2026-08-26
 
   - id: mp-ladli-behna
@@ -67,8 +148,19 @@ schemes:
     state: Madhya Pradesh
     ministry: Department of Women and Child Development
     category: Women & Child Development
-    official_url: https://cmladlibahna.mp.gov.in
-    source_url: https://cmladlibahna.mp.gov.in/Uploaded%20Document/UpcomingEvents/25072023014055LBY%20sanshodhit%20guideline.pdf
+    summary: Monthly financial assistance of ₹1,250 deposited directly into the bank accounts of eligible resident women of Madhya Pradesh.
+    benefit_amount: "₹1,250 / month"
+    benefit_type: "Direct Cash Transfer (Monthly)"
+    required_documents:
+      - "Samagra Family & Member ID"
+      - "Aadhaar Card (e-KYC completed)"
+      - "Bank Account linked with Aadhaar and DBT enabled"
+    application_mode: "offline"
+    application_url: "https://cmladlibahna.mp.gov.in"
+    deadlines: "Annual registration drives"
+    helpline: "0755-2700800"
+    official_url: "https://cmladlibahna.mp.gov.in"
+    source_url: "https://cmladlibahna.mp.gov.in/Uploaded%20Document/UpcomingEvents/25072023014055LBY%20sanshodhit%20guideline.pdf"
     verified_on: 2026-08-26
 
   - id: ka-gruha-jyothi
@@ -76,6 +168,17 @@ schemes:
     state: Karnataka
     ministry: Department of Energy
     category: Power & Welfare
-    official_url: https://sevasindhugs.karnataka.gov.in
-    source_url: https://sevasindhugs.karnataka.gov.in/PDF/Gruha_Jyothi_Kannada.pdf
+    summary: Zero electricity billing for domestic households in Karnataka consuming up to 200 units per month based on their calculated monthly entitlement.
+    benefit_amount: "Up to 200 units free power / month"
+    benefit_type: "Electricity Bill Subsidy"
+    required_documents:
+      - "Aadhaar Card"
+      - "Electricity Consumer Account ID (Account ID on Bill)"
+      - "Tenancy Agreement / Rental Deed (for tenants)"
+    application_mode: "online"
+    application_url: "https://sevasindhugs.karnataka.gov.in"
+    deadlines: "Rolling registration"
+    helpline: "1912"
+    official_url: "https://sevasindhugs.karnataka.gov.in"
+    source_url: "https://sevasindhugs.karnataka.gov.in/PDF/Gruha_Jyothi_Kannada.pdf"
     verified_on: 2026-08-26

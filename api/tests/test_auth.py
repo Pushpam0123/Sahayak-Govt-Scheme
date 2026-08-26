@@ -43,7 +43,7 @@ def test_admin_stats_forbidden(client: TestClient):
 
 
 def test_admin_stats_success(client: TestClient, mock_db: AsyncMock):
-    mock_db.scalar.side_effect = [9, 9, 9, 9, 150, 42, 1.25]
+    mock_db.scalar.side_effect = [9, 9, 9, 9, 150, 42, 1.25, 0]
     res = client.get(
         "/api/v1/admin/stats",
         headers={"X-Admin-Token": settings.ADMIN_TOKEN},

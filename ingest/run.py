@@ -101,6 +101,15 @@ async def ingest_scheme(db: AsyncSession, scheme_data: dict, force: bool = False
 
     logger.info(f"Ingesting scheme '{scheme_id}'...")
 
+    summary = scheme_data.get("summary")
+    benefit_amount = scheme_data.get("benefit_amount")
+    benefit_type = scheme_data.get("benefit_type")
+    required_documents = scheme_data.get("required_documents")
+    application_mode = scheme_data.get("application_mode")
+    application_url = scheme_data.get("application_url")
+    deadlines = scheme_data.get("deadlines")
+    helpline = scheme_data.get("helpline")
+
     # 3. Create or update Scheme model
     stmt_scheme = select(Scheme).where(Scheme.id == scheme_id)
     result_scheme = await db.execute(stmt_scheme)
@@ -114,6 +123,15 @@ async def ingest_scheme(db: AsyncSession, scheme_data: dict, force: bool = False
             category=category,
             ministry=ministry,
             official_url=official_url,
+            summary=summary,
+            benefit_amount=benefit_amount,
+            benefit_type=benefit_type,
+            required_documents=required_documents,
+            application_mode=application_mode,
+            application_url=application_url,
+            deadlines=deadlines,
+            helpline=helpline,
+            last_verified_at=fetch_result.fetched_at,
             status="active"
         )
         db.add(db_scheme)
@@ -125,6 +143,16 @@ async def ingest_scheme(db: AsyncSession, scheme_data: dict, force: bool = False
         db_scheme.category = category
         db_scheme.ministry = ministry
         db_scheme.official_url = official_url
+        db_scheme.summary = summary
+        db_scheme.benefit_amount = benefit_amount
+        db_scheme.benefit_type = benefit_type
+        db_scheme.required_documents = required_documents
+        db_scheme.application_mode = application_mode
+        db_scheme.application_url = application_url
+        db_scheme.deadlines = deadlines
+        db_scheme.helpline = helpline
+        if fetch_result.fetched_at:
+            db_scheme.last_verified_at = fetch_result.fetched_at
         db_scheme.status = "active"
 
     # 4. If document exists but checksum changed, delete the old document (cascade deletes old chunks)
