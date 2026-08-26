@@ -144,3 +144,42 @@ async def test_get_fts_search_db_calls() -> None:
     compiled_sql = str(stmt)
     assert "websearch_to_tsquery" in compiled_sql
     assert "state = :" in compiled_sql
+
+
+@pytest.mark.asyncio
+async def test_get_vector_search_excludes_unverified_documents() -> None:
+    """Chunks belonging to a document with verified_at IS NULL must never
+    be reachable through vector search."""
+    mock_db = AsyncMock(spec=AsyncSession)
+    mock_result = MagicMock()
+    mock_result.scalars().all.return_value = []
+    mock_db.execute.return_value = mock_result
+
+    from unittest.mock import patch
+
+    with patch("api.services.retrieval.get_embedder") as mock_get_embedder:
+        mock_embedder = MagicMock()
+        mock_embedder.embed_text.return_value = [0.1] * 1024
+        mock_get_embedder.return_value = mock_embedder
+
+        await get_vector_search(mock_db, "test query")
+
+    stmt = mock_db.execute.call_args[0][0]
+    compiled_sql = str(stmt)
+    assert "documents.verified_at IS NOT NULL" in compiled_sql
+
+
+@pytest.mark.asyncio
+async def test_get_fts_search_excludes_unverified_documents() -> None:
+    """Chunks belonging to a document with verified_at IS NULL must never
+    be reachable through full-text search."""
+    mock_db = AsyncMock(spec=AsyncSession)
+    mock_result = MagicMock()
+    mock_result.scalars().all.return_value = []
+    mock_db.execute.return_value = mock_result
+
+    await get_fts_search(mock_db, "test query")
+
+    stmt = mock_db.execute.call_args[0][0]
+    compiled_sql = str(stmt)
+    assert "documents.verified_at IS NOT NULL" in compiled_sql
