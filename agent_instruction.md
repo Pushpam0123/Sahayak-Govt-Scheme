@@ -3,7 +3,7 @@
 **From:** Opus (senior engineer — owns the plan, reviews every diff)
 **To:** `gemini_agent` (implementer)
 **Written:** 2026-08-26
-**Scope of this document:** everything through **Work Order B**. Do not begin C or D.
+**Scope of this document:** **Work Order B**, to be done in parallel with another agent's Work Order A. Do not begin C or D.
 
 Read these first, in order: this file → `PLAN.md` (§7 audit, §8 roadmap) → `HANDOFF.md`.
 
@@ -53,7 +53,7 @@ Four things went wrong, and this document exists so they don't repeat. None of t
 
 ## 3. Current state
 
-- **Branch:** `phase-0-truth`. All prior work is committed.
+- **Branch:** you work on `phase-b-nextjs` (see §4). `phase-0-truth` belongs to the other agent right now.
 - **Backend:** FastAPI, 70 passing tests. Run with `.venv/bin/python -m pytest`.
 - **Frontend:** React 19 + Vite + Tailwind v4. `cd web && npm run build`.
 - **Corpus:** nine verified schemes in `data/raw/`.
@@ -75,33 +75,48 @@ All under prefix `/api/v1`:
 
 ---
 
-## 4. ⛔ GATE — Work Order A is not yours
+## 4. ⛔ You are working in parallel with another agent
 
-**Another agent is currently implementing Work Order A. Do not touch it.** Specifically, do not modify:
+**A Sonnet agent is implementing Work Order A at the same time as you.** The two work orders have been deliberately split so your file sets do not overlap. Respect the boundary and the merge is trivial; cross it and one of you loses work.
 
-`ingest/fetcher.py` · `ingest/corpus.yaml` · `eval/golden/golden_set.yaml` · `EVALS.md` · `README.md` · any Alembic migration
+### Branch
 
-### Before you start B, verify A has landed
-
-Run these and confirm all four:
+**Create and work on `phase-b-nextjs`, branched from the current `phase-0-truth` HEAD:**
 
 ```bash
-git log --oneline -12                       # expect commits referencing TLS verification
-grep -n "verify=" ingest/fetcher.py         # must NOT be an unconditional verify=False
-grep -c "VOID" EVALS.md                     # void rows still marked
-tail -5 EVALS.md                            # expect a real, non-void baseline row
+git checkout phase-0-truth
+git pull --ff-only 2>/dev/null || true
+git checkout -b phase-b-nextjs
 ```
 
-**If A has not landed, stop and report that.** Do not start B on top of an unverified pipeline, and do not implement A yourself.
+**Never commit to `phase-0-truth`.** That branch belongs to the other agent for the duration of A. Do not merge, rebase onto, or cherry-pick from it while A is in flight — if you need something from A, ask me.
+
+### File ownership — absolute
+
+| Owner | Paths |
+| --- | --- |
+| **Sonnet (A)** | `ingest/**` · `api/**` · `eval/**` · `EVALS.md` · `README.md` · `infra/migrations/**` |
+| **You (B)** | `web/**` · `infra/Dockerfile.web` · the `web` service block in `infra/docker-compose.yml` |
+| **Opus (me)** | `PLAN.md` · `HANDOFF.md` · `agent_instruction.md` |
+
+**Do not edit a single file outside your column.** Not to fix a typo, not to add a type, not to correct something you can see is wrong. If you find a genuine problem in the backend, put it in your report and I will route it.
+
+If you need a backend change to finish B — a missing field, a broken endpoint — **stop and report it**. Do not implement it yourself and do not work around it with a hack.
+
+### The one contract between A and B
+
+A adds a `tls_verified` boolean indicating whether a source document was fetched over a certificate-verified connection. It surfaces in the scheme detail response and in citation metadata. **Rendering it is your job, in B.**
+
+A may not have landed by the time you need it. Code defensively: treat the field as **optional**, and when it is absent or `true`, render nothing. When it is explicitly `false`, show a short, plain, non-alarming note that the source could not be certificate-verified — this is a weaker provenance claim and the UI must say so. A missing field must never crash a page or render a scary warning.
 
 ---
 
-## 5. Work Order A — reference only, DO NOT IMPLEMENT
+## 5. Work Order A — context only, NOT YOURS
 
-Listed so you can verify it, and so you understand why B waits on it.
+You do not implement any of this. It is here so you understand the contract above and why the boundary exists.
 
-1. Restore TLS verification. On by default. Insecure retry only if the scheme opts in via **both** `tls_insecure: true` and a non-empty `tls_insecure_reason` in `corpus.yaml`; a flag without a reason is a configuration error. `tls_verified` is recorded in the sidecar and on the document row, and surfaced in the UI — an insecurely fetched document is a weaker claim and must say so.
-2. Re-fetch all nine documents with verification on and compare each SHA-256 against the hash in its existing sidecar. Any mismatch halts the work order.
+1. Restore TLS verification in the ingestion pipeline. On by default; insecure retry only when a scheme opts in via **both** `tls_insecure: true` and a non-empty `tls_insecure_reason`. `tls_verified` recorded in the provenance sidecar and on the document row.
+2. Re-fetch all nine documents with verification on and compare each SHA-256 against the hash already recorded. Any mismatch halts A.
 3. Run the eval and publish real numbers to `EVALS.md`, closing work order 0.7b.
 4. Correct the `pm-jjby` golden quote to a verbatim span.
 5. State the true scheme count in `README.md`.
@@ -210,7 +225,7 @@ Commit after each.
 - Navigating changes the URL; the browser back button works.
 - `/schemes/pm-kisan` loads directly on a cold browser and has scheme-specific `<title>` and OG tags. Check the served HTML, not just the rendered page.
 - No hydration warnings in the console.
-- `.venv/bin/python -m pytest` still passes — you should not have touched the backend, so a change here means something went wrong.
+- `.venv/bin/python -m pytest` still passes — you must not have touched the backend at all, so any change here means you crossed the boundary in §4.
 - Nothing looks different from before.
 
 ### 6.8 Report back with
@@ -222,7 +237,9 @@ Commit after each.
 5. The `<title>` and OG tags produced for two different schemes, pasted from the served HTML — proof metadata is per-scheme.
 6. Anything in this document that turned out to be wrong about the code.
 7. Any change you made outside the stated scope, and why it was forced.
-8. `git log --oneline` for your commits.
+8. Confirmation that you touched **no** file outside the `web/**` column in §4 — `git diff --name-only phase-0-truth..phase-b-nextjs` proves it. Paste the output.
+9. Any backend problem you noticed but correctly did not fix.
+10. `git log --oneline` for your commits.
 
 Then **stop and wait**. Work Order C (the public surfaces — homepage, services, audience pages, motion, share cards) begins only after I've reviewed B.
 
