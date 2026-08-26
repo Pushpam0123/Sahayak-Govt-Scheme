@@ -58,16 +58,26 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   let scheme: SchemeDetail | null = null;
+  let threw = false;
   try {
     scheme = await getSchemeData(slug);
   } catch {
-    scheme = null;
+    threw = true;
   }
 
-  if (!scheme) {
+  if (threw) {
+    return {
+      title: 'Sahayak',
+      robots: {
+        index: false,
+        follow: false,
+      },
+    };
+  }
+
+  if (scheme === null) {
     return {
       title: 'Scheme not found | Sahayak',
-      description: 'The requested scheme could not be found.',
       robots: {
         index: false,
         follow: false,
@@ -105,12 +115,7 @@ export default async function SchemePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  let initialScheme: SchemeDetail | null = null;
-  try {
-    initialScheme = await getSchemeData(slug);
-  } catch {
-    initialScheme = null;
-  }
+  const initialScheme = await getSchemeData(slug);
 
   if (initialScheme === null) {
     notFound();
