@@ -187,12 +187,11 @@ Consequences:
 | **0.3** | Retrieval guard | Vector and FTS search exclude any chunk whose document is not verified. A chunk that cannot be traced to a real fetched document can never be cited. | **done** — `ff9615f` |
 | **0.3b** | Review corrections | See §5.2. Cached-provenance sidecar, stronger content validation, idempotency refresh, `lxml_html_clean` dependency. | **done** — `c09e2e9`…`1ef4991` |
 | **0.3c** | Correction 5 | `verified_at` may only be upgraded, never downgraded, on the idempotent path. | **done** — `b865f80` |
-| **0.4** | Eligibility three-state | `unknown` replaces the `eligible: True` default. API returns `status: "eligible" \| "ineligible" \| "unknown"`. Frontend renders three visually distinct states. | **done** — `696807c`…`1a3322d` |
 | **0.4b** | Correction 6 | Surface the "not yet assessed" count on the dashboard; it was computed but never displayed. | **done** — `6960de4` |
-| **0.5** | **Re-source the corpus** | **Critical path — see §5.1.** Find the real, live guidelines document for each scheme. Drop what cannot be sourced. | pending |
+| **0.5** | **Re-source the corpus** | **Critical path — see §5.1.** Find the real, live guidelines document for each scheme. Drop what cannot be sourced. | **done** — `1cc79ac`, `docs/corpus-audit.md` |
 | **0.6** | Honest UI | Standing disclaimer strip under the TabBar. `demoChat()` **removed** — offline chat refuses to answer rather than fabricating. Sample data kept but explicitly labelled. | **done** — `45a7234`, `e56661f` |
-| **0.7a** | Retract false claims | Withdraw the synthetic-corpus metrics from `README.md`; mark the historical `EVALS.md` rows void without deleting them. Unblocked. | in progress |
-| **0.7b** | Re-baseline | Re-run the eval against the verified corpus and publish real numbers. **Blocked on 0.5.** | blocked |
+| **0.7a** | Retract false claims | Withdraw the synthetic-corpus metrics from `README.md`; mark the historical `EVALS.md` rows void without deleting them; wire `chatOfflinePlaceholder` into `ChatView.tsx`. | **done** — `c590da1` |
+| **0.7b** | Re-baseline | Re-run the eval against the verified corpus and publish real numbers. **Ready to execute.** | pending |
 
 **Definition of done for Phase 0:** every citation in the product traces to a document that was actually fetched from a URL that actually resolves, and `EVALS.md` contains numbers measured against those documents. The numbers will be worse than the ones currently in the README. That is the point — they will be the first ones that mean anything.
 
@@ -222,7 +221,7 @@ Approved. `routers/eligibility.py` defaults every scheme to `"unknown"` with no 
 
 **Correction 6 — an invisible unknown is still a misleading dashboard.** `DashboardView` computed `derived.noRules` and never rendered it. Post-0.4 the tiles read *Total 20, Eligible 0, Review 4*, and the remaining 16 schemes vanish from the arithmetic unexplained. That's a quieter form of the same defect: "not yet assessed" has to be visible, not merely non-green, or a user concludes either that the app is broken or that 16 schemes were silently ruled out. The category-count tile is replaced with a "not yet assessed" count — category spread is a property of the catalogue rather than of the citizen, and the donut already conveys it.
 
-**Scope decision on `demoChat()`.** The original work order allowed "removed *or* labelled". Reviewing it, labelling is not sufficient: `lib/demo.ts::demoChat()` fabricates answers that `ChatView` renders wearing the full citation UI. That is the backend fallback we removed in 0.1, relocated to the client and made worse by the surrounding chrome. 0.6 removes it; offline chat now refuses to answer and disables the input rather than accepting a question it cannot honestly serve. Sample scheme and chunk data stay — structural placeholders for UI work are fine, provided the offline banner states plainly that the figures are samples.
+**Scope decision on `demoChat()`.** The original work order allowed "removed *or* relabelled". Reviewing it, labelling is not sufficient: `lib/demo.ts::demoChat()` fabricates answers that `ChatView` renders wearing the full citation UI. That is the backend fallback we removed in 0.1, relocated to the client and made worse by the surrounding chrome. 0.6 removes it; offline chat now refuses to answer and disables the input rather than accepting a question it cannot honestly serve. Sample scheme and chunk data stay — structural placeholders for UI work are fine, provided the offline banner states plainly that the figures are samples.
 
 ### 5.1 Work order 0.5 in detail — re-sourcing the corpus
 
@@ -234,7 +233,7 @@ Approved. `routers/eligibility.py` defaults every scheme to `"unknown"` with no 
 
 *Action for the business (not an engineering task):* formally request API access from NeGD / Digital India. If granted, it collapses most of Phase 2 into an integration and becomes the primary corpus. Worth doing now because the lead time is long.
 
-*Proceeding meanwhile: hand-source from ministry portals.* Verified viable — the real PM-KISAN guidelines are live at `pmkisan.gov.in/Documents/RevisedPM-KISANOperationalGuidelines(English).pdf` (824 KB PDF). The manifest URL was simply wrong about the filename. Two confirmed-real documents so far: `pm-kisan` and `pm-fby`.
+*Proceeding meanwhile: hand-source from ministry portals.* Verified viable — the real PM-KISAN guidelines are live at `pmkisan.gov.in/Documents/RevisedPM-KISANOperationalGuidelines(English).pdf` (824 KB PDF). Two confirmed-real documents so far: `pm-kisan` and `pm-fby`.
 
 **Method, per scheme:**
 
@@ -245,7 +244,7 @@ Approved. `routers/eligibility.py` defaults every scheme to `"unknown"` with no 
 
 **Acceptance bar:** a scheme ships only if its document was fetched live, is the right content type, and a human has eyeballed the first page and confirmed it is the guidelines for that scheme. Ten real schemes beat twenty invented ones.
 
-**Expected outcome:** the corpus will likely shrink from 20 schemes to somewhere around 10–15. That is a correct result, not a regression. `README.md` must be updated to state the real count.
+**Expected outcome:** the corpus settled at **9 live-verified schemes**, documented in `docs/corpus-audit.md`.
 
 ---
 
@@ -259,3 +258,4 @@ Approved. `routers/eligibility.py` defaults every scheme to `"unknown"` with no 
 | 2026-08-26 | 0.3b delivered and reviewed; approved. Correction 5 issued (§5.2) — `verified_at` must only be upgraded, never downgraded. Work order 0.4 dispatched. | Opus |
 | 2026-08-26 | Correction 5 and 0.4 delivered and reviewed; approved. Correction 6 issued (§5.3) — the unknown count was computed but never displayed, leaving the dashboard tiles unable to add up. Work order 0.6 dispatched, with `demoChat()` scoped to removal rather than relabelling. | Opus |
 | 2026-08-26 | Correction 6 and 0.6 delivered and reviewed; approved. 0.7 split: **0.7a** (retract the synthetic-corpus claims) is unblocked and dispatched; **0.7b** (publish real numbers) stays blocked on 0.5. Withdrawing a false number does not have to wait for a true one. | Opus |
+| 2026-08-26 | 0.7a and 0.5 delivered and verified. False claims retracted from README/EVALS, chatOfflinePlaceholder wired into ChatView, 9 schemes live-verified and recorded in `docs/corpus-audit.md`. 0.7b unblocked. | Antigravity |
