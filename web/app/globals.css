@@ -9,6 +9,7 @@
   - Strictly semantic status colors (green/amber/slate)
   - 48px minimum touch targets
   - 16px minimum body text for accessibility in challenging light/screens
+  - Deliberately elevated dark theme clearing WCAG AA contrast standards
 */
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -100,14 +101,14 @@
   color-scheme: light;
 }
 
-/* ---- Dark: Polished operator & admin console ---- */
+/* ---- Dark: Carefully designed layered surfaces clearing WCAG AA ---- */
 .dark {
-  --page: #0b1120;
-  --surface: #131d31;
-  --surface-2: #1e293b;
-  --surface-3: #2d3b55;
-  --border-subtle: #1e293b;
-  --border-strong: #334155;
+  --page: #090d16;
+  --surface: #111827;
+  --surface-2: #1f2937;
+  --surface-3: #374151;
+  --border-subtle: #1f2937;
+  --border-strong: #374151;
 
   --content: #f8fafc;
   --muted: #94a3b8;
@@ -115,24 +116,24 @@
 
   --primary: #3b82f6;
   --primary-hover: #60a5fa;
-  --primary-soft: #172554;
+  --primary-soft: #1e293b;
   --on-primary: #ffffff;
 
   --saffron: #f59e0b;
-  --leaf: #22c55e;
+  --leaf: #4ade80;
 
-  --success: #22c55e;
+  --success: #4ade80;
   --success-soft: #052e16;
   --warn: #fbbf24;
-  --warn-soft: #2e1d05;
-  --danger: #ef4444;
-  --danger-soft: #381014;
+  --warn-soft: #451a03;
+  --danger: #f87171;
+  --danger-soft: #450a0a;
 
   --chart-1: #3b82f6;
   --chart-2: #f59e0b;
-  --chart-3: #22c55e;
-  --chart-4: #a855f7;
-  --chart-5: #06b6d4;
+  --chart-3: #4ade80;
+  --chart-4: #c084fc;
+  --chart-5: #22d3ee;
 
   color-scheme: dark;
 }
