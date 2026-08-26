@@ -1,24 +1,30 @@
 import type { Metadata } from 'next';
 import { SchemeClient } from './scheme-client';
-import type { SchemeDetail, SchemeInfo } from '../../../lib/types';
-import { DEMO_SCHEMES } from '../../../lib/demo';
+import type { SchemeDetail } from '../../../lib/types';
 
 export const dynamicParams = true;
 export const revalidate = 3600;
 
-async function getSchemeData(slug: string): Promise<SchemeDetail | SchemeInfo | null> {
+async function getSchemeData(slug: string): Promise<SchemeDetail | null> {
+  const apiBase = process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, '') ?? 'http://localhost:8000';
+  let res: Response;
   try {
-    const apiBase = process.env.NEXT_PUBLIC_API_BASE?.replace(/\/$/, '') ?? 'http://localhost:8000';
-    const res = await fetch(`${apiBase}/api/v1/schemes/${slug}`, {
+    res = await fetch(`${apiBase}/api/v1/schemes/${slug}`, {
       next: { revalidate: 3600 },
     });
-    if (!res.ok) {
-      return DEMO_SCHEMES.find((s) => s.id === slug) ?? null;
-    }
-    return (await res.json()) as SchemeDetail;
-  } catch {
-    return DEMO_SCHEMES.find((s) => s.id === slug) ?? null;
+  } catch (err) {
+    throw new Error(`Network error fetching scheme '${slug}': ${err instanceof Error ? err.message : String(err)}`);
   }
+
+  if (res.status === 404) {
+    return null;
+  }
+
+  if (!res.ok) {
+    throw new Error(`API error fetching scheme '${slug}': HTTP ${res.status}`);
+  }
+
+  return (await res.json()) as SchemeDetail;
 }
 
 export async function generateStaticParams() {
@@ -47,7 +53,12 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const scheme = await getSchemeData(slug);
+  let scheme: SchemeDetail | null = null;
+  try {
+    scheme = await getSchemeData(slug);
+  } catch {
+    scheme = null;
+  }
 
   if (!scheme) {
     return {
@@ -84,11 +95,12 @@ export default async function SchemePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const schemeData = await getSchemeData(slug);
-  const initialScheme =
-    schemeData && 'required_documents' in schemeData
-      ? (schemeData as SchemeDetail)
-      : null;
+  let initialScheme: SchemeDetail | null = null;
+  try {
+    initialScheme = await getSchemeData(slug);
+  } catch {
+    initialScheme = null;
+  }
 
   return <SchemeClient slug={slug} initialScheme={initialScheme} />;
 }
