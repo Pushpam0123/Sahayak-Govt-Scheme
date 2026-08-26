@@ -10,11 +10,19 @@
 import type { ChunkResult, EligibilityMap, SchemeInfo } from './types';
 
 export const DEMO_SCHEMES: SchemeInfo[] = [
-  { id: 'pm-kisan', name: 'PM-KISAN Samman Nidhi', state: 'Central', category: 'Agriculture' },
-  { id: 'pmmvy', name: 'Pradhan Mantri Matru Vandana Yojana', state: 'Central', category: 'Women & Child Development' },
+  { id: 'pm-kisan', name: 'PM-KISAN Samman Nidhi', state: 'Central', category: 'Agriculture', benefit_amount: '₹6,000 / year', summary: 'Direct income support of ₹6,000 per year for landholding farmer families across India.' },
+  { id: 'pm-fby', name: 'Pradhan Mantri Fasal Bima Yojana', state: 'Central', category: 'Agriculture', benefit_amount: 'Crop Insurance Coverage', summary: 'Comprehensive crop insurance coverage against non-preventable natural risks.' },
+  { id: 'pm-jjby', name: 'Pradhan Mantri Jeevan Jyoti Bima Yojana', state: 'Central', category: 'Social Security', benefit_amount: '₹2,00,000 Life Cover', summary: 'Life insurance cover of ₹2,00,000 for death due to any reason at ₹436/year premium.' },
+  { id: 'pm-sby', name: 'Pradhan Mantri Suraksha Bima Yojana', state: 'Central', category: 'Social Security', benefit_amount: '₹2,00,000 Accident Cover', summary: 'Accidental death and disability insurance cover of up to ₹2,00,000 at ₹20/year premium.' },
+  { id: 'atal-pension-yojana', name: 'Atal Pension Yojana', state: 'Central', category: 'Pension', benefit_amount: '₹1,000 - ₹5,000 / month', summary: 'Guaranteed monthly pension for unorganised sector citizens between ages 18 to 40.' },
+  { id: 'pm-matru-vandana', name: 'Pradhan Mantri Matru Vandana Yojana', state: 'Central', category: 'Women & Child Development', benefit_amount: '₹5,000 Direct Benefit', summary: 'Maternity benefit cash incentive of ₹5,000 for pregnant women and lactating mothers.' },
+  { id: 'stand-up-india', name: 'Stand-Up India Scheme', state: 'Central', category: 'Financial Inclusion', benefit_amount: '₹10 Lakh - ₹1 Crore Loan', summary: 'Bank loans between ₹10 lakh and ₹1 crore to SC/ST and women borrowers for greenfield enterprises.' },
+  { id: 'mp-ladli-behna', name: 'Mukhyamantri Ladli Behna Yojana', state: 'Madhya Pradesh', category: 'Women & Child Development', benefit_amount: '₹1,250 / month', summary: 'Financial assistance of ₹1,250 per month directly deposited to eligible women in Madhya Pradesh.' },
+  { id: 'ka-gruha-jyothi', name: 'Gruha Jyothi Scheme', state: 'Karnataka', category: 'Energy & Welfare', benefit_amount: 'Up to 200 Units Free Electricity', summary: 'Zero electricity charges for monthly household consumption up to 200 units in Karnataka.' },
+  { id: 'pmmvy', name: 'Pradhan Mantri Matru Vandana Yojana (Legacy)', state: 'Central', category: 'Women & Child Development' },
   { id: 'nsap-igndps', name: 'Indira Gandhi National Disability Pension', state: 'Central', category: 'Pension' },
   { id: 'pm-scholarship', name: 'Post-Matric Scholarship (SC)', state: 'Central', category: 'Education' },
-  { id: 'ladli-behna', name: 'Mukhyamantri Ladli Behna Yojana', state: 'Madhya Pradesh', category: 'Welfare' },
+  { id: 'ladli-behna', name: 'Mukhyamantri Ladli Behna Yojana (Legacy)', state: 'Madhya Pradesh', category: 'Welfare' },
   { id: 'kalia', name: 'KALIA Farmer Support Scheme', state: 'Odisha', category: 'Agriculture' },
   { id: 'rythu-bandhu', name: 'Rythu Bandhu Investment Support', state: 'Telangana', category: 'Agriculture' },
   { id: 'kanyashree', name: 'Kanyashree Prakalpa', state: 'West Bengal', category: 'Education' },
