@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import { SchemeClient } from './scheme-client';
 import type { SchemeDetail } from '../../../lib/types';
 
@@ -62,15 +63,21 @@ export async function generateMetadata({
 
   if (!scheme) {
     return {
-      title: `${slug.toUpperCase()} — Scheme Details | Sahayak`,
-      description: `Official government scheme information and eligibility criteria for ${slug}.`,
+      title: 'Scheme not found | Sahayak',
+      description: 'The requested scheme could not be found.',
+      robots: {
+        index: false,
+        follow: false,
+      },
     };
   }
 
   const title = `${scheme.name} — Eligibility & Benefits | Sahayak`;
   const description =
     scheme.summary ||
-    `Official government welfare scheme ${scheme.name} in ${scheme.state}. Benefit amount: ${scheme.benefit_amount || 'Financial Assistance'}.`;
+    (scheme.benefit_amount
+      ? `Government welfare scheme ${scheme.name} in ${scheme.state}. Benefit amount: ${scheme.benefit_amount}.`
+      : `Government welfare scheme ${scheme.name} in ${scheme.state}.`);
   const canonicalUrl = `https://sahayak.gov.in/schemes/${slug}`;
 
   return {
@@ -100,6 +107,10 @@ export default async function SchemePage({
     initialScheme = await getSchemeData(slug);
   } catch {
     initialScheme = null;
+  }
+
+  if (initialScheme === null) {
+    notFound();
   }
 
   return <SchemeClient slug={slug} initialScheme={initialScheme} />;
