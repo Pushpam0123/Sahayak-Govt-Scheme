@@ -348,3 +348,43 @@ The UI portion of A1 moved into B. A now stops at **exposing `tls_verified` in t
 Branches: A stays on `phase-0-truth`; B works on `phase-b-nextjs` branched from its current HEAD. Because the file sets are disjoint the merge is mechanical.
 
 The original reasoning for A-before-B still stands on its merits — not building a new frontend on a pipeline that trusts any server claiming to be a government — but parallelising is acceptable here because B cannot make the TLS problem worse, and A's fix lands well before anything ships.
+
+---
+
+## 9. Worktree protocol (2026-08-26)
+
+### What went wrong
+
+Work orders A and B ran in parallel on separate branches but in **one shared working directory**. Branches do not isolate a filesystem: when the B agent ran `git checkout phase-b-nextjs`, it silently moved the A agent's checkout too. Consequences, both real:
+
+- An A commit landed on `phase-b-nextjs` instead of `phase-0-truth` and had to be cherry-picked back, leaving a duplicate commit that then had to be dropped.
+- The B agent spent a long stretch mid-migration — the entire `web/src/**` tree deleted, nothing committed — while `HEAD` pointed at `phase-0-truth`. One stray `checkout`, `reset` or `stash` would have destroyed the work.
+
+This was a planning error, not an agent error. Disjoint file ownership was necessary but not sufficient; parallel agents need **physically separate directories**.
+
+### The layout
+
+| Directory | Branch | Owner |
+| --- | --- | --- |
+| `Sahayak-Govt-Scheme/` | `phase-b-nextjs` | frontend agent (work orders B, C) |
+| `../sahayak-backend/` | `phase-0-truth` | backend agent (work order A, Phase 1 re-verification) |
+
+Created with `git worktree add ../sahayak-backend phase-0-truth`. A checkout in one worktree cannot move the other — that is the whole point.
+
+### Setup for a new worktree
+
+`.venv/` and `data/` are gitignored, so a fresh worktree has neither. Symlink rather than duplicate — the corpus is a URL-keyed content cache and sharing it avoids re-downloading 14 MB:
+
+```bash
+ln -s ../Sahayak-Govt-Scheme/.venv .venv
+mkdir -p data && ln -s ../../Sahayak-Govt-Scheme/data/raw data/raw
+```
+
+Verified working: `76 passed` from the backend worktree with all nine corpus PDFs visible.
+
+### Rules for parallel agents
+
+1. **One agent per worktree.** Never two agents in one directory, whatever the branch discipline says.
+2. **Agents never switch branches.** Each is created in its worktree, on its branch, and stays there. If an agent thinks it needs to `checkout`, `merge`, `rebase`, `stash` or `reset`, it stops and reports.
+3. **Commit early and often.** Frequent small commits are the only real protection against a directory-level accident.
+4. **File ownership still applies** (§8) — the worktree makes collisions impossible rather than merely forbidden, but the ownership table remains the source of truth for who changes what.
