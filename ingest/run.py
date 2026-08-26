@@ -3,7 +3,7 @@ import yaml
 import asyncio
 import logging
 import argparse
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import select, delete, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -36,13 +36,45 @@ async def ingest_scheme(db: AsyncSession, scheme_data: dict, force: bool = False
     source_url = scheme_data["source_url"]
 
     # 1. Fetch guideline file
-    file_path, doc_type, checksum = fetch_scheme_guidelines(scheme_id, source_url)
-    
+    fetch_result = fetch_scheme_guidelines(scheme_id, source_url)
+
+    if fetch_result.status == "failed":
+        logger.warning(
+            f"Failed to fetch guidelines for scheme '{scheme_id}' from {source_url}: "
+            f"{fetch_result.error} (http_status={fetch_result.http_status}). "
+            "Skipping ingestion - no Document will be created."
+        )
+        # Ensure the Scheme row exists, marked unverified. No Document or
+        # chunks are created and nothing is indexed.
+        stmt_scheme = select(Scheme).where(Scheme.id == scheme_id)
+        result_scheme = await db.execute(stmt_scheme)
+        db_scheme = result_scheme.scalars().first()
+
+        if not db_scheme:
+            db_scheme = Scheme(
+                id=scheme_id,
+                name=name,
+                state=state,
+                category=category,
+                ministry=ministry,
+                official_url=official_url,
+                status="unverified",
+            )
+            db.add(db_scheme)
+            await db.flush()
+        else:
+            db_scheme.status = "unverified"
+        return
+
+    checksum = fetch_result.checksum
+    file_path = fetch_result.file_path
+    doc_type = fetch_result.doc_type
+
     # 2. Check if document already exists with same checksum (Idempotency)
     stmt = select(Document).where(Document.checksum == checksum)
     result = await db.execute(stmt)
     existing_doc = result.scalars().first()
-    
+
     if existing_doc and not force:
         logger.info(f"Skipping scheme '{scheme_id}': Document matches checksum {checksum}")
         return
@@ -53,7 +85,7 @@ async def ingest_scheme(db: AsyncSession, scheme_data: dict, force: bool = False
     stmt_scheme = select(Scheme).where(Scheme.id == scheme_id)
     result_scheme = await db.execute(stmt_scheme)
     db_scheme = result_scheme.scalars().first()
-    
+
     if not db_scheme:
         db_scheme = Scheme(
             id=scheme_id,
@@ -73,6 +105,7 @@ async def ingest_scheme(db: AsyncSession, scheme_data: dict, force: bool = False
         db_scheme.category = category
         db_scheme.ministry = ministry
         db_scheme.official_url = official_url
+        db_scheme.status = "active"
 
     # 4. If document exists but checksum changed, delete the old document (cascade deletes old chunks)
     if existing_doc:
@@ -97,8 +130,11 @@ async def ingest_scheme(db: AsyncSession, scheme_data: dict, force: bool = False
         source_url=source_url,
         doc_type=doc_type,
         lang="en",
-        fetched_at=datetime.utcnow(),
-        checksum=checksum
+        fetched_at=datetime.now(timezone.utc),
+        checksum=checksum,
+        fetch_status=fetch_result.status,
+        verified_at=fetch_result.fetched_at if fetch_result.status == "fetched" else None,
+        content_sha256=fetch_result.content_sha256,
     )
     db.add(db_doc)
     await db.flush()  # Populates db_doc.id
