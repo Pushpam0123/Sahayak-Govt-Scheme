@@ -13,13 +13,30 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from api.db import AsyncSessionLocal, engine
 from api.models.scheme import Scheme, Document, Chunk
-from ingest.fetcher import fetch_scheme_guidelines
+from ingest.fetcher import FetchResult, fetch_scheme_guidelines
 from ingest.cleaner import clean_document
 from ingest.chunker import chunk_document
 from ingest.embedder import get_embedder
 
 logger = logging.getLogger("sahayak.ingest.run")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+
+
+def _naive_utc(dt: datetime | None) -> datetime | None:
+    """Strips tzinfo from a timezone-aware UTC datetime before writing it
+    to a DateTime (not DateTime(timezone=True)) column. Scheme.last_verified_at
+    and Document.fetched_at/verified_at are all declared as naive DateTime,
+    while fetch_scheme_guidelines() and datetime.now(timezone.utc) throughout
+    this module produce timezone-aware values - asyncpg rejects the mismatch
+    outright ("can't subtract offset-naive and offset-aware datetimes"), so
+    this predates any Phase 0 change and would have failed on the very first
+    live-database ingest. Pre-existing bug, fixed narrowly here rather than
+    changing column types app-wide."""
+    if dt is None:
+        return None
+    if dt.tzinfo is not None:
+        return dt.astimezone(timezone.utc).replace(tzinfo=None)
+    return dt
 
 async def load_corpus_manifest(manifest_path: str = "ingest/corpus.yaml") -> list[dict]:
     with open(manifest_path, "r") as f:
@@ -35,8 +52,35 @@ async def ingest_scheme(db: AsyncSession, scheme_data: dict, force: bool = False
     official_url = scheme_data.get("official_url")
     source_url = scheme_data["source_url"]
 
-    # 1. Fetch guideline file
-    fetch_result = fetch_scheme_guidelines(scheme_id, source_url)
+    # 1. Validate and resolve the per-scheme TLS opt-in. tls_insecure and
+    # tls_insecure_reason must appear together with a non-empty reason -
+    # nobody sets this flag silently. A malformed opt-in is a config error
+    # and fails this scheme's fetch outright rather than being ignored or
+    # silently allowed.
+    tls_insecure = bool(scheme_data.get("tls_insecure", False))
+    tls_insecure_reason = (scheme_data.get("tls_insecure_reason") or "").strip()
+    if tls_insecure and not tls_insecure_reason:
+        logger.error(
+            f"Scheme '{scheme_id}' sets tls_insecure: true without a non-empty "
+            "tls_insecure_reason. Refusing to fetch. Fix ingest/corpus.yaml."
+        )
+        fetch_result = FetchResult(
+            status="failed",
+            error=(
+                "Configuration error: tls_insecure requires a non-empty "
+                "tls_insecure_reason"
+            ),
+        )
+    else:
+        if tls_insecure:
+            logger.info(
+                f"Scheme '{scheme_id}' has opted into insecure TLS fallback: "
+                f"{tls_insecure_reason}"
+            )
+        # 2. Fetch guideline file
+        fetch_result = fetch_scheme_guidelines(
+            scheme_id, source_url, allow_insecure_fallback=tls_insecure
+        )
 
     if fetch_result.status == "failed":
         logger.warning(
@@ -89,12 +133,15 @@ async def ingest_scheme(db: AsyncSession, scheme_data: dict, force: bool = False
         # make an earlier verified fetch not have happened. fetch_status
         # rides along with verified_at: a stored "fetched" is never
         # overwritten by this run's "cached" unless it's a genuine upgrade.
-        if fetch_result.fetched_at is not None and (
+        # tls_verified rides along too - it describes the same evidence.
+        new_verified_at = _naive_utc(fetch_result.fetched_at)
+        if new_verified_at is not None and (
             existing_doc.verified_at is None
-            or fetch_result.fetched_at > existing_doc.verified_at
+            or new_verified_at > existing_doc.verified_at
         ):
-            existing_doc.verified_at = fetch_result.fetched_at
+            existing_doc.verified_at = new_verified_at
             existing_doc.fetch_status = fetch_result.status
+            existing_doc.tls_verified = fetch_result.tls_verified
         existing_doc.content_sha256 = fetch_result.content_sha256
         logger.info(f"Skipping scheme '{scheme_id}': Document matches checksum {checksum}")
         return
@@ -131,7 +178,7 @@ async def ingest_scheme(db: AsyncSession, scheme_data: dict, force: bool = False
             application_url=application_url,
             deadlines=deadlines,
             helpline=helpline,
-            last_verified_at=fetch_result.fetched_at,
+            last_verified_at=_naive_utc(fetch_result.fetched_at),
             status="active"
         )
         db.add(db_scheme)
@@ -152,7 +199,7 @@ async def ingest_scheme(db: AsyncSession, scheme_data: dict, force: bool = False
         db_scheme.deadlines = deadlines
         db_scheme.helpline = helpline
         if fetch_result.fetched_at:
-            db_scheme.last_verified_at = fetch_result.fetched_at
+            db_scheme.last_verified_at = _naive_utc(fetch_result.fetched_at)
         db_scheme.status = "active"
 
     # 4. If document exists but checksum changed, delete the old document (cascade deletes old chunks)
@@ -178,11 +225,12 @@ async def ingest_scheme(db: AsyncSession, scheme_data: dict, force: bool = False
         source_url=source_url,
         doc_type=doc_type,
         lang="en",
-        fetched_at=datetime.now(timezone.utc),
+        fetched_at=_naive_utc(datetime.now(timezone.utc)),
         checksum=checksum,
         fetch_status=fetch_result.status,
-        verified_at=fetch_result.fetched_at,
+        verified_at=_naive_utc(fetch_result.fetched_at),
         content_sha256=fetch_result.content_sha256,
+        tls_verified=fetch_result.tls_verified,
     )
     db.add(db_doc)
     await db.flush()  # Populates db_doc.id

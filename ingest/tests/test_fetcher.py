@@ -182,3 +182,114 @@ def test_pdf_without_magic_bytes_is_rejected_even_if_large() -> None:
 
     assert result.status == "failed"
     assert "magic bytes" in (result.error or "")
+
+
+# --------------------------------------------------------------------------
+# TLS verification (Work Order A1): on by default, opt-in-only insecure retry
+# --------------------------------------------------------------------------
+
+TLS_ERROR = Exception(
+    "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: "
+    "unable to get local issuer certificate (_ssl.c:997)"
+)
+
+
+def test_default_fetch_verifies_tls() -> None:
+    """A normal successful fetch verifies certificates and is marked as such."""
+    with _patched_client(response=_mock_response(200, VALID_HTML_CONTENT)) as mock_client_cls:
+        result = fetch_scheme_guidelines("some-scheme", "https://example.gov.in/guidelines.html")
+
+    assert result.status == "fetched"
+    assert result.tls_verified is True
+    # Only ever attempted once, with verify=True - no opt-in was given.
+    assert len(mock_client_cls.call_args_list) == 1
+    _, kwargs = mock_client_cls.call_args_list[0]
+    assert kwargs["verify"] is True
+
+
+def test_tls_error_without_opt_in_fails_and_never_retries_insecurely() -> None:
+    with _patched_client(side_effect=TLS_ERROR):
+        result = fetch_scheme_guidelines(
+            "some-scheme", "https://example.gov.in/guidelines.html", allow_insecure_fallback=False
+        )
+
+    assert result.status == "failed"
+    assert result.tls_verified is True  # default; nothing was ever fetched
+
+
+def test_tls_error_with_opt_in_retries_insecurely_and_is_marked_unverified(tmp_path) -> None:
+    scheme_id = "some-scheme"
+    with _patched_client(side_effect=[TLS_ERROR, _mock_response(200, VALID_HTML_CONTENT)]):
+        result = fetch_scheme_guidelines(
+            scheme_id, "https://example.gov.in/guidelines.html", allow_insecure_fallback=True
+        )
+
+    assert result.status == "fetched"
+    assert result.tls_verified is False
+    assert os.path.exists(f"{result.file_path}.meta.json")
+
+
+def test_non_tls_error_with_opt_in_does_not_trigger_insecure_retry() -> None:
+    """The opt-in only covers TLS/certificate failures - a DNS failure, timeout,
+    or connection refused must never trigger the insecure retry regardless of
+    the flag."""
+    with _patched_client(side_effect=Exception("Connection refused")) as mock_client_cls:
+        result = fetch_scheme_guidelines(
+            "some-scheme", "https://example.gov.in/guidelines.html", allow_insecure_fallback=True
+        )
+
+    assert result.status == "failed"
+    assert len(mock_client_cls.call_args_list) == 1  # no second, insecure attempt
+
+
+def test_cached_fallback_carries_tls_verified_through_sidecar() -> None:
+    """Mirrors the fetched_at regression test: an insecurely-fetched-but-cached
+    document must still report tls_verified=False on the next run, not silently
+    default back to True."""
+    scheme_id = "some-scheme"
+    source_url = "https://example.gov.in/guidelines.html"
+
+    with _patched_client(side_effect=[TLS_ERROR, _mock_response(200, VALID_HTML_CONTENT)]):
+        first = fetch_scheme_guidelines(scheme_id, source_url, allow_insecure_fallback=True)
+    assert first.tls_verified is False
+
+    with _patched_client(side_effect=Exception("Connection refused")):
+        second = fetch_scheme_guidelines(scheme_id, source_url, allow_insecure_fallback=True)
+
+    assert second.status == "cached"
+    assert second.fetched_at is not None
+    assert second.tls_verified is False
+
+
+def test_old_sidecar_without_tls_verified_field_is_treated_as_unverified(tmp_path) -> None:
+    """A sidecar written before tls_verified existed carries no evidence either
+    way - treated as False (unknown is not verified), not True."""
+    scheme_id = "some-scheme"
+    source_url = "https://example.gov.in/guidelines.html"
+    cached_path = os.path.join(str(tmp_path), f"{scheme_id}.html")
+    with open(cached_path, "wb") as f:
+        f.write(VALID_HTML_CONTENT)
+
+    import hashlib
+    import json
+
+    content_sha256 = hashlib.sha256(VALID_HTML_CONTENT).hexdigest()
+    with open(f"{cached_path}.meta.json", "w") as f:
+        json.dump(
+            {
+                "source_url": source_url,
+                "fetched_at": "2026-01-01T00:00:00+00:00",
+                "http_status": 200,
+                "content_sha256": content_sha256,
+                "doc_type": "html",
+                # no tls_verified key - pre-A1 sidecar
+            },
+            f,
+        )
+
+    with _patched_client(side_effect=Exception("Connection refused")):
+        result = fetch_scheme_guidelines(scheme_id, source_url)
+
+    assert result.status == "cached"
+    assert result.fetched_at is not None
+    assert result.tls_verified is False

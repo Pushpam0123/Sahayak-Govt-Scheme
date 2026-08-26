@@ -202,6 +202,7 @@ async def get_grounded_answer(
                             if len(chunk.text) > 150
                             else chunk.text
                         ),
+                        "tls_verified": doc.tls_verified if doc else True,
                     }
                 )
 
@@ -345,6 +346,7 @@ async def stream_grounded_answer(
                 ),
                 "heading_path": chunk.heading_path or (doc.title if doc else "Document"),
                 "quote": chunk.text[:150] + "..." if len(chunk.text) > 150 else chunk.text,
+                "tls_verified": doc.tls_verified if doc else True,
             }
         )
 

@@ -104,7 +104,10 @@ async def test_ingest_scheme_upgrades_verified_at_on_idempotent_checksum_match()
         await ingest_scheme(mock_db, SCHEME_DATA, force=False)
 
     assert existing_doc.fetch_status == "fetched"
-    assert existing_doc.verified_at == verified_time
+    # Document.verified_at is a naive DateTime column (not DateTime(timezone=True));
+    # asyncpg rejects a tz-aware value outright, so ingest_scheme strips tzinfo
+    # before assigning. The upgraded value is the same instant, naive.
+    assert existing_doc.verified_at == verified_time.replace(tzinfo=None)
     assert existing_doc.content_sha256 == "new-sha256"
     # No new Document (or anything else) was created - this was an
     # in-place upgrade of the existing row.

@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text, text
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB, TSVECTOR
 from sqlalchemy.orm import relationship
 
@@ -65,6 +65,10 @@ class Document(Base):
         DateTime, nullable=True
     )  # set only when fetched live and successfully from a real URL
     content_sha256 = Column(String, nullable=True)
+    tls_verified = Column(
+        Boolean, nullable=False, server_default=text("true")
+    )  # False if the fetch only succeeded after an explicit, opted-in
+    # insecure (certificate-unverified) retry - see ingest/fetcher.py
 
     scheme = relationship("Scheme", back_populates="documents")
     chunks = relationship(

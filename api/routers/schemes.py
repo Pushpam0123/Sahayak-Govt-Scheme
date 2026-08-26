@@ -112,6 +112,7 @@ async def get_scheme_detail(
                 "fetch_status": d.fetch_status,
                 "verified_at": d.verified_at.isoformat() if d.verified_at else None,
                 "content_sha256": d.content_sha256,
+                "tls_verified": d.tls_verified,
             }
             for d in docs
         ],
