@@ -124,9 +124,25 @@ async def get_grounded_answer(
             "correctly attached to your sentences."
         )
 
-    # 5. Invoke LLM client
+    # 5. Fetch previous dialogue history for session if provided
+    history_messages: List[Dict[str, str]] = []
+    if session_id:
+        history_stmt = (
+            select(QALog)
+            .where(QALog.session_id == session_id)
+            .order_by(QALog.created_at.desc())
+            .limit(3)
+        )
+        history_res = await db.execute(history_stmt)
+        past_logs = history_res.scalars().all()
+        for log in reversed(past_logs):
+            history_messages.append({"role": "user", "content": log.question})
+            history_messages.append({"role": "assistant", "content": log.answer})
+
+    messages = history_messages + [{"role": "user", "content": query}]
+
+    # 6. Invoke LLM client
     llm_client = get_llm_client()
-    messages = [{"role": "user", "content": query}]
 
     start_time = time.perf_counter()
     response = await llm_client.generate_response(
@@ -358,9 +374,25 @@ async def stream_grounded_answer(
             "correctly attached to your sentences."
         )
 
-    # 6. Stream tokens
+    # 6. Fetch previous dialogue history for session if provided
+    history_messages: List[Dict[str, str]] = []
+    if session_id:
+        history_stmt = (
+            select(QALog)
+            .where(QALog.session_id == session_id)
+            .order_by(QALog.created_at.desc())
+            .limit(3)
+        )
+        history_res = await db.execute(history_stmt)
+        past_logs = history_res.scalars().all()
+        for log in reversed(past_logs):
+            history_messages.append({"role": "user", "content": log.question})
+            history_messages.append({"role": "assistant", "content": log.answer})
+
+    messages = history_messages + [{"role": "user", "content": query}]
+
+    # 7. Stream tokens
     llm_client = get_llm_client()
-    messages = [{"role": "user", "content": query}]
 
     accumulated_text = ""
     async for token in llm_client.stream_response(

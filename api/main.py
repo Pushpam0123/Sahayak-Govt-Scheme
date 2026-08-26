@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 from api.config import settings
 from api.exceptions import SahayakError
 from api.middleware.rate_limiter import RateLimitMiddleware
-from api.routers import chat, eligibility, health, search, usage
+from api.routers import admin, chat, eligibility, health, search, usage
 
 logger = logging.getLogger("sahayak.api")
 
@@ -77,6 +77,7 @@ app.include_router(search.router, prefix="/api/v1", tags=["search"])
 app.include_router(chat.router, prefix="/api/v1", tags=["chat"])
 app.include_router(eligibility.router, prefix="/api/v1", tags=["eligibility"])
 app.include_router(usage.router, prefix="/api/v1", tags=["usage"])
+app.include_router(admin.router, prefix="/api/v1")
 
 
 @app.get("/")
