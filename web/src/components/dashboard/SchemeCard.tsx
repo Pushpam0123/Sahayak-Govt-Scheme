@@ -14,7 +14,11 @@ export function SchemeCard({
   scheme: SchemeInfo;
   eligibility?: EligibilityStatus;
 }) {
-  const eligible = eligibility?.eligible;
+  // "unknown" covers both a scheme the eligibility map has no entry for yet
+  // (no profile match run) and one the backend explicitly marked unknown
+  // (no verified rules for it). Both read the same way to the citizen: we
+  // don't have a verdict, not a soft "no".
+  const status = eligibility?.status ?? 'unknown';
 
   return (
     <div className="flex flex-col rounded-xl border border-border-subtle bg-surface p-4 transition-colors hover:border-border-strong">
@@ -36,22 +40,20 @@ export function SchemeCard({
           </div>
         </div>
 
-        {eligibility ? (
-          eligible ? (
-            <Badge tone="success">
-              <CheckIcon className="h-3 w-3" /> {t.eligible}
-            </Badge>
-          ) : (
-            <Badge tone="danger">
-              <AlertIcon className="h-3 w-3" /> {t.ineligible}
-            </Badge>
-          )
+        {status === 'eligible' ? (
+          <Badge tone="success">
+            <CheckIcon className="h-3 w-3" /> {t.eligible}
+          </Badge>
+        ) : status === 'ineligible' ? (
+          <Badge tone="danger">
+            <AlertIcon className="h-3 w-3" /> {t.ineligible}
+          </Badge>
         ) : (
           <Badge tone="neutral">{t.noRules}</Badge>
         )}
       </div>
 
-      {eligibility && !eligible && eligibility.failed_rules.length > 0 ? (
+      {status === 'ineligible' && eligibility && eligibility.failed_rules.length > 0 ? (
         <div className="mt-3 rounded-lg bg-danger-soft px-3 py-2">
           <p className="mb-1 text-[11px] font-semibold text-danger">
             {t.failedCriteria}
@@ -64,7 +66,7 @@ export function SchemeCard({
         </div>
       ) : null}
 
-      {eligible ? (
+      {status === 'eligible' ? (
         <p className="mt-3 flex items-center gap-1.5 text-[11px] font-medium text-success">
           <CheckIcon className="h-3.5 w-3.5" /> {t.matchesProfile}
         </p>

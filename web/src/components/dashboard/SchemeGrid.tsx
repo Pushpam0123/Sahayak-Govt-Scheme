@@ -20,17 +20,18 @@ export function SchemeGrid({
   const [filter, setFilter] = useState<FilterKey>('all');
 
   const ordered = useMemo(() => {
+    const statusOf = (s: SchemeInfo) => eligibility[s.id]?.status ?? 'unknown';
     const rank = (s: SchemeInfo) => {
-      const e = eligibility[s.id];
-      if (e?.eligible) return 0;
-      if (e && !e.eligible) return 1;
+      const status = statusOf(s);
+      if (status === 'eligible') return 0;
+      if (status === 'ineligible') return 1;
       return 2;
     };
     return [...schemes]
       .filter((s) => {
-        const e = eligibility[s.id];
-        if (filter === 'eligible') return e?.eligible === true;
-        if (filter === 'ineligible') return e ? !e.eligible : false;
+        const status = statusOf(s);
+        if (filter === 'eligible') return status === 'eligible';
+        if (filter === 'ineligible') return status === 'ineligible';
         return true;
       })
       .sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name));

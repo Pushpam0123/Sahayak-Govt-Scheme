@@ -69,8 +69,10 @@ export interface ChatResponse {
   latency_ms?: number;
 }
 
+export type EligibilityVerdict = 'eligible' | 'ineligible' | 'unknown';
+
 export interface EligibilityStatus {
-  eligible: boolean;
+  status: EligibilityVerdict;
   failed_rules: string[];
 }
 

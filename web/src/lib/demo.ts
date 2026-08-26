@@ -23,35 +23,31 @@ export const DEMO_SCHEMES: SchemeInfo[] = [
 // Eligibility against the default profile
 // (age 30, Madhya Pradesh, Female, General, ₹1.8L income, 2.5 acres).
 export const DEMO_ELIGIBILITY: EligibilityMap = {
-  'pm-kisan': { eligible: true, failed_rules: [] },
-  pmmvy: { eligible: true, failed_rules: [] },
-  'ladli-behna': { eligible: true, failed_rules: [] },
+  'pm-kisan': { status: 'eligible', failed_rules: [] },
+  pmmvy: { status: 'eligible', failed_rules: [] },
+  'ladli-behna': { status: 'eligible', failed_rules: [] },
   'nsap-igndps': {
-    eligible: false,
+    status: 'ineligible',
     failed_rules: [
       'Requires a BPL household — income is above the limit',
       'Requires a certified disability of 80% or more',
     ],
   },
   'pm-scholarship': {
-    eligible: false,
+    status: 'ineligible',
     failed_rules: ['Caste category must be SC'],
   },
   kalia: {
-    eligible: false,
+    status: 'ineligible',
     failed_rules: ['Applicant must reside in Odisha'],
   },
   'rythu-bandhu': {
-    eligible: false,
+    status: 'ineligible',
     failed_rules: ['Applicant must reside in Telangana'],
   },
-  kanyashree: {
-    eligible: false,
-    failed_rules: [
-      'Age must be between 13 and 19 years',
-      'Applicant must reside in West Bengal',
-    ],
-  },
+  // No verified eligibility rules exist for this scheme yet - unknown must
+  // never be silently upgraded to a "yes".
+  kanyashree: { status: 'unknown', failed_rules: [] },
 };
 
 export const DEMO_CHUNKS: ChunkResult[] = [

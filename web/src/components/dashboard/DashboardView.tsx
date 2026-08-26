@@ -35,10 +35,10 @@ export function DashboardView({
     const byCategory = new Map<string, number>();
 
     for (const s of schemes) {
-      const e = eligibility[s.id];
-      if (!e) noRules += 1;
-      else if (e.eligible) eligible += 1;
-      else ineligible += 1;
+      const status = eligibility[s.id]?.status ?? 'unknown';
+      if (status === 'eligible') eligible += 1;
+      else if (status === 'ineligible') ineligible += 1;
+      else noRules += 1;
       byCategory.set(s.category, (byCategory.get(s.category) ?? 0) + 1);
     }
 
