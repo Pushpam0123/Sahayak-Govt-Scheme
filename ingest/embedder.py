@@ -49,6 +49,74 @@ class VoyageEmbedder(Embedder):
         return embeddings
 
 
+class GeminiEmbedder(Embedder):
+    """Google Gemini embeddings.
+
+    ``output_dimensionality`` is pinned to the width of the ``chunks.embedding``
+    pgvector column (1024 by default). gemini-embedding-001 supports arbitrary
+    output sizes via Matryoshka truncation, so this matches the existing schema
+    without a re-embedding migration. Changing the width means migrating that
+    column and re-ingesting the whole corpus.
+
+    Queries and documents are embedded with different task types, which is what
+    the model expects for retrieval and measurably improves recall.
+    """
+
+    def __init__(self, api_key: str | None = None, dimension: int | None = None):
+        from google import genai
+
+        key = api_key or os.getenv("GEMINI_API_KEY")
+        if not key:
+            raise ValueError(
+                "Gemini API Key is missing. Set GEMINI_API_KEY environment variable."
+            )
+        self.client = genai.Client(api_key=key)
+        self.model = os.getenv("GEMINI_EMBEDDING_MODEL", "gemini-embedding-001")
+        self.dimension = dimension or int(os.getenv("GEMINI_EMBEDDING_DIM", "1024"))
+        logger.info(
+            f"Initialized GeminiEmbedder using model '{self.model}' "
+            f"at {self.dimension} dimensions"
+        )
+
+    def _embed(self, texts: list[str], task_type: str) -> list[list[float]]:
+        from google.genai import types
+
+        result = self.client.models.embed_content(
+            model=self.model,
+            contents=texts,  # type: ignore[arg-type]
+            config=types.EmbedContentConfig(
+                task_type=task_type,
+                output_dimensionality=self.dimension,
+            ),
+        )
+        embeddings = result.embeddings or []
+        vectors: list[list[float]] = []
+        for e in embeddings:
+            values = e.values or []
+            if len(values) != self.dimension:
+                raise ValueError(
+                    f"Gemini returned a {len(values)}-dimension vector but the "
+                    f"chunks.embedding column expects {self.dimension}. Refusing "
+                    "to write a mismatched vector."
+                )
+            vectors.append(list(values))
+        return vectors
+
+    def embed_text(self, text: str) -> list[float]:
+        cleaned = text.replace("\n", " ")
+        return self._embed([cleaned], "RETRIEVAL_QUERY")[0]
+
+    def embed_batch(self, texts: list[str]) -> list[list[float]]:
+        cleaned = [t.replace("\n", " ") for t in texts]
+        batch_size = 100
+        embeddings: list[list[float]] = []
+        for i in range(0, len(cleaned), batch_size):
+            embeddings.extend(
+                self._embed(cleaned[i : i + batch_size], "RETRIEVAL_DOCUMENT")
+            )
+        return embeddings
+
+
 class MockEmbedder(Embedder):
     """Deterministic mock embedder generating 1024-dim vectors based on text hash
     with simple keyword-based semantic overlap to allow offline retrieval evaluation.
@@ -164,21 +232,44 @@ class MockEmbedder(Embedder):
         return [self._get_vector(text) for text in texts]
 
 
+def _usable(value: str | None, placeholder_fragment: str) -> bool:
+    """A key is usable only if non-empty and not the .env.example placeholder."""
+    if not value or not value.strip():
+        return False
+    return placeholder_fragment not in value.lower()
+
+
 def get_embedder() -> Embedder:
-    """Return VoyageEmbedder when VOYAGE_API_KEY is set, else MockEmbedder."""
-    api_key = os.getenv("VOYAGE_API_KEY")
-    if api_key and api_key != "your-voyage-api-key-here" and api_key.strip():
+    """Pick an embedding backend: Gemini, then Voyage, then the mock.
+
+    MockEmbedder produces deterministic hash-based vectors, not semantic ones.
+    Any recall number measured against it describes the mock's keyword overlap,
+    not a real embedding model, so the fallback is logged loudly. See EVALS.md.
+    """
+    gemini_key = os.getenv("GEMINI_API_KEY")
+    if _usable(gemini_key, "your-gemini-api-key"):
         try:
-            return VoyageEmbedder(api_key)
+            return GeminiEmbedder(gemini_key)
+        except Exception as e:
+            logger.error(
+                f"Failed to initialize GeminiEmbedder: {str(e)}. "
+                "Falling back to MockEmbedder."
+            )
+            return MockEmbedder()
+
+    voyage_key = os.getenv("VOYAGE_API_KEY")
+    if _usable(voyage_key, "your-voyage-api-key"):
+        try:
+            return VoyageEmbedder(voyage_key)
         except Exception as e:
             logger.error(
                 f"Failed to initialize VoyageEmbedder: {str(e)}. "
                 "Falling back to MockEmbedder."
             )
             return MockEmbedder()
-    else:
-        logger.warning(
-            "VOYAGE_API_KEY not configured or placeholder. "
-            "Falling back to MockEmbedder."
-        )
-        return MockEmbedder()
+
+    logger.warning(
+        "Neither GEMINI_API_KEY nor VOYAGE_API_KEY is configured. "
+        "Falling back to MockEmbedder: vectors are NOT semantic."
+    )
+    return MockEmbedder()

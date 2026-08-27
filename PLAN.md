@@ -485,3 +485,30 @@ The shared `.venv` carries an editable install pointing at `Sahayak-Govt-Scheme/
 `python api/seed_eligibility.py` in script form silently imports the *other* worktree's code;
 `python -m` and pytest resolve locally. Prefer `python -m`.
 
+---
+
+## 11. Gemini provider support (2026-08-27, Opus)
+
+A single `GEMINI_API_KEY` now drives **both** chat and embeddings. Selection order for each is
+Gemini -> Anthropic/Voyage -> mock, so setting one key replaces both mocks at once and closes the
+gap that has been blocking real eval numbers.
+
+- `GeminiClient` (`api/llm/client.py`) translates the two places Gemini's wire format differs:
+  the assistant role is `model`, and the system prompt is a config field rather than a message.
+- `GeminiEmbedder` (`ingest/embedder.py`) pins `output_dimensionality` to 1024 to match the
+  existing `chunks.embedding` pgvector column -- `gemini-embedding-001` supports arbitrary widths
+  via Matryoshka truncation, so no schema migration or re-embedding is required. It raises rather
+  than writing a vector of the wrong width. Documents and queries use different task types.
+- Cost attribution follows the active provider via `active_llm_provider()` /
+  `llm_input_cost_per_m()` / `llm_output_cost_per_m()`; previously every request was priced at
+  Anthropic rates regardless of who served it.
+- 9 tests cover selection priority, placeholder-key rejection, mock fallback, embedding width, and
+  cost attribution.
+
+**Security fix found while wiring this up:** `docker-compose.yml` carried
+`ADMIN_TOKEN: sahayak-admin-token-live` and `JWT_SECRET: sahayak-jwt-secret-live-production` as
+hardcoded literals in a committed file. That put a live admin token in git history and defeated the
+fail-loud startup check F-2 added -- the container could never hit it, because the values were
+always present. Both now come from `.env` via `${VAR:?...}` substitution, which fails the compose
+run with a named error when unset. **The two literals remain in git history and must be treated as
+compromised: rotate them before any deployment.**

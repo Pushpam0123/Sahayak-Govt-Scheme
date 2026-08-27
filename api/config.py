@@ -48,6 +48,23 @@ class Settings:
     CHAT_MODEL: str = os.getenv("CHAT_MODEL", "claude-haiku-4-5-20251001")
     EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "voyage-3-lite")
 
+    # Google Gemini. A single GEMINI_API_KEY covers both chat and embeddings.
+    # When it is set, Gemini is preferred over Anthropic/Voyage for both.
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+    GEMINI_CHAT_MODEL: str = os.getenv("GEMINI_CHAT_MODEL", "gemini-2.5-flash")
+    GEMINI_EMBEDDING_MODEL: str = os.getenv(
+        "GEMINI_EMBEDDING_MODEL", "gemini-embedding-001"
+    )
+    # Must stay 1024 unless the chunks.embedding pgvector column is migrated to
+    # a different width; gemini-embedding-001 supports arbitrary output sizes.
+    GEMINI_EMBEDDING_DIM: int = int(os.getenv("GEMINI_EMBEDDING_DIM", "1024"))
+
+    # Gemini token pricing (per million tokens, USD). Defaults are gemini-2.5-flash.
+    GEMINI_INPUT_COST_PER_M: float = float(os.getenv("GEMINI_INPUT_COST_PER_M", "0.30"))
+    GEMINI_OUTPUT_COST_PER_M: float = float(
+        os.getenv("GEMINI_OUTPUT_COST_PER_M", "2.50")
+    )
+
     # Token Pricing (Per Million Tokens in USD)
     ANTHROPIC_INPUT_COST_PER_M: float = float(
         os.getenv("ANTHROPIC_INPUT_COST_PER_M", "0.80")
@@ -83,3 +100,32 @@ class Settings:
 
 
 settings = Settings()
+
+
+def active_llm_provider() -> str:
+    """Which chat backend get_llm_client() will actually pick: gemini|anthropic|mock.
+
+    Kept next to the pricing helpers so cost is never attributed to a provider
+    that is not the one serving the request.
+    """
+    key = settings.GEMINI_API_KEY
+    if key and key.strip() and "your-gemini-api-key" not in key.lower():
+        return "gemini"
+    key = settings.ANTHROPIC_API_KEY
+    if key and key.strip() and "your-anthropic-api-key" not in key.lower():
+        return "anthropic"
+    return "mock"
+
+
+def llm_input_cost_per_m() -> float:
+    """Input token price per million for the active provider."""
+    if active_llm_provider() == "gemini":
+        return settings.GEMINI_INPUT_COST_PER_M
+    return settings.ANTHROPIC_INPUT_COST_PER_M
+
+
+def llm_output_cost_per_m() -> float:
+    """Output token price per million for the active provider."""
+    if active_llm_provider() == "gemini":
+        return settings.GEMINI_OUTPUT_COST_PER_M
+    return settings.ANTHROPIC_OUTPUT_COST_PER_M

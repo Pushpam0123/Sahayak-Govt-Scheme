@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.config import settings
+from api.config import llm_input_cost_per_m, llm_output_cost_per_m
 from api.llm.client import get_llm_client
 from api.models.chat import QALog
 from api.models.scheme import Document, Scheme
@@ -223,20 +223,16 @@ async def get_grounded_answer(
 
     # 9. Cost Accounting Calculation using centralized settings
     chat_cost = (
-        usage.get("input_tokens", 0)
-        * (settings.ANTHROPIC_INPUT_COST_PER_M / 1_000_000.0)
-    ) + (
-        usage.get("output_tokens", 0)
-        * (settings.ANTHROPIC_OUTPUT_COST_PER_M / 1_000_000.0)
-    )
+        usage.get("input_tokens", 0) * (llm_input_cost_per_m() / 1_000_000.0)
+    ) + (usage.get("output_tokens", 0) * (llm_output_cost_per_m() / 1_000_000.0))
     groundedness_cost = groundedness_usage.get("input_tokens", 0) * (
-        settings.ANTHROPIC_INPUT_COST_PER_M / 1_000_000.0
+        llm_input_cost_per_m() / 1_000_000.0
     ) + groundedness_usage.get("output_tokens", 0) * (
-        settings.ANTHROPIC_OUTPUT_COST_PER_M / 1_000_000.0
+        llm_output_cost_per_m() / 1_000_000.0
     )
     translation_cost = translation_input_tokens * (
-        settings.ANTHROPIC_INPUT_COST_PER_M / 1_000_000.0
-    ) + translation_output_tokens * (settings.ANTHROPIC_OUTPUT_COST_PER_M / 1_000_000.0)
+        llm_input_cost_per_m() / 1_000_000.0
+    ) + translation_output_tokens * (llm_output_cost_per_m() / 1_000_000.0)
 
     total_cost = chat_cost + groundedness_cost + translation_cost
 
@@ -456,9 +452,9 @@ async def stream_grounded_answer(
         + translation_output_tokens
     )
 
-    chat_cost = (
-        est_input_tokens * settings.ANTHROPIC_INPUT_COST_PER_M / 1_000_000.0
-    ) + (est_output_tokens * settings.ANTHROPIC_OUTPUT_COST_PER_M / 1_000_000.0)
+    chat_cost = (est_input_tokens * llm_input_cost_per_m() / 1_000_000.0) + (
+        est_output_tokens * llm_output_cost_per_m() / 1_000_000.0
+    )
     total_cost = chat_cost
 
     qa_log = QALog(

@@ -41,8 +41,18 @@ services:
       DATABASE_URL: postgresql+asyncpg://sahayak:sahayak_password@db:5432/sahayak
       REDIS_URL: redis://redis:6379/0
       ENVIRONMENT: production
-      ADMIN_TOKEN: sahayak-admin-token-live
-      JWT_SECRET: sahayak-jwt-secret-live-production
+      # Secrets come from .env (compose substitutes ${VAR}) and are deliberately
+      # NOT given defaults here. Hardcoding them in a committed file put a live
+      # admin token in git history and defeated the fail-loud startup check.
+      ADMIN_TOKEN: ${ADMIN_TOKEN:?ADMIN_TOKEN must be set in .env}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in .env}
+      # LLM / embedding providers. Empty means the app runs on mocks.
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_CHAT_MODEL: ${GEMINI_CHAT_MODEL:-gemini-2.5-flash}
+      GEMINI_EMBEDDING_MODEL: ${GEMINI_EMBEDDING_MODEL:-gemini-embedding-001}
+      GEMINI_EMBEDDING_DIM: ${GEMINI_EMBEDDING_DIM:-1024}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      VOYAGE_API_KEY: ${VOYAGE_API_KEY:-}
       ALLOWED_ORIGINS: "http://localhost:5173,http://localhost:3000,http://localhost:8000"
     ports:
       - "8000:8000"
