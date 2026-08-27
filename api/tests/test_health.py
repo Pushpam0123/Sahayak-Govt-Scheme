@@ -41,7 +41,9 @@ def test_health_check_failure(client: TestClient, mock_db: AsyncMock) -> None:
     # Simulate database connection failure
     mock_db.execute.side_effect = Exception("DB Connection Timeout")
     response = client.get("/api/v1/health")
-    assert response.status_code == 500
-    assert (
-        "Database connection failed: DB Connection Timeout" in response.json()["detail"]
-    )
+    # An unreachable database is a dependency outage, not an internal fault: 503.
+    assert response.status_code == 503
+    detail = response.json()["detail"]
+    assert "Database connection failed." in detail
+    # The raw driver exception must never reach the client; it belongs in the logs.
+    assert "DB Connection Timeout" not in detail
