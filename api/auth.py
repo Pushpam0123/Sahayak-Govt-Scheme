@@ -153,7 +153,7 @@ async def get_current_principal(
         stmt_key = (
             select(APIKey)
             .options(selectinload(APIKey.organization))
-            .where(APIKey.key_hash == hashed, APIKey.is_active == True)
+            .where(APIKey.key_hash == hashed, APIKey.is_active.is_(True))
         )
         result_key = await db.execute(stmt_key)
         api_key_rec = result_key.scalars().first()
@@ -189,7 +189,7 @@ async def get_current_principal(
         stmt_user = (
             select(User)
             .options(selectinload(User.organization))
-            .where(User.id == user_id, User.is_active == True)
+            .where(User.id == user_id, User.is_active.is_(True))
         )
         result_user = await db.execute(stmt_user)
         user_rec = result_user.scalars().first()

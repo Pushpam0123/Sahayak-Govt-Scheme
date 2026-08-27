@@ -46,13 +46,13 @@ async def get_admin_stats(db: AsyncSession = Depends(get_db)) -> Dict[str, Any]:
     active_schemes_count = await db.scalar(select(func.count(Scheme.id)).where(Scheme.status == "active"))
     docs_count = await db.scalar(select(func.count(Document.id)))
     verified_docs_count = await db.scalar(
-        select(func.count(Document.id)).where(Document.verified_at != None)
+        select(func.count(Document.id)).where(Document.verified_at.is_not(None))
     )
     chunks_count = await db.scalar(select(func.count(Chunk.id)))
     qa_logs_count = await db.scalar(select(func.count(QALog.id)))
     total_cost = await db.scalar(select(func.coalesce(func.sum(QALog.estimated_cost_usd), 0.0)))
     unverified_rules_count = await db.scalar(
-        select(func.count(SchemeEligibilityRules.id)).where(SchemeEligibilityRules.is_verified == False)
+        select(func.count(SchemeEligibilityRules.id)).where(SchemeEligibilityRules.is_verified.is_(False))
     )
 
     return {
@@ -111,7 +111,7 @@ async def get_rules_verification_queue(
     stmt = (
         select(SchemeEligibilityRules, Scheme)
         .join(Scheme, SchemeEligibilityRules.scheme_id == Scheme.id)
-        .where(SchemeEligibilityRules.is_verified == False)
+        .where(SchemeEligibilityRules.is_verified.is_(False))
         .order_by(SchemeEligibilityRules.updated_at.desc())
     )
     res = await db.execute(stmt)
@@ -191,7 +191,7 @@ async def trigger_rule_extraction(
     stmt_chunks = (
         select(Chunk)
         .join(Document, Chunk.document_id == Document.id)
-        .where(Document.scheme_id == scheme_id, Document.verified_at != None)
+        .where(Document.scheme_id == scheme_id, Document.verified_at.is_not(None))
         .order_by(Chunk.seq)
         .limit(5)
     )

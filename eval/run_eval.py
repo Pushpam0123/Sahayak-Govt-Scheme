@@ -269,13 +269,9 @@ async def main() -> None:
 
             # A. Compute hybrid recall (if in-corpus)
             if gold_ids:
-                # Reconstruct retrieved IDs from the chat database logs
-                # Since get_grounded_answer uses hybrid_search, we check if gold intersects top 5
-                # Wait, get_grounded_answer retrieves top 5 in chunks list.
-                # Let's get the retrieved chunk IDs.
-                retrieved_ids = {cit["chunk_id"] for cit in citations}
-                # Wait, the assistant might only cite some. Let's look at all retrieved chunks.
-                # To be precise, we get them from the DB log we just created
+                # Citations only cover what the assistant chose to cite, which is a
+                # subset of what was retrieved. Recall must be measured against the
+                # full retrieved set, so read it back from the QA log written above.
                 qa_log_id = chat_res["id"]
                 qa_log = await db.get(QALog, qa_log_id)
                 ret_chunk_ids = set(qa_log.retrieved_chunk_ids or []) if qa_log else set()
