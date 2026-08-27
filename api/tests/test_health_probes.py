@@ -36,7 +36,10 @@ def test_readyz_healthy(client: TestClient, mock_db: AsyncMock) -> None:
 
 
 def test_readyz_database_failure(client: TestClient, mock_db: AsyncMock) -> None:
-    mock_db.execute.side_effect = OperationalError("connection refused", {}, None)
+    # OperationalError's third argument is the underlying DBAPI exception.
+    mock_db.execute.side_effect = OperationalError(
+        "connection refused", {}, Exception("connection refused")
+    )
     response = client.get("/api/v1/readyz")
     assert response.status_code == 503
     assert "Database readiness check failed" in response.json()["detail"]
