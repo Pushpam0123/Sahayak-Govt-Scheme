@@ -5,8 +5,6 @@ import random
 import time
 from abc import ABC, abstractmethod
 
-import voyageai
-
 logger = logging.getLogger("sahayak.ingest.embedder")
 
 
@@ -26,34 +24,6 @@ class Embedder(ABC):
     def embed_batch(self, texts: list[str]) -> list[list[float]]:
         """Generate embeddings for a list of texts."""
         pass
-
-
-class VoyageEmbedder(Embedder):
-    def __init__(self, api_key: str | None = None):
-        key = api_key or os.getenv("VOYAGE_API_KEY")
-        if not key:
-            raise ValueError(
-                "Voyage API Key is missing. Set VOYAGE_API_KEY environment variable."
-            )
-        self.client = voyageai.Client(api_key=key)  # type: ignore
-        self.model = "voyage-3.5"
-        logger.info(f"Initialized VoyageEmbedder using model '{self.model}'")
-
-    def embed_text(self, text: str) -> list[float]:
-        # Clean text
-        cleaned = text.replace("\n", " ")
-        result = self.client.embed([cleaned], model=self.model)
-        return list(result.embeddings[0])
-
-    def embed_batch(self, texts: list[str]) -> list[list[float]]:
-        cleaned = [t.replace("\n", " ") for t in texts]
-        batch_size = 128
-        embeddings: list[list[float]] = []
-        for i in range(0, len(cleaned), batch_size):
-            batch = cleaned[i : i + batch_size]
-            result = self.client.embed(batch, model=self.model)
-            embeddings.extend(result.embeddings)  # type: ignore
-        return embeddings
 
 
 class GeminiEmbedder(Embedder):
@@ -274,16 +244,16 @@ def _usable(value: str | None, placeholder_fragment: str) -> bool:
 
 
 def get_embedder() -> Embedder:
-    """Pick an embedding backend: Gemini, then Voyage, then the mock.
+    """Return the Gemini embedder, or the mock when no key is configured.
 
     MockEmbedder produces deterministic hash-based vectors, not semantic ones.
     Any recall number measured against it describes the mock's keyword overlap,
     not a real embedding model, so the fallback is logged loudly. See EVALS.md.
     """
-    gemini_key = os.getenv("GEMINI_API_KEY")
-    if _usable(gemini_key, "your-gemini-api-key"):
+    key = os.getenv("GEMINI_API_KEY")
+    if _usable(key, "your-gemini-api-key"):
         try:
-            return GeminiEmbedder(gemini_key)
+            return GeminiEmbedder(key)
         except Exception as e:
             logger.error(
                 f"Failed to initialize GeminiEmbedder: {str(e)}. "
@@ -291,19 +261,8 @@ def get_embedder() -> Embedder:
             )
             return MockEmbedder()
 
-    voyage_key = os.getenv("VOYAGE_API_KEY")
-    if _usable(voyage_key, "your-voyage-api-key"):
-        try:
-            return VoyageEmbedder(voyage_key)
-        except Exception as e:
-            logger.error(
-                f"Failed to initialize VoyageEmbedder: {str(e)}. "
-                "Falling back to MockEmbedder."
-            )
-            return MockEmbedder()
-
     logger.warning(
-        "Neither GEMINI_API_KEY nor VOYAGE_API_KEY is configured. "
-        "Falling back to MockEmbedder: vectors are NOT semantic."
+        "GEMINI_API_KEY is not configured. Falling back to MockEmbedder: "
+        "vectors are NOT semantic."
     )
     return MockEmbedder()

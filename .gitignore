@@ -49,3 +49,6 @@ data/raw/
 .DS_Store
 Thumbs.db
 .venv/
+
+# Editor / agent tooling
+.claude/

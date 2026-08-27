@@ -15,11 +15,11 @@ init:
 
 # Spin up Postgres, FastAPI and Vite React containers
 up:
-	$(DC) --env-file .env -f infra/docker-compose.yml up --build -d
+	$(DC) --env-file .env up --build -d
 
 # Take down all containers
 down:
-	$(DC) --env-file .env -f infra/docker-compose.yml down
+	$(DC) --env-file .env down
 
 # Run backend tests
 test:
@@ -34,15 +34,15 @@ lint:
 
 # Run scheme ingestion CLI
 ingest:
-	$(DC) --env-file .env -f infra/docker-compose.yml exec api python ingest/run.py
+	$(DC) --env-file .env exec api python -m ingest.run
 
 # Run evaluation harness
 eval:
-	$(DC) --env-file .env -f infra/docker-compose.yml exec api python eval/run_eval.py
+	$(DC) --env-file .env exec api python -m eval.run_eval
 
 # Run database migrations using Alembic
 db-migrate:
-	$(DC) --env-file .env -f infra/docker-compose.yml exec api alembic upgrade head
+	$(DC) --env-file .env exec api alembic upgrade head
 
 # Check Alembic migration history
 db-history:

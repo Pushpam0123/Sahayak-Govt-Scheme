@@ -42,14 +42,8 @@ class Settings:
     JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
     JWT_EXPIRE_MINUTES: int = int(os.getenv("JWT_EXPIRE_MINUTES", "1440"))
 
-    # LLM & Embeddings (F-5 configurable defaults)
-    ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
-    VOYAGE_API_KEY: str = os.getenv("VOYAGE_API_KEY", "")
-    CHAT_MODEL: str = os.getenv("CHAT_MODEL", "claude-haiku-4-5-20251001")
-    EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "voyage-3-lite")
-
     # Google Gemini. A single GEMINI_API_KEY covers both chat and embeddings.
-    # When it is set, Gemini is preferred over Anthropic/Voyage for both.
+    # Without it the app runs on mocks whose output is fabricated.
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
     GEMINI_CHAT_MODEL: str = os.getenv("GEMINI_CHAT_MODEL", "gemini-3.6-flash")
     GEMINI_EMBEDDING_MODEL: str = os.getenv(
@@ -68,18 +62,6 @@ class Settings:
     )
 
     # Token Pricing (Per Million Tokens in USD)
-    ANTHROPIC_INPUT_COST_PER_M: float = float(
-        os.getenv("ANTHROPIC_INPUT_COST_PER_M", "0.80")
-    )
-    ANTHROPIC_OUTPUT_COST_PER_M: float = float(
-        os.getenv("ANTHROPIC_OUTPUT_COST_PER_M", "4.00")
-    )
-    ANTHROPIC_CACHE_READ_COST_PER_M: float = float(
-        os.getenv("ANTHROPIC_CACHE_READ_COST_PER_M", "0.08")
-    )
-    ANTHROPIC_CACHE_WRITE_COST_PER_M: float = float(
-        os.getenv("ANTHROPIC_CACHE_WRITE_COST_PER_M", "1.00")
-    )
 
     # Rate Limiting Parameters
     RATE_LIMIT_REQUESTS: int = int(os.getenv("RATE_LIMIT_REQUESTS", "60"))
@@ -105,29 +87,18 @@ settings = Settings()
 
 
 def active_llm_provider() -> str:
-    """Which chat backend get_llm_client() will actually pick: gemini|anthropic|mock.
-
-    Kept next to the pricing helpers so cost is never attributed to a provider
-    that is not the one serving the request.
-    """
+    """Which chat backend get_llm_client() will actually pick: gemini or mock."""
     key = settings.GEMINI_API_KEY
     if key and key.strip() and "your-gemini-api-key" not in key.lower():
         return "gemini"
-    key = settings.ANTHROPIC_API_KEY
-    if key and key.strip() and "your-anthropic-api-key" not in key.lower():
-        return "anthropic"
     return "mock"
 
 
 def llm_input_cost_per_m() -> float:
-    """Input token price per million for the active provider."""
-    if active_llm_provider() == "gemini":
-        return settings.GEMINI_INPUT_COST_PER_M
-    return settings.ANTHROPIC_INPUT_COST_PER_M
+    """Input token price per million tokens."""
+    return settings.GEMINI_INPUT_COST_PER_M
 
 
 def llm_output_cost_per_m() -> float:
-    """Output token price per million for the active provider."""
-    if active_llm_provider() == "gemini":
-        return settings.GEMINI_OUTPUT_COST_PER_M
-    return settings.ANTHROPIC_OUTPUT_COST_PER_M
+    """Output token price per million tokens."""
+    return settings.GEMINI_OUTPUT_COST_PER_M

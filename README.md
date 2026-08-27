@@ -29,7 +29,7 @@ graph TD
     Retriever -->|Full-Text Search GIN| DB
     Retriever -->|Reciprocal Rank Fusion| RRF[RRF Ranker]
     RRF -->|Top Context Chunks| QA[Grounded Q&A Synthesis]
-    QA -->|Claude 3.5 Sonnet| Sentences[Sentence citation parser]
+    QA -->|Gemini| Sentences[Sentence citation parser]
     Sentences -->|Check groundedness| Judge[Second-Pass Evaluator Haiku]
     Judge -->|Audit claim validity| Log[(Q&A Logs + Costs + Citations)]
     Log -->|Displaycited response| User
@@ -42,7 +42,7 @@ graph TD
 Retriever and generator capabilities are tracked in `EVALS.md`.
 
 > [!NOTE]
-> Historical metrics measured on synthetic documents have been marked void in `EVALS.md`. A real baseline against the nine verified schemes requires a live `ANTHROPIC_API_KEY` and `VOYAGE_API_KEY` to run the full retrieval + generation harness (`eval/run_eval.py`); it has not yet been published for that reason — see `EVALS.md` for status.
+> Historical metrics measured on synthetic documents have been marked void in `EVALS.md`. A real baseline against the nine verified schemes requires a live `GEMINI_API_KEY` to run the full retrieval + generation harness (`eval/run_eval.py`); it has not yet been published for that reason — see `EVALS.md` for status.
 
 ---
 
@@ -56,39 +56,48 @@ Retriever and generator capabilities are tracked in `EVALS.md`.
 ### Step 1: Environment Variables
 Create a `.env` file in the project root:
 ```bash
-DATABASE_URL=postgresql+asyncpg://sahayak_user:sahayak_password@db:5432/sahayak_db
-ANTHROPIC_API_KEY=your_anthropic_api_key_here
-VOYAGE_API_KEY=your_voyage_api_key_here
+# Matches docker-compose.yml. For host-side runs use localhost:5433.
+DATABASE_URL=postgresql+asyncpg://sahayak:sahayak_password@db:5432/sahayak
+REDIS_URL=redis://redis:6379/0
+
+# Mandatory. The app refuses to start if either is empty.
+ADMIN_TOKEN=change-me-to-a-long-random-string
+JWT_SECRET=change-me-to-a-different-long-random-string
+
+# One key powers both chat and embeddings. https://aistudio.google.com/apikey
+# Without it the app runs on mocks whose output is fabricated.
+GEMINI_API_KEY=your-gemini-api-key-here
+
 ENABLE_GROUNDEDNESS_CHECK=true
 ```
 
 ### Step 2: Boot Services
-Start PostgreSQL, FastAPI backend, and React+TS Vite frontend:
+Start PostgreSQL, Redis, and the FastAPI backend:
 ```bash
 # Spin up services inside Docker Compose
-docker-compose -f infra/docker-compose.yml up -d
+docker-compose --env-file .env up -d
 ```
 
 ### Step 3: Run Ingestion Pipeline
 Seed the database, ingest guidelines, generate chunks/embeddings, and seed eligibility rules:
 ```bash
 # Run migrations inside the API container
-docker-compose -f infra/docker-compose.yml exec api alembic upgrade head
+docker-compose --env-file .env exec api alembic upgrade head
 
 # Ingest, chunk, and embed verified guidelines documents
-docker-compose -f infra/docker-compose.yml exec api python ingest/run.py
+docker-compose --env-file .env exec api python -m ingest.run
 
 # Seed structured eligibility rules
-docker-compose -f infra/docker-compose.yml exec api python api/seed_eligibility.py
+docker-compose --env-file .env exec api python -m api.seed_eligibility
 ```
 
 ### Step 4: Run Tests & Evaluation
 ```bash
 # Execute unit/integration test suite
-docker-compose -f infra/docker-compose.yml exec api pytest
+docker-compose --env-file .env exec api pytest
 
 # Execute evaluation harness
-docker-compose -f infra/docker-compose.yml exec api python eval/run_eval.py
+docker-compose --env-file .env exec api python -m eval.run_eval
 ```
 
 ---
@@ -98,3 +107,12 @@ docker-compose -f infra/docker-compose.yml exec api python eval/run_eval.py
 - **pgvector vs External Vector DB**: We chose pgvector to keep document Guidelines, Chunks, Embeddings, Schemes, Q&A Audit Logs, and Eligibility Rules in a single transactional Postgres database, eliminating sync latency and infrastructure overhead.
 - **RRF (Reciprocal Rank Fusion)**: Combines dense embeddings (which capture semantics) and sparse keyword indices (which capture specific names like PM-KISAN).
 - **Two-Pass Verification**: Using a fast Haiku-class model for sentence claim auditing separates factual synthesis from validation, protecting against hallucinations.
+
+### Step 5: Run the Web Frontend
+The frontend is a Next.js App Router application in `web/`:
+```bash
+npm install --prefix web
+npm run --prefix web dev     # http://localhost:3000
+```
+It talks to the API at `http://localhost:8000` by default; override with
+`NEXT_PUBLIC_API_BASE`.

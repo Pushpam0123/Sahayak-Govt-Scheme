@@ -28,5 +28,4 @@ os.environ.setdefault("RATE_LIMIT_REQUESTS", "100000")
 # real key exported would otherwise have the suite make billed API calls, and a
 # rate-limited run would fail on quota rather than on code. Tests that need a
 # provider selected patch the setting or set the variable themselves.
-for _provider_key in ("GEMINI_API_KEY", "ANTHROPIC_API_KEY", "VOYAGE_API_KEY"):
-    os.environ.pop(_provider_key, None)
+os.environ.pop("GEMINI_API_KEY", None)

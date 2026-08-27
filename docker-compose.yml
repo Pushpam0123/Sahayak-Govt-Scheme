@@ -51,8 +51,6 @@ services:
       GEMINI_CHAT_MODEL: ${GEMINI_CHAT_MODEL:-gemini-3.6-flash}
       GEMINI_EMBEDDING_MODEL: ${GEMINI_EMBEDDING_MODEL:-gemini-embedding-001}
       GEMINI_EMBEDDING_DIM: ${GEMINI_EMBEDDING_DIM:-1024}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      VOYAGE_API_KEY: ${VOYAGE_API_KEY:-}
       ALLOWED_ORIGINS: "http://localhost:5173,http://localhost:3000,http://localhost:8000"
     ports:
       - "8000:8000"

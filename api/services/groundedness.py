@@ -76,9 +76,9 @@ async def verify_groundedness(
         f"{sentences_str}"
     )
 
-    # 5. Invoke LLM judge (Haiku-class model)
-    # Pinned to haiku model via config or environment
-    judge_model = os.getenv("ANTHROPIC_JUDGE_MODEL", "claude-3-5-haiku-20241022")
+    # 5. Invoke the LLM judge. Defaults to a small, fast model; override with
+    # GEMINI_JUDGE_MODEL if a stronger judge is wanted.
+    judge_model = os.getenv("GEMINI_JUDGE_MODEL", "gemini-3.1-flash-lite")
     llm_client = get_llm_client(chat_model=judge_model)
     messages = [
         {

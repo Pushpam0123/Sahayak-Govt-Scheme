@@ -20,8 +20,9 @@ def test_settings_defaults() -> None:
             defaults = api.config.Settings()
 
             assert defaults.ENVIRONMENT == "development"
-            assert defaults.CHAT_MODEL == "claude-haiku-4-5-20251001"
-            assert defaults.EMBEDDING_MODEL == "voyage-3-lite"
+            assert defaults.GEMINI_CHAT_MODEL == "gemini-3.6-flash"
+            assert defaults.GEMINI_EMBEDDING_MODEL == "gemini-embedding-001"
+            assert defaults.GEMINI_EMBEDDING_DIM == 1024
             assert isinstance(defaults.ALLOWED_ORIGINS, list)
             assert len(defaults.ALLOWED_ORIGINS) >= 1
             assert defaults.RATE_LIMIT_REQUESTS == 60

@@ -7,7 +7,6 @@ from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
 from typing import Any, Dict, List, Optional
 
-import anthropic
 import yaml
 
 from api.config import settings
@@ -49,88 +48,13 @@ class BaseLLMClient(ABC):
         ...
 
 
-class ClaudeClient(BaseLLMClient):
-    def __init__(self, api_key: str, chat_model: Optional[str] = None):
-        self.client = anthropic.AsyncAnthropic(api_key=api_key)
-        model_name = chat_model or os.getenv("ANTHROPIC_CHAT_MODEL")
-        self.model: str = (
-            model_name or settings.CHAT_MODEL or "claude-haiku-4-5-20251001"
-        )
-        logger.info(f"Initialized ClaudeClient using model '{self.model}'")
-
-    async def generate_response(
-        self,
-        system_prompt: str,
-        messages: List[Dict[str, str]],
-        temperature: float = 0.0,
-    ) -> Dict[str, Any]:
-        max_tokens = int(os.getenv("ANTHROPIC_MAX_TOKENS", "1024"))
-
-        # Simple async retry wrapper
-        for attempt in range(3):
-            try:
-                formatted_messages = []
-                for m in messages:
-                    formatted_messages.append(
-                        {"role": m["role"], "content": m["content"]}
-                    )
-
-                response = await self.client.messages.create(
-                    model=self.model,
-                    system=system_prompt,
-                    messages=formatted_messages,  # type: ignore
-                    temperature=temperature,
-                    max_tokens=max_tokens,
-                )
-
-                content_text = ""
-                for block in response.content:
-                    if block.type == "text":
-                        content_text += block.text
-
-                return {
-                    "content": content_text,
-                    "usage": {
-                        "input_tokens": response.usage.input_tokens,
-                        "output_tokens": response.usage.output_tokens,
-                    },
-                }
-            except Exception as e:
-                logger.warning(f"LLM call attempt {attempt + 1} failed: {str(e)}")
-                if attempt == 2:
-                    raise e
-                await asyncio.sleep(2**attempt)
-        raise RuntimeError("LLM call failed after retries")
-
-    async def stream_response(
-        self,
-        system_prompt: str,
-        messages: List[Dict[str, str]],
-        temperature: float = 0.0,
-    ) -> AsyncGenerator[str, None]:
-        max_tokens = int(os.getenv("ANTHROPIC_MAX_TOKENS", "1024"))
-        formatted_messages = []
-        for m in messages:
-            formatted_messages.append({"role": m["role"], "content": m["content"]})
-
-        async with self.client.messages.stream(
-            model=self.model,
-            system=system_prompt,
-            messages=formatted_messages,  # type: ignore
-            temperature=temperature,
-            max_tokens=max_tokens,
-        ) as stream:
-            async for text in stream.text_stream:
-                yield text
-
-
 class GeminiClient(BaseLLMClient):
     """Google Gemini implementation of the chat interface.
 
-    Gemini's wire format differs from Anthropic's in two ways that matter here:
-    the assistant role is called "model", and the system prompt is not a message
-    but a field on the request config. Both are translated below so the rest of
-    the application keeps speaking one message format.
+    Two details of Gemini's wire format are translated here so the rest of the
+    application keeps speaking one message format: the assistant role is called
+    "model", and the system prompt is a field on the request config rather than
+    a message in the conversation.
     """
 
     def __init__(self, api_key: str, chat_model: Optional[str] = None):
@@ -164,7 +88,7 @@ class GeminiClient(BaseLLMClient):
         # Gemini 3.x reasons before answering, and those thinking tokens are drawn
         # from max_output_tokens. A 1024 budget can be consumed entirely by
         # thinking, returning an empty or truncated answer, so the default here is
-        # deliberately larger than the Anthropic-era one.
+        # deliberately generous.
         return types.GenerateContentConfig(
             system_instruction=system_prompt,
             temperature=temperature,
@@ -227,10 +151,10 @@ class GeminiClient(BaseLLMClient):
                 yield text
 
 
-class MockClaudeClient(BaseLLMClient):
+class MockLLMClient(BaseLLMClient):
     def __init__(self) -> None:
-        self.model = "mock-claude-3-5"
-        logger.info("Initialized MockClaudeClient")
+        self.model = "mock-llm"
+        logger.info("Initialized MockLLMClient")
 
         # Load golden set for matching
         self.golden_cases: Dict[str, Dict[str, Any]] = {}
@@ -246,10 +170,10 @@ class MockClaudeClient(BaseLLMClient):
                         q = case.get("question", "")
                         self.golden_cases[self._normalize(q)] = case
                 logger.info(
-                    f"Loaded {len(self.golden_cases)} cases into MockClaudeClient."
+                    f"Loaded {len(self.golden_cases)} cases into MockLLMClient."
                 )
         except Exception as e:
-            logger.error(f"Failed to load golden set in MockClaudeClient: {str(e)}")
+            logger.error(f"Failed to load golden set in MockLLMClient: {str(e)}")
 
     def _normalize(self, text: str) -> str:
         return "".join(c for c in text.lower() if c.isalnum())
@@ -445,26 +369,20 @@ def _is_usable_key(value: str, placeholder_fragment: str) -> bool:
 
 
 def get_llm_client(chat_model: Optional[str] = None) -> BaseLLMClient:
-    """Pick a chat backend.
+    """Return the Gemini client, or the mock when no key is configured.
 
-    Gemini wins when GEMINI_API_KEY is set, then Anthropic, then the mock. The
-    mock returns golden-set answers verbatim and always self-reports perfect
+    The mock returns golden-set answers verbatim and always self-reports perfect
     faithfulness, so falling back to it is logged loudly: any metric produced
     while it is active is meaningless. See EVALS.md.
     """
     from api.config import settings
 
-    gemini_key = settings.GEMINI_API_KEY
-    if _is_usable_key(gemini_key, "your-gemini-api-key"):
-        return GeminiClient(gemini_key, chat_model or settings.GEMINI_CHAT_MODEL)
-
-    anthropic_key = settings.ANTHROPIC_API_KEY
-    if _is_usable_key(anthropic_key, "your-anthropic-api-key"):
-        return ClaudeClient(anthropic_key, chat_model or settings.CHAT_MODEL)
+    key = settings.GEMINI_API_KEY
+    if _is_usable_key(key, "your-gemini-api-key"):
+        return GeminiClient(key, chat_model or settings.GEMINI_CHAT_MODEL)
 
     logger.warning(
-        "Neither GEMINI_API_KEY nor ANTHROPIC_API_KEY is configured. "
-        "Falling back to MockClaudeClient: generated answers are FABRICATED "
-        "and must not be treated as real output."
+        "GEMINI_API_KEY is not configured. Falling back to MockLLMClient: "
+        "generated answers are FABRICATED and must not be treated as real output."
     )
-    return MockClaudeClient()
+    return MockLLMClient()
