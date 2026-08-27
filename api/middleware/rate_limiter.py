@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import time
 import uuid
@@ -26,16 +27,25 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.window_seconds = window_seconds
         self.redis_url = redis_url or settings.REDIS_URL
         self._redis: Optional[aioredis.Redis] = None
+        self._redis_loop: Optional[asyncio.AbstractEventLoop] = None
 
     @property
     def redis(self) -> aioredis.Redis:
-        if self._redis is None:
+        # An aioredis client binds its connection pool to the event loop that
+        # created it. If that loop is gone, every call raises "Event loop is
+        # closed", which the dispatch handler below treats as a Redis outage and
+        # (under the default FAIL_OPEN policy) stops enforcing limits entirely --
+        # silently, while the service still looks healthy. Rebinding per loop
+        # keeps a stale client from disabling rate limiting.
+        loop = asyncio.get_running_loop()
+        if self._redis is None or self._redis_loop is not loop:
             self._redis = aioredis.from_url(
                 self.redis_url,
                 decode_responses=True,
                 socket_connect_timeout=2.0,
                 socket_timeout=2.0,
             )
+            self._redis_loop = loop
         return self._redis
 
     def _get_client_identifier(self, request: Request) -> str:
@@ -138,6 +148,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 response.headers["X-Request-ID"] = request_id
                 return response
 
-        response = await call_next(request)
-        response.headers["X-Request-ID"] = request_id
-        return response
+        # Named separately from the JSONResponse branches above: call_next returns
+        # the broader Response type, and reusing `response` narrows it to JSONResponse.
+        downstream = await call_next(request)
+        downstream.headers["X-Request-ID"] = request_id
+        return downstream

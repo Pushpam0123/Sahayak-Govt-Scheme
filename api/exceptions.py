@@ -38,7 +38,11 @@ class SchemeNotFoundError(NotFoundError):
         # `scheme_id` is the identifier the caller supplied in the request, so echoing
         # it back discloses nothing. Clients key off this field, so it stays in the
         # payload alongside the generic NotFoundError keys.
-        self.details = {"scheme_id": scheme_id, "resource": "Scheme", "identifier": scheme_id}
+        self.details = {
+            "scheme_id": scheme_id,
+            "resource": "Scheme",
+            "identifier": scheme_id,
+        }
 
 
 class DocumentNotVerifiedError(SahayakError):

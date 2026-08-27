@@ -130,7 +130,9 @@ def test_token_with_altered_signature_is_rejected():
 
 
 def test_expired_token_is_rejected():
-    token = create_access_token({"sub": "user-123"}, expires_delta=timedelta(seconds=-10))
+    token = create_access_token(
+        {"sub": "user-123"}, expires_delta=timedelta(seconds=-10)
+    )
     with pytest.raises(HTTPException) as exc:
         decode_access_token(token)
     assert exc.value.status_code == 401
@@ -176,7 +178,9 @@ def test_me_with_garbage_bearer_token_is_401(client: TestClient):
 
 
 def test_me_with_expired_token_is_401(client: TestClient):
-    token = create_access_token({"sub": "user-123"}, expires_delta=timedelta(seconds=-10))
+    token = create_access_token(
+        {"sub": "user-123"}, expires_delta=timedelta(seconds=-10)
+    )
     res = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
     assert res.status_code == 401
 
@@ -192,7 +196,9 @@ def test_unknown_api_key_is_401(client: TestClient, mock_db: AsyncMock):
     assert res.json()["detail"] == "Invalid or inactive API key."
 
 
-def test_login_does_not_reveal_whether_an_email_exists(client: TestClient, mock_db: AsyncMock):
+def test_login_does_not_reveal_whether_an_email_exists(
+    client: TestClient, mock_db: AsyncMock
+):
     result = AsyncMock()
     result.scalars = lambda: type("S", (), {"first": lambda self: None})()
     mock_db.execute.return_value = result

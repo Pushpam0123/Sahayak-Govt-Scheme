@@ -1,4 +1,7 @@
+import uuid
+
 from fastapi.testclient import TestClient
+
 from api.main import app
 
 
@@ -19,8 +22,12 @@ def test_custom_request_id_preserved():
 
 
 def test_rate_limiter_blocks_excessive_requests():
-    client = TestClient(app)
-    # Create client with low limit for test
+    # The limiter is Redis-backed, so a fixed key would still hold counts from a
+    # previous run inside the same window. Use a bucket unique to this run --
+    # and keep it under 16 characters, because _get_client_identifier truncates
+    # the API key to api_key[:16] when building the bucket name.
+    unique_key = uuid.uuid4().hex[:16]
+
     from api.middleware.rate_limiter import RateLimitMiddleware
     from fastapi import FastAPI
 
@@ -32,9 +39,9 @@ def test_rate_limiter_blocks_excessive_requests():
         return {"ping": "pong"}
 
     mini_client = TestClient(mini_app)
-    r1 = mini_client.get("/ping", headers={"X-API-Key": "test-key-limit"})
-    r2 = mini_client.get("/ping", headers={"X-API-Key": "test-key-limit"})
-    r3 = mini_client.get("/ping", headers={"X-API-Key": "test-key-limit"})
+    r1 = mini_client.get("/ping", headers={"X-API-Key": unique_key})
+    r2 = mini_client.get("/ping", headers={"X-API-Key": unique_key})
+    r3 = mini_client.get("/ping", headers={"X-API-Key": unique_key})
 
     assert r1.status_code == 200
     assert r2.status_code == 200
