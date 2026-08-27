@@ -1,0 +1,297 @@
+@import "tailwindcss";
+
+/*
+  Sahayak "Warm Civic" Design System (Tailwind v4)
+  -------------------------------------------------
+  Accessible, high-contrast, citizen-centric government scheme portal.
+  - Warm neutrals for human accessibility
+  - Large tabular numerals for benefit amounts
+  - Strictly semantic status colors (green/amber/slate)
+  - 48px minimum touch targets
+  - 16px minimum body text for accessibility in challenging light/screens
+  - Deliberately elevated dark theme clearing WCAG AA contrast standards
+  - Multilingual script support (Bengali, Telugu, Tamil, Devanagari) via [lang] selectors
+*/
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---- Semantic tokens: consumed as utilities (bg-surface, text-muted, ...) ---- */
+@theme {
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+
+  --color-content: var(--content);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-on-primary: var(--on-primary);
+
+  --color-saffron: var(--saffron);
+  --color-leaf: var(--leaf);
+
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+
+  --color-ring: var(--primary);
+
+  /* Chart palette (categorical) — swapped per theme below */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --font-sans: var(--font-noto-sans), "Inter", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Noto Sans Devanagari", sans-serif;
+  --font-bengali: var(--font-noto-bengali), var(--font-sans), sans-serif;
+  --font-telugu: var(--font-noto-telugu), var(--font-sans), sans-serif;
+  --font-tamil: var(--font-noto-tamil), var(--font-sans), sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Display and headline tracking */
+  --tracking-tight: -0.025em;
+  --tracking-tighter: -0.035em;
+
+  /* Patched legacy shades */
+  --color-sky-650: #0d84cf;
+  --color-sky-850: #0a4a76;
+  --color-slate-850: #172032;
+}
+
+/* ---- Light (default): Warm Civic friendly citizen portal ---- */
+:root {
+  --page: #f8fafc;
+  --surface: #ffffff;
+  --surface-2: #f1f5f9;
+  --surface-3: #e2e8f0;
+  --border-subtle: #e2e8f0;
+  --border-strong: #cbd5e1;
+
+  --content: #0f172a;
+  --muted: #334155;
+  --faint: #64748b;
+
+  --primary: #1d4ed8;
+  --primary-hover: #1e40af;
+  --primary-soft: #eff6ff;
+  --on-primary: #ffffff;
+
+  --saffron: #d97706;
+  --leaf: #15803d;
+
+  --success: #15803d;
+  --success-soft: #f0fdf4;
+  --warn: #b45309;
+  --warn-soft: #fffbeb;
+  --danger: #b91c1c;
+  --danger-soft: #fef2f2;
+
+  --chart-1: #1d4ed8;
+  --chart-2: #d97706;
+  --chart-3: #15803d;
+  --chart-4: #7c3aed;
+  --chart-5: #0891b2;
+
+  --font-scale: 1;
+
+  color-scheme: light;
+}
+
+/* ---- Dark: Carefully designed layered surfaces clearing WCAG AA ---- */
+.dark {
+  --page: #090d16;
+  --surface: #111827;
+  --surface-2: #1f2937;
+  --surface-3: #374151;
+  --border-subtle: #1f2937;
+  --border-strong: #374151;
+
+  --content: #f8fafc;
+  --muted: #94a3b8;
+  --faint: #64748b;
+
+  --primary: #3b82f6;
+  --primary-hover: #60a5fa;
+  --primary-soft: #1e293b;
+  --on-primary: #ffffff;
+
+  --saffron: #f59e0b;
+  --leaf: #4ade80;
+
+  --success: #4ade80;
+  --success-soft: #052e16;
+  --warn: #fbbf24;
+  --warn-soft: #451a03;
+  --danger: #f87171;
+  --danger-soft: #450a0a;
+
+  --chart-1: #3b82f6;
+  --chart-2: #f59e0b;
+  --chart-3: #4ade80;
+  --chart-4: #c084fc;
+  --chart-5: #22d3ee;
+
+  color-scheme: dark;
+}
+
+/* ---- High Contrast Overrides (Light & Dark) ---- */
+html.high-contrast,
+html[data-contrast="high"] {
+  --border-subtle: #64748b;
+  --border-strong: #1e293b;
+  --content: #000000;
+  --muted: #0f172a;
+  --faint: #334155;
+}
+
+html.dark.high-contrast,
+html.dark[data-contrast="high"] {
+  --border-subtle: #64748b;
+  --border-strong: #e2e8f0;
+  --content: #ffffff;
+  --muted: #f8fafc;
+  --faint: #e2e8f0;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  body {
+    background-color: var(--page);
+    color: var(--content);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    font-size: calc(1rem * var(--font-scale, 1)); /* 16px baseline scaled */
+    line-height: 1.6;
+  }
+
+  /* Language-specific font family bindings */
+  html[lang="bn"] body {
+    font-family: var(--font-bengali), var(--font-sans), sans-serif;
+  }
+
+  html[lang="te"] body {
+    font-family: var(--font-telugu), var(--font-sans), sans-serif;
+  }
+
+  html[lang="ta"] body {
+    font-family: var(--font-tamil), var(--font-sans), sans-serif;
+  }
+
+  html[lang="hi"] body,
+  html[lang="mr"] body {
+    font-family: var(--font-sans), sans-serif;
+  }
+
+  /* Micro transitions on interactive elements */
+  a,
+  button,
+  input,
+  select {
+    transition: background-color 0.15s ease, border-color 0.15s ease,
+      color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+}
+
+@keyframes fadeRise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@layer utilities {
+  /* Fluid display typography scale */
+  .text-display-hero {
+    font-size: calc(clamp(1.875rem, 4vw + 1rem, 3.5rem) * var(--font-scale, 1));
+    line-height: 1.15;
+    letter-spacing: var(--tracking-tighter);
+    font-weight: 800;
+  }
+
+  .text-display-section {
+    font-size: calc(clamp(1.875rem, 3vw + 0.75rem, 2.5rem) * var(--font-scale, 1));
+    line-height: 1.2;
+    letter-spacing: var(--tracking-tight);
+    font-weight: 800;
+  }
+
+  .text-display-card {
+    font-size: calc(clamp(1.25rem, 2vw + 0.5rem, 1.5rem) * var(--font-scale, 1));
+    line-height: 1.3;
+    letter-spacing: var(--tracking-tight);
+    font-weight: 700;
+  }
+
+  /* Benefit figure treatment: tabular, bold, prominent */
+  .benefit-figure {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .tap-target {
+    min-height: 48px;
+    min-width: 48px;
+  }
+
+  /* Section motion entrance (~300ms) */
+  .animate-fade-rise {
+    animation: fadeRise 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: var(--border-strong);
+    border-radius: 9999px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+/* Strictly disable all motion and transitions when reduced motion is preferred */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -45,10 +45,13 @@ services:
       dockerfile: infra/Dockerfile.web
     container_name: sahayak-web
     ports:
-      - "5173:5173"
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_BASE=http://localhost:8000
     volumes:
       - ../:/app
       - /app/web/node_modules
+      - /app/web/.next
     depends_on:
       - api
 
