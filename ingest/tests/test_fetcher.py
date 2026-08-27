@@ -4,7 +4,11 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from ingest.fetcher import MIN_HTML_BYTES, MIN_PDF_BYTES, FetchResult, fetch_scheme_guidelines
+from ingest.fetcher import (
+    MIN_PDF_BYTES,
+    FetchResult,
+    fetch_scheme_guidelines,
+)
 
 VALID_HTML_CONTENT = b"<html><body>" + b"Real guidelines content. " * 100 + b"</body></html>"
 VALID_PDF_CONTENT = b"%PDF-1.4\n" + b"0" * MIN_PDF_BYTES

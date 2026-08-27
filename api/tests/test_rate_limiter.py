@@ -28,8 +28,9 @@ def test_rate_limiter_blocks_excessive_requests():
     # the API key to api_key[:16] when building the bucket name.
     unique_key = uuid.uuid4().hex[:16]
 
-    from api.middleware.rate_limiter import RateLimitMiddleware
     from fastapi import FastAPI
+
+    from api.middleware.rate_limiter import RateLimitMiddleware
 
     mini_app = FastAPI()
     mini_app.add_middleware(RateLimitMiddleware, requests_limit=2, window_seconds=60)

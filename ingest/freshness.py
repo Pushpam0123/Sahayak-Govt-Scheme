@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.db import AsyncSessionLocal
-from api.models.scheme import Document, Scheme
+from api.models.scheme import Document
 
 logger = logging.getLogger("sahayak.ingest.freshness")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")

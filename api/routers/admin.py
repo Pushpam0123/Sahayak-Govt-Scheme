@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.auth import hash_api_key, verify_admin_token
 from api.db import get_db
-from api.models.auth import APIKey, Organization, User
+from api.models.auth import APIKey
 from api.models.chat import QALog
 from api.models.eligibility import SchemeEligibilityRules
 from api.models.scheme import Chunk, Document, Scheme

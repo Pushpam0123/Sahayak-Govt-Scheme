@@ -12,7 +12,6 @@ from api.auth import (
     create_access_token,
     generate_api_key,
     get_current_principal,
-    get_current_user,
     hash_password,
     verify_password,
 )

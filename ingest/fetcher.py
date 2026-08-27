@@ -1,12 +1,13 @@
-import os
 import hashlib
-import httpx
 import json
 import logging
+import os
 import ssl
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Optional
+
+import httpx
 
 logger = logging.getLogger("sahayak.ingest.fetcher")
 logging.basicConfig(level=logging.INFO)

@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from fastapi.testclient import TestClient
 
-from api.exceptions import SchemeNotFoundError, DocumentNotVerifiedError, SahayakError
+from api.exceptions import DocumentNotVerifiedError, SahayakError, SchemeNotFoundError
 from api.main import app
 
 err_router = APIRouter()

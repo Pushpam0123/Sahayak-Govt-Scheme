@@ -1,11 +1,12 @@
 from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 from fastapi.testclient import TestClient
 
 from api.db import get_db
 from api.main import app
 from api.models.chat import QALog
-from api.models.scheme import Chunk, Document, Scheme
+from api.models.scheme import Chunk
 
 
 @pytest.fixture

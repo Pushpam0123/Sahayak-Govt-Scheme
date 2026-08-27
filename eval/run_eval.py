@@ -16,12 +16,12 @@ from sqlalchemy import delete, select
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from api.db import AsyncSessionLocal
+from api.llm.client import get_llm_client
+from api.models.chat import QALog
 from api.models.eval import EvalCase, EvalRun
 from api.models.scheme import Chunk, Document
-from api.models.chat import QALog
-from api.services.retrieval import get_fts_search, get_vector_search, hybrid_search
 from api.services.chat import get_grounded_answer
-from api.llm.client import get_llm_client
+from api.services.retrieval import get_fts_search, get_vector_search, hybrid_search
 
 logger = logging.getLogger("sahayak.eval.harness")
 logging.basicConfig(
@@ -213,7 +213,7 @@ async def evaluate_faithfulness(
             system_prompt, messages, temperature=0.0
         )
         content = response["content"]
-        
+
         # Parse JSON block from response
         match = re.search(r"({.*})", content, re.DOTALL)
         if match:
@@ -245,19 +245,19 @@ async def main() -> None:
 
         # 5. Evaluate Hybrid Q&A (Recall@5, Citation Precision, and Faithfulness)
         logger.info("Starting Grounded Q&A Evaluation...")
-        
+
         total_latency_ms = 0.0
         hybrid_hits = 0
         citation_precisions = []
         faithfulness_scores = []
         total_sentences = 0
         supported_sentences = 0
-        
+
         # We evaluate QA metrics for all cases (faithfulness applies to out-of-corpus as well!)
         for case in synced_cases:
             question = case["question"]
             gold_ids = set(case["gold_chunk_ids"])
-            
+
             # Start timer & run full chat generation pipeline
             start_time = time.perf_counter()
             chat_res = await get_grounded_answer(db, question)
@@ -266,7 +266,7 @@ async def main() -> None:
 
             answer = chat_res["answer"]
             citations = chat_res["citations"]
-            
+
             # A. Compute hybrid recall (if in-corpus)
             if gold_ids:
                 # Reconstruct retrieved IDs from the chat database logs
@@ -279,7 +279,7 @@ async def main() -> None:
                 qa_log_id = chat_res["id"]
                 qa_log = await db.get(QALog, qa_log_id)
                 ret_chunk_ids = set(qa_log.retrieved_chunk_ids or []) if qa_log else set()
-                
+
                 if gold_ids.intersection(ret_chunk_ids):
                     hybrid_hits += 1
 
@@ -301,7 +301,7 @@ async def main() -> None:
                 chunk_obj = await db.get(Chunk, chunk_id)
                 if chunk_obj:
                     cited_texts.append(chunk_obj.text)
-            
+
             faith = await evaluate_faithfulness(answer, cited_texts)
             faithfulness_scores.append(faith)
 

@@ -1,22 +1,24 @@
-import os
-import yaml
+import argparse
 import asyncio
 import logging
-import argparse
-from datetime import datetime, timezone
-from sqlalchemy import select, delete, func
-from sqlalchemy.ext.asyncio import AsyncSession
+import os
 
 # Ensure workspace root is in sys.path
 import sys
+from datetime import datetime, timezone
+
+import yaml
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from api.db import AsyncSessionLocal, engine
-from api.models.scheme import Scheme, Document, Chunk
-from ingest.fetcher import FetchResult, fetch_scheme_guidelines
-from ingest.cleaner import clean_document
+from api.db import AsyncSessionLocal
+from api.models.scheme import Chunk, Document, Scheme
 from ingest.chunker import chunk_document
+from ingest.cleaner import clean_document
 from ingest.embedder import get_embedder
+from ingest.fetcher import FetchResult, fetch_scheme_guidelines
 
 logger = logging.getLogger("sahayak.ingest.run")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
@@ -265,7 +267,7 @@ async def ingest_scheme(db: AsyncSession, scheme_data: dict, force: bool = False
 async def run_pipeline(scheme_id: str | None = None, force: bool = False) -> None:
     # Read manifest
     schemes = await load_corpus_manifest()
-    
+
     # Filter if specific scheme is requested
     if scheme_id:
         schemes = [s for s in schemes if s["id"] == scheme_id]
