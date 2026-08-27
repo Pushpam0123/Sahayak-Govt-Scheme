@@ -110,7 +110,12 @@ class Chunk(Base):
     heading_path = Column(Text, nullable=True)  # e.g., "Eligibility > Exclusions"
     text = Column(Text, nullable=False)
     tokens = Column(Integer, nullable=False)
-    embedding = Column(Vector(1024), nullable=True)  # Voyage 3.5 size is 1024
+    embedding = Column(Vector(1024), nullable=True)
+    # Which embedding model produced `embedding`. Vectors from different models
+    # are not comparable: mixing them yields similarity scores that look
+    # plausible and mean nothing. Recorded so a partially re-embedded corpus is
+    # detectable instead of silent.
+    embedding_model = Column(String, nullable=True)
     tsv = Column(TSVECTOR, nullable=True)  # Full-text search vector
 
     document = relationship("Document", back_populates="chunks")

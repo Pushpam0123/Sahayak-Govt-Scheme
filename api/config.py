@@ -51,7 +51,7 @@ class Settings:
     # Google Gemini. A single GEMINI_API_KEY covers both chat and embeddings.
     # When it is set, Gemini is preferred over Anthropic/Voyage for both.
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
-    GEMINI_CHAT_MODEL: str = os.getenv("GEMINI_CHAT_MODEL", "gemini-2.5-flash")
+    GEMINI_CHAT_MODEL: str = os.getenv("GEMINI_CHAT_MODEL", "gemini-3.6-flash")
     GEMINI_EMBEDDING_MODEL: str = os.getenv(
         "GEMINI_EMBEDDING_MODEL", "gemini-embedding-001"
     )
@@ -59,7 +59,9 @@ class Settings:
     # a different width; gemini-embedding-001 supports arbitrary output sizes.
     GEMINI_EMBEDDING_DIM: int = int(os.getenv("GEMINI_EMBEDDING_DIM", "1024"))
 
-    # Gemini token pricing (per million tokens, USD). Defaults are gemini-2.5-flash.
+    # Gemini token pricing (per million tokens, USD). These are ESTIMATES used
+    # only for the usage dashboard -- verify against current Google pricing and
+    # override in .env before treating any cost figure as accurate.
     GEMINI_INPUT_COST_PER_M: float = float(os.getenv("GEMINI_INPUT_COST_PER_M", "0.30"))
     GEMINI_OUTPUT_COST_PER_M: float = float(
         os.getenv("GEMINI_OUTPUT_COST_PER_M", "2.50")

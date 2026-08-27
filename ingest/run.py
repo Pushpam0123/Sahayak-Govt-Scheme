@@ -271,6 +271,7 @@ async def ingest_scheme(
             text=c["text"],
             tokens=c["tokens"],
             embedding=embeddings[i],
+            embedding_model=getattr(embedder, "model", type(embedder).__name__),
             tsv=func.to_tsvector("english", c["text"]),
         )
         db.add(db_chunk)

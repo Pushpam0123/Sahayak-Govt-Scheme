@@ -141,7 +141,7 @@ class GeminiClient(BaseLLMClient):
             chat_model
             or os.getenv("GEMINI_CHAT_MODEL")
             or settings.GEMINI_CHAT_MODEL
-            or "gemini-2.5-flash"
+            or "gemini-3.6-flash"
         )
         logger.info(f"Initialized GeminiClient using model '{self.model}'")
 
@@ -161,10 +161,14 @@ class GeminiClient(BaseLLMClient):
     def _config(self, system_prompt: str, temperature: float) -> Any:
         from google.genai import types
 
+        # Gemini 3.x reasons before answering, and those thinking tokens are drawn
+        # from max_output_tokens. A 1024 budget can be consumed entirely by
+        # thinking, returning an empty or truncated answer, so the default here is
+        # deliberately larger than the Anthropic-era one.
         return types.GenerateContentConfig(
             system_instruction=system_prompt,
             temperature=temperature,
-            max_output_tokens=int(os.getenv("GEMINI_MAX_TOKENS", "1024")),
+            max_output_tokens=int(os.getenv("GEMINI_MAX_TOKENS", "4096")),
         )
 
     async def generate_response(
@@ -184,13 +188,16 @@ class GeminiClient(BaseLLMClient):
                     config=config,
                 )
                 usage = getattr(response, "usage_metadata", None)
+                # Thinking tokens are billed as output but reported separately.
+                # Counting only candidates_token_count understates the cost of a
+                # reasoning model by roughly the size of its reasoning.
+                candidates = getattr(usage, "candidates_token_count", 0) or 0
+                thoughts = getattr(usage, "thoughts_token_count", 0) or 0
                 return {
                     "content": response.text or "",
                     "usage": {
                         "input_tokens": getattr(usage, "prompt_token_count", 0) or 0,
-                        "output_tokens": (
-                            getattr(usage, "candidates_token_count", 0) or 0
-                        ),
+                        "output_tokens": candidates + thoughts,
                     },
                 }
             except Exception as e:

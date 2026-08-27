@@ -2,11 +2,18 @@ import hashlib
 import logging
 import os
 import random
+import time
 from abc import ABC, abstractmethod
 
 import voyageai
 
 logger = logging.getLogger("sahayak.ingest.embedder")
+
+
+def _is_rate_limit(err: Exception) -> bool:
+    """True for HTTP 429 / RESOURCE_EXHAUSTED, which is worth retrying."""
+    text = str(err)
+    return "429" in text or "RESOURCE_EXHAUSTED" in text
 
 
 class Embedder(ABC):
@@ -73,22 +80,44 @@ class GeminiEmbedder(Embedder):
         self.client = genai.Client(api_key=key)
         self.model = os.getenv("GEMINI_EMBEDDING_MODEL", "gemini-embedding-001")
         self.dimension = dimension or int(os.getenv("GEMINI_EMBEDDING_DIM", "1024"))
+        self.batch_size = int(os.getenv("GEMINI_EMBED_BATCH_SIZE", "20"))
+        self.max_retries = int(os.getenv("GEMINI_EMBED_MAX_RETRIES", "6"))
+        self.retry_base_delay = float(os.getenv("GEMINI_EMBED_RETRY_DELAY", "10"))
         logger.info(
             f"Initialized GeminiEmbedder using model '{self.model}' "
-            f"at {self.dimension} dimensions"
+            f"at {self.dimension} dimensions (batch={self.batch_size})"
         )
 
     def _embed(self, texts: list[str], task_type: str) -> list[list[float]]:
         from google.genai import types
 
-        result = self.client.models.embed_content(
-            model=self.model,
-            contents=texts,  # type: ignore[arg-type]
-            config=types.EmbedContentConfig(
-                task_type=task_type,
-                output_dimensionality=self.dimension,
-            ),
+        config = types.EmbedContentConfig(
+            task_type=task_type,
+            output_dimensionality=self.dimension,
         )
+
+        # Free-tier quota is easily exceeded mid-corpus. Without backoff the
+        # pipeline aborts partway, leaving some chunks embedded by this model and
+        # the rest by whatever ran before -- a mixed vector space in which
+        # similarity scores are meaningless but still look plausible.
+        result = None
+        for attempt in range(self.max_retries):
+            try:
+                result = self.client.models.embed_content(
+                    model=self.model, contents=texts, config=config
+                )
+                break
+            except Exception as e:
+                if not _is_rate_limit(e) or attempt == self.max_retries - 1:
+                    raise
+                delay = self.retry_base_delay * (2**attempt)
+                logger.warning(
+                    f"Gemini embedding rate-limited (attempt {attempt + 1}/"
+                    f"{self.max_retries}); retrying in {delay:.0f}s"
+                )
+                time.sleep(delay)
+        if result is None:
+            raise RuntimeError("Gemini embedding failed after retries")
         embeddings = result.embeddings or []
         vectors: list[list[float]] = []
         for e in embeddings:
@@ -108,11 +137,10 @@ class GeminiEmbedder(Embedder):
 
     def embed_batch(self, texts: list[str]) -> list[list[float]]:
         cleaned = [t.replace("\n", " ") for t in texts]
-        batch_size = 100
         embeddings: list[list[float]] = []
-        for i in range(0, len(cleaned), batch_size):
+        for i in range(0, len(cleaned), self.batch_size):
             embeddings.extend(
-                self._embed(cleaned[i : i + batch_size], "RETRIEVAL_DOCUMENT")
+                self._embed(cleaned[i : i + self.batch_size], "RETRIEVAL_DOCUMENT")
             )
         return embeddings
 
