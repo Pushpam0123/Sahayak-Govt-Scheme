@@ -34,6 +34,11 @@ class SchemeNotFoundError(NotFoundError):
     def __init__(self, scheme_id: str):
         super().__init__(resource="Scheme", identifier=scheme_id)
         self.error_code = "SCHEME_NOT_FOUND"
+        self.message = f"Scheme '{scheme_id}' was not found in the verified catalogue."
+        # `scheme_id` is the identifier the caller supplied in the request, so echoing
+        # it back discloses nothing. Clients key off this field, so it stays in the
+        # payload alongside the generic NotFoundError keys.
+        self.details = {"scheme_id": scheme_id, "resource": "Scheme", "identifier": scheme_id}
 
 
 class DocumentNotVerifiedError(SahayakError):
