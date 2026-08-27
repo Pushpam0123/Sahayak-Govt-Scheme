@@ -1,11 +1,12 @@
 import uuid
+from typing import Dict
 
 from fastapi.testclient import TestClient
 
 from api.main import app
 
 
-def test_request_id_attached_to_response():
+def test_request_id_attached_to_response() -> None:
     client = TestClient(app)
     res = client.get("/api/v1/healthz")
     assert res.status_code == 200
@@ -13,7 +14,7 @@ def test_request_id_attached_to_response():
     assert len(res.headers["x-request-id"]) > 0
 
 
-def test_custom_request_id_preserved():
+def test_custom_request_id_preserved() -> None:
     client = TestClient(app)
     custom_id = "req-custom-trace-12345"
     res = client.get("/api/v1/healthz", headers={"X-Request-ID": custom_id})
@@ -21,7 +22,7 @@ def test_custom_request_id_preserved():
     assert res.headers["x-request-id"] == custom_id
 
 
-def test_rate_limiter_blocks_excessive_requests():
+def test_rate_limiter_blocks_excessive_requests() -> None:
     # The limiter is Redis-backed, so a fixed key would still hold counts from a
     # previous run inside the same window. Use a bucket unique to this run --
     # and keep it under 16 characters, because _get_client_identifier truncates
@@ -36,7 +37,7 @@ def test_rate_limiter_blocks_excessive_requests():
     mini_app.add_middleware(RateLimitMiddleware, requests_limit=2, window_seconds=60)
 
     @mini_app.get("/ping")
-    def ping():
+    def ping() -> Dict[str, str]:
         return {"ping": "pong"}
 
     mini_client = TestClient(mini_app)

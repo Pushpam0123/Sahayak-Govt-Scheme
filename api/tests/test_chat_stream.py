@@ -1,3 +1,4 @@
+from typing import Iterator
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -15,7 +16,7 @@ def mock_db() -> AsyncMock:
 
 
 @pytest.fixture
-def client(mock_db: AsyncMock):
+def client(mock_db: AsyncMock) -> Iterator[TestClient]:
     app.dependency_overrides[get_db] = lambda: mock_db
     with TestClient(app) as test_client:
         yield test_client

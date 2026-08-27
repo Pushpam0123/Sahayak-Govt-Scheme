@@ -6,6 +6,7 @@ a token can be wrong ends in 401.
 """
 
 from datetime import timedelta
+from typing import Iterator
 from unittest.mock import AsyncMock
 
 import jwt
@@ -33,7 +34,7 @@ def mock_db() -> AsyncMock:
 
 
 @pytest.fixture
-def client(mock_db: AsyncMock):
+def client(mock_db: AsyncMock) -> Iterator[TestClient]:
     app.dependency_overrides[get_db] = lambda: mock_db
     with TestClient(app) as test_client:
         yield test_client
@@ -43,7 +44,7 @@ def client(mock_db: AsyncMock):
 # --- Password hashing ---
 
 
-def test_password_hash_is_salted_and_verifies():
+def test_password_hash_is_salted_and_verifies() -> None:
     password = "correct horse battery staple"
     first = hash_password(password)
     second = hash_password(password)
@@ -54,20 +55,20 @@ def test_password_hash_is_salted_and_verifies():
     assert verify_password(password, second)
 
 
-def test_password_hash_is_not_the_plaintext():
+def test_password_hash_is_not_the_plaintext() -> None:
     password = "correct horse battery staple"
     hashed = hash_password(password)
     assert password not in hashed
     assert hashed.startswith("$2b$")
 
 
-def test_verify_password_rejects_wrong_password():
+def test_verify_password_rejects_wrong_password() -> None:
     hashed = hash_password("correct horse battery staple")
     assert not verify_password("Correct horse battery staple", hashed)
     assert not verify_password("", hashed)
 
 
-def test_verify_password_returns_false_on_malformed_hash():
+def test_verify_password_returns_false_on_malformed_hash() -> None:
     # A corrupt stored hash must fail closed, not raise into the request handler.
     assert not verify_password("anything", "not-a-bcrypt-hash")
 
@@ -75,7 +76,7 @@ def test_verify_password_returns_false_on_malformed_hash():
 # --- API keys ---
 
 
-def test_generate_api_key_is_unguessable_and_consistent():
+def test_generate_api_key_is_unguessable_and_consistent() -> None:
     plaintext, prefix, key_hash = generate_api_key()
 
     assert plaintext.startswith("shk_live_")
@@ -87,25 +88,25 @@ def test_generate_api_key_is_unguessable_and_consistent():
     assert plaintext not in key_hash
 
 
-def test_generate_api_key_never_repeats():
+def test_generate_api_key_never_repeats() -> None:
     keys = {generate_api_key()[0] for _ in range(50)}
     assert len(keys) == 50
 
 
-def test_api_key_hash_is_deterministic_for_lookup():
+def test_api_key_hash_is_deterministic_for_lookup() -> None:
     plaintext, _, key_hash = generate_api_key()
     assert hash_api_key(plaintext) == key_hash
     assert len(key_hash) == 64
 
 
-def test_api_key_list_schema_cannot_expose_plaintext():
+def test_api_key_list_schema_cannot_expose_plaintext() -> None:
     # The read-back model has no field capable of carrying the secret.
     assert "api_key" not in APIKeyListItem.model_fields
     assert "key_hash" not in APIKeyListItem.model_fields
     assert "prefix" in APIKeyListItem.model_fields
 
 
-def test_user_response_schema_cannot_expose_password_hash():
+def test_user_response_schema_cannot_expose_password_hash() -> None:
     assert "password_hash" not in UserResponse.model_fields
     assert "password" not in UserResponse.model_fields
 
@@ -113,7 +114,7 @@ def test_user_response_schema_cannot_expose_password_hash():
 # --- JWT issuance and rejection ---
 
 
-def test_token_round_trip_preserves_claims():
+def test_token_round_trip_preserves_claims() -> None:
     token = create_access_token({"sub": "user-123", "role": "admin"})
     payload = decode_access_token(token)
     assert payload["sub"] == "user-123"
@@ -121,7 +122,7 @@ def test_token_round_trip_preserves_claims():
     assert "exp" in payload
 
 
-def test_token_with_altered_signature_is_rejected():
+def test_token_with_altered_signature_is_rejected() -> None:
     token = create_access_token({"sub": "user-123"})
     header, payload, signature = token.split(".")
 
@@ -138,7 +139,7 @@ def test_token_with_altered_signature_is_rejected():
     assert exc.value.status_code == 401
 
 
-def test_expired_token_is_rejected():
+def test_expired_token_is_rejected() -> None:
     token = create_access_token(
         {"sub": "user-123"}, expires_delta=timedelta(seconds=-10)
     )
@@ -148,7 +149,7 @@ def test_expired_token_is_rejected():
     assert "expired" in exc.value.detail.lower()
 
 
-def test_token_signed_with_another_secret_is_rejected():
+def test_token_signed_with_another_secret_is_rejected() -> None:
     forged = jwt.encode(
         {"sub": "user-123", "exp": 9999999999},
         "an-attacker-chosen-secret",
@@ -159,7 +160,7 @@ def test_token_signed_with_another_secret_is_rejected():
     assert exc.value.status_code == 401
 
 
-def test_token_without_subject_claim_is_rejected():
+def test_token_without_subject_claim_is_rejected() -> None:
     token = jwt.encode(
         {"exp": 9999999999},
         settings.JWT_SECRET,
@@ -173,13 +174,13 @@ def test_token_without_subject_claim_is_rejected():
 # --- Route-level enforcement ---
 
 
-def test_me_without_credentials_is_401(client: TestClient):
+def test_me_without_credentials_is_401(client: TestClient) -> None:
     res = client.get("/api/v1/auth/me")
     assert res.status_code == 401
     assert "credentials required" in res.json()["detail"].lower()
 
 
-def test_me_with_garbage_bearer_token_is_401(client: TestClient):
+def test_me_with_garbage_bearer_token_is_401(client: TestClient) -> None:
     res = client.get(
         "/api/v1/auth/me",
         headers={"Authorization": "Bearer not.a.jwt"},
@@ -187,7 +188,7 @@ def test_me_with_garbage_bearer_token_is_401(client: TestClient):
     assert res.status_code == 401
 
 
-def test_me_with_expired_token_is_401(client: TestClient):
+def test_me_with_expired_token_is_401(client: TestClient) -> None:
     token = create_access_token(
         {"sub": "user-123"}, expires_delta=timedelta(seconds=-10)
     )
@@ -195,7 +196,7 @@ def test_me_with_expired_token_is_401(client: TestClient):
     assert res.status_code == 401
 
 
-def test_unknown_api_key_is_401(client: TestClient, mock_db: AsyncMock):
+def test_unknown_api_key_is_401(client: TestClient, mock_db: AsyncMock) -> None:
     result = AsyncMock()
     result.scalars = lambda: type("S", (), {"first": lambda self: None})()
     mock_db.execute.return_value = result
@@ -208,7 +209,7 @@ def test_unknown_api_key_is_401(client: TestClient, mock_db: AsyncMock):
 
 def test_login_does_not_reveal_whether_an_email_exists(
     client: TestClient, mock_db: AsyncMock
-):
+) -> None:
     result = AsyncMock()
     result.scalars = lambda: type("S", (), {"first": lambda self: None})()
     mock_db.execute.return_value = result

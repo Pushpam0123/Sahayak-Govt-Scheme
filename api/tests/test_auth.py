@@ -1,3 +1,4 @@
+from typing import Iterator
 from unittest.mock import AsyncMock
 
 import pytest
@@ -16,14 +17,14 @@ def mock_db() -> AsyncMock:
 
 
 @pytest.fixture
-def client(mock_db: AsyncMock):
+def client(mock_db: AsyncMock) -> Iterator[TestClient]:
     app.dependency_overrides[get_db] = lambda: mock_db
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
 
 
-def test_hash_api_key():
+def test_hash_api_key() -> None:
     key = "shk_live_testkey123"
     h1 = hash_api_key(key)
     h2 = hash_api_key(key)
@@ -31,19 +32,19 @@ def test_hash_api_key():
     assert len(h1) == 64
 
 
-def test_admin_stats_unauthorized(client: TestClient):
+def test_admin_stats_unauthorized(client: TestClient) -> None:
     # No token provided
     res = client.get("/api/v1/admin/stats")
     assert res.status_code == 401
 
 
-def test_admin_stats_forbidden(client: TestClient):
+def test_admin_stats_forbidden(client: TestClient) -> None:
     # Wrong token provided
     res = client.get("/api/v1/admin/stats", headers={"X-Admin-Token": "invalid-token"})
     assert res.status_code == 403
 
 
-def test_admin_stats_success(client: TestClient, mock_db: AsyncMock):
+def test_admin_stats_success(client: TestClient, mock_db: AsyncMock) -> None:
     mock_db.scalar.side_effect = [9, 9, 9, 9, 150, 42, 1.25, 0]
     res = client.get(
         "/api/v1/admin/stats",
@@ -56,7 +57,7 @@ def test_admin_stats_success(client: TestClient, mock_db: AsyncMock):
     assert data["usage"]["total_questions_served"] == 42
 
 
-def test_admin_create_api_key(client: TestClient, mock_db: AsyncMock):
+def test_admin_create_api_key(client: TestClient, mock_db: AsyncMock) -> None:
     res = client.post(
         "/api/v1/admin/api-keys",
         json={"name": "Test Partner Client"},

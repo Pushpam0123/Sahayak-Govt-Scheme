@@ -1,3 +1,4 @@
+from typing import Iterator
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -15,14 +16,14 @@ def mock_db() -> AsyncMock:
 
 
 @pytest.fixture
-def client(mock_db: AsyncMock):
+def client(mock_db: AsyncMock) -> Iterator[TestClient]:
     app.dependency_overrides[get_db] = lambda: mock_db
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
 
 
-def test_list_schemes(client: TestClient, mock_db: AsyncMock):
+def test_list_schemes(client: TestClient, mock_db: AsyncMock) -> None:
     mock_scheme = Scheme(
         id="pm-kisan",
         name="PM Kisan",
@@ -44,7 +45,7 @@ def test_list_schemes(client: TestClient, mock_db: AsyncMock):
     assert data[0]["benefit_amount"] == "₹6,000 / year"
 
 
-def test_get_scheme_detail_success(client: TestClient, mock_db: AsyncMock):
+def test_get_scheme_detail_success(client: TestClient, mock_db: AsyncMock) -> None:
     mock_scheme = Scheme(
         id="pm-kisan",
         name="PM Kisan",
@@ -87,7 +88,7 @@ def test_get_scheme_detail_success(client: TestClient, mock_db: AsyncMock):
     assert len(data["documents"]) == 1
 
 
-def test_get_scheme_detail_not_found(client: TestClient, mock_db: AsyncMock):
+def test_get_scheme_detail_not_found(client: TestClient, mock_db: AsyncMock) -> None:
     mock_scheme_res = MagicMock()
     mock_scheme_res.scalars().first.return_value = None
     mock_db.execute.return_value = mock_scheme_res

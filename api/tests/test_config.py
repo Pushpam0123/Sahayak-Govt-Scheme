@@ -6,7 +6,7 @@ import api.config
 from api.config import Settings
 
 
-def test_settings_defaults():
+def test_settings_defaults() -> None:
     """The built-in defaults, independent of whatever is in the ambient environment.
 
     ``Settings`` binds ``os.getenv`` results in its class body, so the only way to
@@ -33,13 +33,13 @@ def test_settings_defaults():
         importlib.reload(api.config)
 
 
-def test_settings_origins_wildcard():
+def test_settings_origins_wildcard() -> None:
     settings = Settings()
     settings._raw_origins = "*"
     assert settings.ALLOWED_ORIGINS == ["*"]
 
 
-def test_settings_origins_custom_list():
+def test_settings_origins_custom_list() -> None:
     settings = Settings()
     settings._raw_origins = "https://sahayak.gov.in, https://app.sahayak.gov.in"
     assert settings.ALLOWED_ORIGINS == [

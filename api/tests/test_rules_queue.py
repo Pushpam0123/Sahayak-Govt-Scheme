@@ -1,3 +1,4 @@
+from typing import Iterator
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -17,14 +18,14 @@ def mock_db() -> AsyncMock:
 
 
 @pytest.fixture
-def client(mock_db: AsyncMock):
+def client(mock_db: AsyncMock) -> Iterator[TestClient]:
     app.dependency_overrides[get_db] = lambda: mock_db
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
 
 
-def test_get_rules_verification_queue(client: TestClient, mock_db: AsyncMock):
+def test_get_rules_verification_queue(client: TestClient, mock_db: AsyncMock) -> None:
     mock_rule = SchemeEligibilityRules(
         id=1,
         scheme_id="pm-kisan",
@@ -51,7 +52,7 @@ def test_get_rules_verification_queue(client: TestClient, mock_db: AsyncMock):
     assert data[0]["is_verified"] is False
 
 
-def test_verify_scheme_rules(client: TestClient, mock_db: AsyncMock):
+def test_verify_scheme_rules(client: TestClient, mock_db: AsyncMock) -> None:
     mock_rule = SchemeEligibilityRules(
         id=1,
         scheme_id="pm-kisan",
@@ -79,7 +80,7 @@ def test_verify_scheme_rules(client: TestClient, mock_db: AsyncMock):
     assert data["verified_by"] == "operator@sahayak.gov.in"
 
 
-def test_trigger_rule_extraction(client: TestClient, mock_db: AsyncMock):
+def test_trigger_rule_extraction(client: TestClient, mock_db: AsyncMock) -> None:
     mock_chunk = Chunk(
         id=1,
         document_id=10,

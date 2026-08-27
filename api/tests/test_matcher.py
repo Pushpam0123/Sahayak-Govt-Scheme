@@ -160,33 +160,33 @@ def test_match_profile_nsp_post_matric() -> None:
 # A mismatch here produces a confident, wrong "ineligible".
 
 
-def test_gender_match_is_case_insensitive():
+def test_gender_match_is_case_insensitive() -> None:
     rules = {"genders": ["Female"]}
     for supplied in ("Female", "female", "FEMALE", " female "):
         ok, reasons = match_citizen_profile({"gender": supplied}, rules)
         assert ok, f"{supplied!r} should match 'Female' but failed: {reasons}"
 
 
-def test_state_match_is_case_insensitive():
+def test_state_match_is_case_insensitive() -> None:
     rules = {"states": ["Karnataka"]}
     for supplied in ("Karnataka", "karnataka", "KARNATAKA"):
         ok, _ = match_citizen_profile({"state": supplied}, rules)
         assert ok, f"{supplied!r} should match 'Karnataka'"
 
 
-def test_caste_match_is_case_insensitive():
+def test_caste_match_is_case_insensitive() -> None:
     rules = {"castes": ["SC", "ST"]}
     for supplied in ("SC", "sc", "St", "st"):
         ok, _ = match_citizen_profile({"caste": supplied}, rules)
         assert ok, f"{supplied!r} should match one of SC/ST"
 
 
-def test_any_wildcard_is_case_insensitive():
+def test_any_wildcard_is_case_insensitive() -> None:
     ok, _ = match_citizen_profile({"gender": "Male"}, {"genders": ["any"]})
     assert ok
 
 
-def test_genuine_mismatch_still_fails():
+def test_genuine_mismatch_still_fails() -> None:
     # Case-insensitivity must not turn into matching everything.
     ok, reasons = match_citizen_profile({"gender": "Male"}, {"genders": ["Female"]})
     assert not ok
@@ -196,7 +196,7 @@ def test_genuine_mismatch_still_fails():
     assert not ok
 
 
-def test_missing_value_is_reported_not_silently_matched():
+def test_missing_value_is_reported_not_silently_matched() -> None:
     ok, reasons = match_citizen_profile({}, {"genders": ["Female"]})
     assert not ok
     assert "Gender details missing" in reasons

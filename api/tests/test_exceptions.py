@@ -8,17 +8,17 @@ err_router = APIRouter()
 
 
 @err_router.get("/test/scheme-not-found")
-def route_scheme_not_found():
+def route_scheme_not_found() -> None:
     raise SchemeNotFoundError("unknown-scheme")
 
 
 @err_router.get("/test/doc-not-verified")
-def route_doc_not_verified():
+def route_doc_not_verified() -> None:
     raise DocumentNotVerifiedError("fake-scheme", "Magic bytes missing")
 
 
 @err_router.get("/test/custom-error")
-def route_custom_error():
+def route_custom_error() -> None:
     raise SahayakError(
         "Custom error message", status_code=400, error_code="CUSTOM_BAD_REQUEST"
     )
@@ -27,7 +27,7 @@ def route_custom_error():
 app.include_router(err_router, prefix="/api/v1/test_errors")
 
 
-def test_scheme_not_found_exception():
+def test_scheme_not_found_exception() -> None:
     client = TestClient(app)
     response = client.get("/api/v1/test_errors/test/scheme-not-found")
     assert response.status_code == 404
@@ -38,7 +38,7 @@ def test_scheme_not_found_exception():
     assert data["error"]["details"]["scheme_id"] == "unknown-scheme"
 
 
-def test_document_not_verified_exception():
+def test_document_not_verified_exception() -> None:
     client = TestClient(app)
     response = client.get("/api/v1/test_errors/test/doc-not-verified")
     assert response.status_code == 403
@@ -48,7 +48,7 @@ def test_document_not_verified_exception():
     assert data["error"]["details"]["reason"] == "Magic bytes missing"
 
 
-def test_custom_sahayak_error():
+def test_custom_sahayak_error() -> None:
     client = TestClient(app)
     response = client.get("/api/v1/test_errors/test/custom-error")
     assert response.status_code == 400
