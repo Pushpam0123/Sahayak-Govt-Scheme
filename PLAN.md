@@ -420,3 +420,68 @@ Verified working: `76 passed` from the backend worktree with all nine corpus PDF
 2. **Agents never switch branches.** Each is created in its worktree, on its branch, and stays there. If an agent thinks it needs to `checkout`, `merge`, `rebase`, `stash` or `reset`, it stops and reports.
 3. **Commit early and often.** Frequent small commits are the only real protection against a directory-level accident.
 4. **File ownership still applies** (§8) — the worktree makes collisions impossible rather than merely forbidden, but the ownership table remains the source of truth for who changes what.
+
+---
+
+## 10. Local run, hardening and cleanup (2026-08-27, Opus)
+
+`phase-b-nextjs` was merged into `phase-0-truth` (zero conflicts). Both stacks now run locally
+against Postgres (:5433) and Redis (:6379): 9 schemes, 9 documents, 233 chunks, 9 verified rule
+sets. Chat and semantic search still run on `MockClaudeClient` / `MockEmbedder` and their output
+is fabricated -- see EVALS.md. Browse, scheme detail and the eligibility wizard are real.
+
+### Defects found by running it that no test caught
+
+- **Missing migration.** The Phase 2 model declared `extracted_by`, `extracted_at`, `verified_by`,
+  `verified_at` and `notes` on `scheme_eligibility_rules`; no migration ever created them, so every
+  query against that table failed with `UndefinedColumnError` on a fresh database.
+- **Naive columns with timezone-aware defaults.** `scheme_eligibility_rules` and `qa_logs` declared
+  naive `DateTime` while defaulting to `datetime.now(timezone.utc)`; asyncpg rejects that outright.
+  Both are now `DateTime(timezone=True)` with migrations. `documents`/`schemes` deliberately stay
+  naive -- `ingest/run.py` converts through an explicit `_naive_utc()` helper at every call site.
+- **`--autogenerate` proposed dropping the search indexes.** `ix_chunks_embedding` (HNSW) and
+  `ix_chunks_tsv` (GIN) are created outside the ORM metadata, so autogenerate reads them as
+  removals. Applying the generated migration unedited would have silently destroyed vector and
+  full-text search. The migration carries a note saying so.
+- **Case-sensitive eligibility matching.** `matcher.py` compared state, gender and caste exactly, so
+  an API caller sending `"female"` was told, confidently, that she was ineligible for a maternity
+  scheme. The wizard sends `"Female"` so the UI was unaffected -- but the B2B API that Work Order F
+  just put API keys in front of was not. Now case- and whitespace-insensitive, with tests pinning
+  both directions: casing must not matter, and a genuine mismatch must still fail.
+- **Blanket TLS bypass in the freshness checker.** `ingest/freshness.py` ran with `verify=False` for
+  every scheme, ignoring the per-scheme `tls_insecure` opt-in that `ingest/fetcher.py` honours. It
+  now verifies by default, uses an unverified client only for the three schemes with a documented
+  opt-in, and records `tls_verified` per result plus a `tls_unverified_count` in the report.
+- **`.env.example` could not start the app** -- no `JWT_SECRET` (mandatory since F-2), no
+  `REDIS_URL`, and database credentials that did not match docker-compose. Rewritten, including a
+  note that nothing auto-loads `.env`: there is no `python-dotenv` call anywhere, so direct
+  uvicorn/alembic/ingest runs need `set -a && . ./.env && set +a`.
+
+### Codebase state
+
+- **Tests: 101 passing** (api + ingest), stable across repeated runs.
+- **mypy: clean** across all 51 source files, down from 76 errors. Fixed properly, never suppressed:
+  57 missing annotations; `Column[str]` errors resolved by migrating `eligibility.py` and `chat.py`
+  to SQLAlchemy 2.0 `Mapped[]` (matching `auth.py`, which F already did correctly); an abstract
+  `stream_response` declared `async def` without a `yield`, which made the supertype a coroutine and
+  broke `async for` at every call site.
+- **ruff: 1 error**, down from 249. `E711`/`E712` were fixed with `.is_()`/`.is_not()` rather than
+  ruff's suggested truth-tests, which would have broken the SQLAlchemy `.where()` clauses they sit in.
+- **The one remaining lint error is deliberate.** `N802` on `Settings.ALLOWED_ORIGINS`: it is a
+  property that must stay dynamic (tests mutate `_raw_origins`), and lowercasing it would make it
+  the only lowercase name among `DATABASE_URL`, `JWT_SECRET` and the rest. Left visible rather than
+  silenced with a `# noqa` -- suppressing a check to make a number look clean is the habit this
+  project exists to avoid.
+
+### Removed
+
+The spent relay work orders (`gemini_prompt*.md`, `gemini_next_message.md`) and
+`agent_instruction.md` -- ~2,000 lines whose outcomes are recorded in §8.4. They remain in git
+history. The five `prompts/*.md` and `rubrics/*.md` files are loaded at runtime and were kept.
+
+### Known trap
+
+The shared `.venv` carries an editable install pointing at `Sahayak-Govt-Scheme/api`. Running
+`python api/seed_eligibility.py` in script form silently imports the *other* worktree's code;
+`python -m` and pytest resolve locally. Prefer `python -m`.
+
