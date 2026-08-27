@@ -1,4 +1,24 @@
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
+
+
+def _matches_any(value: Optional[str], allowed: Sequence[str]) -> bool:
+    """Case- and whitespace-insensitive membership test for categorical rules.
+
+    Rule values are transcribed from government guideline PDFs ("Female", "SC")
+    while profile values arrive from wizards and third-party API clients in
+    whatever casing the caller used. Comparing them exactly meant a caller
+    sending "female" was told, confidently, that she was ineligible for a
+    maternity scheme. Categorical eligibility must never hinge on capitalisation.
+    """
+    if value is None:
+        return False
+    needle = value.strip().casefold()
+    return any(needle == str(a).strip().casefold() for a in allowed)
+
+
+def _contains_any(allowed: Sequence[str]) -> bool:
+    """True when the rule list is the wildcard 'Any' in any casing."""
+    return any(str(a).strip().casefold() == "any" for a in allowed)
 
 
 def match_citizen_profile(
@@ -31,22 +51,22 @@ def match_citizen_profile(
 
     # 2. State residence check
     states = rules.get("states")
-    if states and "Any" not in states:
+    if states and not _contains_any(states):
         state = profile.get("state")
         if not state:
             failed_reasons.append("State details missing")
-        elif state not in states:
+        elif not _matches_any(state, states):
             failed_reasons.append(
                 f"State '{state}' is not eligible. Eligible states: {', '.join(states)}"
             )
 
     # 3. Gender eligibility check
     genders = rules.get("genders")
-    if genders and "Any" not in genders:
+    if genders and not _contains_any(genders):
         gender = profile.get("gender")
         if not gender:
             failed_reasons.append("Gender details missing")
-        elif gender not in genders:
+        elif not _matches_any(gender, genders):
             failed_reasons.append(
                 f"Gender '{gender}' is not eligible. "
                 f"Required genders: {', '.join(genders)}"
@@ -54,11 +74,11 @@ def match_citizen_profile(
 
     # 4. Caste category check
     castes = rules.get("castes")
-    if castes and "Any" not in castes:
+    if castes and not _contains_any(castes):
         caste = profile.get("caste")
         if not caste:
             failed_reasons.append("Caste category details missing")
-        elif caste not in castes:
+        elif not _matches_any(caste, castes):
             failed_reasons.append(
                 f"Caste category '{caste}' is not eligible. "
                 f"Eligible castes: {', '.join(castes)}"
