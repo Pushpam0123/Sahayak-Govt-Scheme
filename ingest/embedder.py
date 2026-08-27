@@ -100,11 +100,17 @@ class GeminiEmbedder(Embedder):
         # pipeline aborts partway, leaving some chunks embedded by this model and
         # the rest by whatever ran before -- a mixed vector space in which
         # similarity scores are meaningless but still look plausible.
+        # Annotated with the SDK's own element alias: list is invariant, so a
+        # bare list[Part] is not assignable to list[str | Image | File | Part].
+        contents: list[types.PartUnion] = [types.Part(text=t) for t in texts]
+
         result = None
         for attempt in range(self.max_retries):
             try:
                 result = self.client.models.embed_content(
-                    model=self.model, contents=texts, config=config
+                    model=self.model,
+                    contents=contents,
+                    config=config,
                 )
                 break
             except Exception as e:
@@ -120,8 +126,8 @@ class GeminiEmbedder(Embedder):
             raise RuntimeError("Gemini embedding failed after retries")
         embeddings = result.embeddings or []
         vectors: list[list[float]] = []
-        for e in embeddings:
-            values = e.values or []
+        for emb in embeddings:
+            values = emb.values or []
             if len(values) != self.dimension:
                 raise ValueError(
                     f"Gemini returned a {len(values)}-dimension vector but the "
