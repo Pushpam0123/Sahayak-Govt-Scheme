@@ -49,7 +49,7 @@ def test_blank_key_falls_back_to_mock() -> None:
 
 
 def test_chat_model_default_is_available_to_new_keys() -> None:
-    """gemini-2.5-* is retired for new API keys and 404s; the default must not be one."""
+    """gemini-2.5-* 404s for keys issued after its retirement."""
     assert "2.5" not in Settings().GEMINI_CHAT_MODEL
 
 
