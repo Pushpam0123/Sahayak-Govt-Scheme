@@ -48,7 +48,9 @@ class SchemeNotFoundError(NotFoundError):
 class DocumentNotVerifiedError(SahayakError):
     def __init__(self, scheme_id: str, reason: str = "Document is unverified"):
         super().__init__(
-            message=f"Scheme '{scheme_id}' document is not verified and cannot be cited.",
+            message=(
+                f"Scheme '{scheme_id}' document is not verified and cannot be cited."
+            ),
             status_code=403,
             error_code="DOCUMENT_NOT_VERIFIED",
             details={"scheme_id": scheme_id, "reason": reason},
@@ -59,7 +61,9 @@ class DocumentNotVerifiedError(SahayakError):
 class UpstreamServiceError(SahayakError):
     def __init__(self, service: str, internal_detail: Optional[str] = None):
         super().__init__(
-            message=f"Upstream service dependency ({service}) failed to process request.",
+            message=(
+                f"Upstream service dependency ({service}) failed to process request."
+            ),
             status_code=502,
             error_code="UPSTREAM_SERVICE_ERROR",
             details={"service": service},

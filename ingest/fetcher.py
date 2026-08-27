@@ -181,7 +181,8 @@ def fetch_scheme_guidelines(
 
     try:
         logger.info(
-            f"Attempting to download guidelines for {scheme_id} from {source_url} (TLS verified)"
+            f"Attempting to download guidelines for {scheme_id} "
+            f"from {source_url} (TLS verified)"
         )
         with httpx.Client(timeout=20.0, follow_redirects=True, verify=True) as client:
             response = client.get(source_url)

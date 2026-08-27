@@ -212,7 +212,8 @@ async def ingest_scheme(
             db_scheme.last_verified_at = _naive_utc(fetch_result.fetched_at)
         db_scheme.status = "active"
 
-    # 4. If document exists but checksum changed, delete the old document (cascade deletes old chunks)
+    # 4. If the document exists but the checksum changed, delete the old
+    #    document (which cascade-deletes its chunks).
     if existing_doc:
         logger.info(
             f"Document checksum changed for '{scheme_id}'. Replacing old document."

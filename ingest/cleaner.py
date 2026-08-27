@@ -31,7 +31,7 @@ def convert_html_table_to_markdown(table_tag) -> str:
 
 
 def clean_html_content(html_content: str) -> str:
-    """Parses HTML raw content, converting headings and tables to Markdown, and extracting text."""
+    """Parse raw HTML, converting headings and tables to Markdown."""
     soup = BeautifulSoup(html_content, "html.parser")
 
     # Remove script and style tags
@@ -48,7 +48,8 @@ def clean_html_content(html_content: str) -> str:
         md_table = convert_html_table_to_markdown(table)
         table.replace_with(soup.new_string(md_table))
 
-    # Extract structural text with trafilatura as a fallback or extract directly from processed soup
+    # Extract structural text with trafilatura as a fallback, or directly
+    # from the processed soup.
     text = soup.get_text(separator="\n")
 
     # Post-process whitespace

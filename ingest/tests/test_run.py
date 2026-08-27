@@ -119,9 +119,7 @@ async def test_ingest_scheme_upgrades_verified_at_on_idempotent_checksum_match()
 
 
 @pytest.mark.asyncio
-async def test_ingest_scheme_never_downgrades_verified_at_on_idempotent_checksum_match() -> (
-    None
-):
+async def test_verified_at_never_downgraded_on_checksum_match() -> None:
     """A document verified at T1 must keep that verified_at (and its
     fetch_status) if a later run on the identical bytes only manages a
     cached fetch with no provenance (e.g. the sidecar was lost). The bytes

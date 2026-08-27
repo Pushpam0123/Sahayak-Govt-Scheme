@@ -67,15 +67,17 @@ class Settings:
     RATE_LIMIT_WINDOW_SECONDS: int = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60"))
 
     def validate_security_configuration(self) -> None:
-        """Enforces that production and runtime environments have mandatory secrets set."""
+        """Enforce that mandatory secrets are set before the app is allowed to start."""
         if not self.ADMIN_TOKEN or self.ADMIN_TOKEN.strip() == "":
             raise ValueError(
-                "CRITICAL SECURITY CONFIGURATION ERROR: ADMIN_TOKEN environment variable is not set. "
+                "CRITICAL SECURITY CONFIGURATION ERROR: ADMIN_TOKEN environment "
+                "variable is not set. "
                 "A secure, non-empty admin token must be provided."
             )
         if not self.JWT_SECRET or self.JWT_SECRET.strip() == "":
             raise ValueError(
-                "CRITICAL SECURITY CONFIGURATION ERROR: JWT_SECRET environment variable is not set. "
+                "CRITICAL SECURITY CONFIGURATION ERROR: JWT_SECRET environment "
+                "variable is not set. "
                 "A secure, non-empty JWT secret must be provided for session issuance."
             )
 

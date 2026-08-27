@@ -165,18 +165,20 @@ class MockEmbedder(Embedder):
 
 
 def get_embedder() -> Embedder:
-    """Returns VoyageEmbedder if VOYAGE_API_KEY is configured, else falls back to MockEmbedder."""
+    """Return VoyageEmbedder when VOYAGE_API_KEY is set, else MockEmbedder."""
     api_key = os.getenv("VOYAGE_API_KEY")
     if api_key and api_key != "your-voyage-api-key-here" and api_key.strip():
         try:
             return VoyageEmbedder(api_key)
         except Exception as e:
             logger.error(
-                f"Failed to initialize VoyageEmbedder: {str(e)}. Falling back to MockEmbedder."
+                f"Failed to initialize VoyageEmbedder: {str(e)}. "
+                "Falling back to MockEmbedder."
             )
             return MockEmbedder()
     else:
         logger.warning(
-            "VOYAGE_API_KEY not configured or placeholder. Falling back to MockEmbedder."
+            "VOYAGE_API_KEY not configured or placeholder. "
+            "Falling back to MockEmbedder."
         )
         return MockEmbedder()

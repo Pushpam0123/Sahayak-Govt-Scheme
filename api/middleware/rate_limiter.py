@@ -111,7 +111,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
             if request_count >= self.requests_limit:
                 logger.warning(
-                    "Rate limit exceeded for %s: %d requests in %ds (limit=%d) [request_id=%s]",
+                    "Rate limit exceeded for %s: %d requests in %ds "
+                    "(limit=%d) [request_id=%s]",
                     client_key,
                     request_count,
                     self.window_seconds,
@@ -123,7 +124,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                     content={
                         "error": {
                             "code": "RATE_LIMIT_EXCEEDED",
-                            "message": "Rate limit exceeded. Too many requests. Please try again later.",
+                            "message": (
+                                "Rate limit exceeded. Too many requests. "
+                                "Please try again later."
+                            ),
                             "details": {"retry_after_seconds": self.window_seconds},
                             "request_id": request_id,
                         }
@@ -135,7 +139,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         except Exception as err:
             logger.warning(
-                "Redis rate limiter unavailable: %s. Fallback policy: %s [request_id=%s]",
+                "Redis rate limiter unavailable: %s. "
+                "Fallback policy: %s [request_id=%s]",
                 err,
                 "FAIL_OPEN" if settings.RATE_LIMIT_FALLBACK_OPEN else "FAIL_CLOSED",
                 request_id,

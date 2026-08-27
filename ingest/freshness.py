@@ -57,7 +57,8 @@ async def check_scheme_freshness(
         if insecure_client is None:
             result["status"] = "broken_network_error"
             result["error"] = (
-                "Scheme opted out of TLS verification but no insecure client was provided."
+                "Scheme opted out of TLS verification but no insecure "
+                "client was provided."
             )
             return result
         logger.warning(
@@ -144,7 +145,8 @@ async def run_freshness_audit(
 def main():
     report = asyncio.run(run_freshness_audit())
     print(
-        f"Freshness Report: {report['fresh_count']}/{report['total_schemes']} fresh, {report['broken_count']} broken"
+        f"Freshness Report: {report['fresh_count']}/{report['total_schemes']} "
+        f"fresh, {report['broken_count']} broken"
     )
 
 

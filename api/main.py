@@ -90,7 +90,10 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
         content={
             "error": {
                 "code": "INTERNAL_SERVER_ERROR",
-                "message": "An unexpected internal server error occurred. Please try again later.",
+                "message": (
+                    "An unexpected internal server error occurred. "
+                    "Please try again later."
+                ),
                 "request_id": req_id,
             }
         },

@@ -113,7 +113,7 @@ async def create_api_key(
 async def get_rules_verification_queue(
     db: AsyncSession = Depends(get_db),
 ) -> List[Dict[str, Any]]:
-    """Returns all scheme eligibility rules waiting for human review and verification."""
+    """Return all scheme eligibility rules awaiting human review."""
     stmt = (
         select(SchemeEligibilityRules, Scheme)
         .join(Scheme, SchemeEligibilityRules.scheme_id == Scheme.id)
@@ -196,7 +196,7 @@ async def trigger_rule_extraction(
     scheme_id: str,
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
-    """Automates drafting of eligibility rules from verified scheme chunks using LLM extractor."""
+    """Draft eligibility rules from verified scheme chunks via the LLM extractor."""
     # Find chunks for scheme
     stmt_chunks = (
         select(Chunk)
@@ -211,7 +211,10 @@ async def trigger_rule_extraction(
     if not chunks:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No verified document chunks found for scheme '{scheme_id}' to extract rules from.",
+            detail=(
+                f"No verified document chunks found for scheme '{scheme_id}' "
+                "to extract rules from."
+            ),
         )
 
     # Combine chunk texts

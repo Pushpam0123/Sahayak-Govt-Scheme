@@ -251,7 +251,8 @@ async def main() -> None:
         total_sentences = 0
         supported_sentences = 0
 
-        # We evaluate QA metrics for all cases (faithfulness applies to out-of-corpus as well!)
+        # QA metrics are evaluated for every case: faithfulness applies to
+        # out-of-corpus questions too.
         for case in synced_cases:
             question = case["question"]
             gold_ids = set(case["gold_chunk_ids"])
@@ -368,7 +369,8 @@ async def main() -> None:
             header = (
                 "# Sahayak Evaluation History\n\n"
                 "| Date | Git SHA | Vector Recall@5 | FTS Recall@5 | "
-                "Hybrid Recall@5 | Citation Precision | Faithfulness | Groundedness Rate | Avg Latency | Notes |\n"
+                "Hybrid Recall@5 | Citation Precision | Faithfulness | "
+                "Groundedness Rate | Avg Latency | Notes |\n"
                 "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n"
             )
             with open(evals_file_path, "w", encoding="utf-8") as f:

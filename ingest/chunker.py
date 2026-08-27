@@ -35,7 +35,8 @@ def chunk_document(
     """
     Splits document text into heading-aware chunks.
     Ensures tables are not split, and metadata contains heading path and token size.
-    Returns: list of dicts: {'seq': int, 'heading_path': str, 'text': str, 'tokens': int}
+    Returns: list of dicts:
+        {'seq': int, 'heading_path': str, 'text': str, 'tokens': int}
     """
     lines = document_text.split("\n")
 
@@ -89,10 +90,12 @@ def chunk_document(
         heading_info = parse_heading(line)
 
         if heading_info and not in_table:
-            # We hit a heading. If we have accumulated enough text, emit current chunk first
+            # We hit a heading. If enough text has accumulated, emit the
+            # current chunk first.
             level, title = heading_info
 
-            # Emit if buffer has content and we hit a major heading (H1, H2, H3) or exceeded min size
+            # Emit if the buffer has content and we hit a major heading
+            # (H1, H2, H3) or exceeded the minimum size.
             if current_buffer and (level <= 3 or current_tokens >= target_min_tokens):
                 emit_chunk()
 
@@ -111,7 +114,8 @@ def chunk_document(
         current_buffer.append(line)
         current_tokens = estimate_tokens("\n".join(current_buffer))
 
-        # If we exceeded the maximum chunk size, and we aren't in the middle of a table, emit the chunk
+        # If the maximum chunk size is exceeded and we are not inside a
+        # table, emit the chunk.
         if current_tokens >= target_max_tokens and not in_table:
             emit_chunk()
             current_tokens = 0

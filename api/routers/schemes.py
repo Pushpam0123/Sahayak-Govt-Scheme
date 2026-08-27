@@ -61,7 +61,7 @@ async def get_scheme_detail(
     scheme_id: str,
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
-    """Retrieves full scheme details: benefits, rules, required documents, and verified guidelines."""
+    """Return full scheme detail: benefits, rules, documents and guidelines."""
     # 1. Fetch scheme record
     stmt_scheme = select(Scheme).where(Scheme.id == scheme_id)
     res_scheme = await db.execute(stmt_scheme)
