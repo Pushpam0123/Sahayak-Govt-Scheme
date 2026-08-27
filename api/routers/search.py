@@ -57,12 +57,12 @@ async def search_chunks(
                     pass
 
             for chunk, score in hybrid_results:
-                doc = doc_map.get(chunk.document_id)
+                chunk_doc = doc_map.get(chunk.document_id)
                 results_list.append(
                     {
                         "id": chunk.id,
-                        "scheme_id": doc.scheme_id if doc else None,
-                        "document_title": doc.title if doc else "",
+                        "scheme_id": chunk_doc.scheme_id if chunk_doc else None,
+                        "document_title": chunk_doc.title if chunk_doc else "",
                         "seq": chunk.seq,
                         "heading_path": chunk.heading_path,
                         "text": chunk.text,
@@ -121,12 +121,12 @@ async def search_chunks(
                         pass
 
                 for chunk in chunks:
-                    doc = doc_map.get(chunk.document_id)
+                    chunk_doc = doc_map.get(chunk.document_id)
                     results_list.append(
                         {
                             "id": chunk.id,
-                            "scheme_id": doc.scheme_id if doc else None,
-                            "document_title": doc.title if doc else "",
+                            "scheme_id": chunk_doc.scheme_id if chunk_doc else None,
+                            "document_title": chunk_doc.title if chunk_doc else "",
                             "seq": chunk.seq,
                             "heading_path": chunk.heading_path,
                             "text": chunk.text,

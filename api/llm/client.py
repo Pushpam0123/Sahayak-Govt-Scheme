@@ -32,14 +32,21 @@ class BaseLLMClient(ABC):
         pass
 
     @abstractmethod
-    async def stream_response(
+    def stream_response(
         self,
         system_prompt: str,
         messages: List[Dict[str, str]],
         temperature: float = 0.0,
     ) -> AsyncGenerator[str, None]:
-        """Streams text chunks from the LLM."""
-        pass
+        """Stream text chunks from the LLM.
+
+        Declared as a plain ``def`` returning an ``AsyncGenerator``: calling an
+        ``async def`` function that yields returns the generator directly rather
+        than a coroutine, so this is the signature implementations satisfy.
+        Declaring it ``async def`` here instead made the supertype a coroutine
+        and broke ``async for`` at every call site under type checking.
+        """
+        ...
 
 
 class ClaudeClient(BaseLLMClient):
