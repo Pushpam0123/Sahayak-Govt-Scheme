@@ -120,9 +120,15 @@ def test_token_round_trip_preserves_claims():
 
 def test_token_with_altered_signature_is_rejected():
     token = create_access_token({"sub": "user-123"})
-    # Flip the final character of the signature segment.
-    last = token[-1]
-    tampered = token[:-1] + ("a" if last != "a" else "b")
+    header, payload, signature = token.split(".")
+
+    # Alter the FIRST signature character, not the last. An HS256 signature is 32
+    # bytes encoded as 43 base64url characters, so the final character carries only
+    # 2 significant bits -- four different trailing characters decode to identical
+    # signature bytes, and tampering there leaves the token valid ~1 time in 16.
+    # Every bit of the first character is significant.
+    replacement = "A" if signature[0] != "A" else "B"
+    tampered = f"{header}.{payload}.{replacement}{signature[1:]}"
 
     with pytest.raises(HTTPException) as exc:
         decode_access_token(tampered)
