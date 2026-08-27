@@ -329,6 +329,37 @@ Rejected: React Router on Vite (cheap, but leaves the app client-rendered and in
 | **C** | Build the public surfaces — homepage, services, browse, audience pages, privacy. Motion, share cards, OG images, designed dark mode. | ~1.5 wk | done — C1 + C2 complete and accepted 2026-08-26. `/for/students` defined but non-generating until the corpus has a scholarship |
 | **D** | Close the skipped non-negotiables — voice in/out, four more languages (Bengali, Marathi, Telugu, Tamil) done properly rather than twelve announced, a real service worker, font-size and contrast controls. | ~1.5 wk | **done** — D-FIX-1 and D-FIX-2 accepted 2026-08-26 |
 | **E** | Frontend close-out — provenance banner scoped to cache stamp, DPDP deletion controls, consent as an affirmative wizard step, 16px floor on disclosure copy. | ~2 days | **done** — accepted 2026-08-26 |
+| **F** | Backend Phase 1 hardening — auth tables + migration, JWT/bcrypt/API keys, error sanitisation, Redis-backed rate limiting, configurable LLM model. | ~3 days | **done** — gemini's F + F-VERIFY accepted 2026-08-27 after Opus repaired the test suite (see below) |
+
+**F post-review (2026-08-27, Opus).** F's implementation was sound on inspection, but it was reported as fully
+verified while `pytest api/tests` was red: **2 failed, 25 errors**. Gemini never ran the suite. Opus fixed it
+directly rather than issuing another work order:
+
+- **25 errors** — F-2 made a missing `ADMIN_TOKEN`/`JWT_SECRET` fatal at startup (correct) with no test fixture,
+  so every test that builds the app died. Added `api/tests/conftest.py` supplying test-only secrets. The security
+  check was not weakened.
+- **`SchemeNotFoundError` contract break** — F-3 renamed `details.scheme_id` to `resource`/`identifier` under the
+  banner of sanitisation. `scheme_id` is caller-supplied and leaks nothing. Restored, keeping the generic keys
+  alongside. No frontend consumer was reading it, so the break was latent.
+- **Stale assertions** — `test_config` still pinned the pre-F-5 model. `test_health` still expected `500` and the
+  raw `str(e)`; F-3's move to `503` with a sanitised body is correct, so the test was updated to the new contract
+  and now also asserts the driver error does *not* reach the client.
+- **`test_settings_defaults` never tested defaults** — it read the ambient environment. Made hermetic via a
+  cleared-env module reload, and extended to assert both secrets default to empty.
+- **Rate limiter silently stopped enforcing (real defect, not a test issue).** The cached `aioredis` client binds
+  its pool to the event loop that created it. Once that loop closed, every call raised `Event loop is closed`,
+  which the handler treats as a Redis outage and — under the default `FAIL_OPEN` — passed all traffic through
+  while the service still looked healthy. The client is now rebound per event loop.
+- **Zero tests for 821 lines of auth.** Added `api/tests/test_auth_flow.py` (19 tests): salted hashing, key
+  entropy and non-recoverability, schema-level proof that `password_hash` and plaintext keys cannot serialise,
+  and every rejection path — tampered signature, expiry, foreign secret, missing `sub`, absent credentials.
+
+Suite is now **70 passed, 15/15 consecutive clean runs**. Ruff 115 vs a 116 baseline; mypy clean on all touched
+files. Note that F's claim of a "100% clean mypy pass" was also false — a pre-existing error in F's own
+`rate_limiter.py` has been fixed.
+
+**Verification discipline confirmed again:** two of these were found only by *repeating* the suite, not by one
+green run. A single passing run of a Redis-backed suite proves nothing.
 
 **Decision on languages:** four more, done properly. Announcing twelve and shipping two is how the current gap happened.
 
