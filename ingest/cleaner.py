@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 
 logger = logging.getLogger("sahayak.ingest.cleaner")
 
+
 def convert_html_table_to_markdown(table_tag) -> str:
     """Helper to convert a BeautifulSoup table tag into a Markdown table."""
     markdown_lines = []
@@ -27,6 +28,7 @@ def convert_html_table_to_markdown(table_tag) -> str:
             markdown_lines.append(separator)
 
     return "\n" + "\n".join(markdown_lines) + "\n"
+
 
 def clean_html_content(html_content: str) -> str:
     """Parses HTML raw content, converting headings and tables to Markdown, and extracting text."""
@@ -60,6 +62,7 @@ def clean_html_content(html_content: str) -> str:
 
     return "\n".join(cleaned_lines).strip()
 
+
 def convert_pdf_table_to_markdown(table_data: list) -> str:
     """Converts a raw list-of-lists table from pdfplumber to a Markdown table."""
     if not table_data or not table_data[0]:
@@ -71,7 +74,10 @@ def convert_pdf_table_to_markdown(table_data: list) -> str:
     # Process each row
     for i, row in enumerate(table_data):
         # Handle None cell values
-        cells = [str(cell or "").strip().replace("\n", " ").replace("|", "\\|") for cell in row]
+        cells = [
+            str(cell or "").strip().replace("\n", " ").replace("|", "\\|")
+            for cell in row
+        ]
         row_str = "| " + " | ".join(cells) + " |"
         markdown_lines.append(row_str)
 
@@ -81,6 +87,7 @@ def convert_pdf_table_to_markdown(table_data: list) -> str:
             markdown_lines.append(separator)
 
     return "\n" + "\n".join(markdown_lines) + "\n"
+
 
 def clean_pdf_content(pdf_path: str) -> str:
     """
@@ -104,7 +111,12 @@ def clean_pdf_content(pdf_path: str) -> str:
             # Combine text and tables
             combined_text = page_text
             if md_tables:
-                combined_text += "\n\n### Tables in Page " + str(page_num + 1) + "\n" + "\n".join(md_tables)
+                combined_text += (
+                    "\n\n### Tables in Page "
+                    + str(page_num + 1)
+                    + "\n"
+                    + "\n".join(md_tables)
+                )
 
             # Filter lines (e.g. skip empty footer-like lines, page numbers)
             lines = combined_text.split("\n")
@@ -112,13 +124,16 @@ def clean_pdf_content(pdf_path: str) -> str:
             for line in lines:
                 stripped = line.strip()
                 # Skip simple page numbers (e.g., "Page 1 of 5", "1")
-                if stripped.isdigit() or (stripped.lower().startswith("page") and len(stripped) < 15):
+                if stripped.isdigit() or (
+                    stripped.lower().startswith("page") and len(stripped) < 15
+                ):
                     continue
                 filtered_lines.append(line)
 
             cleaned_pages.append("\n".join(filtered_lines))
 
     return "\n\n--- PAGE BREAK ---\n\n".join(cleaned_pages).strip()
+
 
 def clean_document(file_path: str, doc_type: str) -> str:
     """Orchestrates document cleaning based on its type."""

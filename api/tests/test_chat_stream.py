@@ -31,8 +31,19 @@ def test_chat_stream_endpoint(client: TestClient, mock_db: AsyncMock) -> None:
         text="Eligible farmer families receive 6,000 per year under PM-KISAN.",
         tokens=15,
     )
-    mock_doc = Document(id=10, scheme_id="pm-kisan", title="PM-KISAN Guidelines", source_url="https://pmkisan.gov.in")
-    mock_scheme = Scheme(id="pm-kisan", name="PM-KISAN", state="Central", category="Agriculture", official_url="https://pmkisan.gov.in")
+    mock_doc = Document(
+        id=10,
+        scheme_id="pm-kisan",
+        title="PM-KISAN Guidelines",
+        source_url="https://pmkisan.gov.in",
+    )
+    mock_scheme = Scheme(
+        id="pm-kisan",
+        name="PM-KISAN",
+        state="Central",
+        category="Agriculture",
+        official_url="https://pmkisan.gov.in",
+    )
 
     mock_res = MagicMock()
     mock_res.all.return_value = [(mock_doc, mock_scheme)]

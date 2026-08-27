@@ -13,7 +13,9 @@ from api.db import AsyncSessionLocal
 from api.models.scheme import Document
 
 logger = logging.getLogger("sahayak.ingest.freshness")
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
 
 
 async def check_scheme_freshness(
@@ -97,7 +99,9 @@ async def check_scheme_freshness(
     return result
 
 
-async def run_freshness_audit(manifest_path: str = "ingest/corpus.yaml") -> Dict[str, Any]:
+async def run_freshness_audit(
+    manifest_path: str = "ingest/corpus.yaml",
+) -> Dict[str, Any]:
     with open(manifest_path, "r", encoding="utf-8") as f:
         manifest = yaml.safe_load(f)
     schemes = manifest.get("schemes", [])
@@ -130,14 +134,18 @@ async def run_freshness_audit(manifest_path: str = "ingest/corpus.yaml") -> Dict
         "fresh_count": fresh_count,
         "stale_count": stale_count,
         "broken_count": broken_count,
-        "tls_unverified_count": sum(1 for r in results if not r.get("tls_verified", True)),
+        "tls_unverified_count": sum(
+            1 for r in results if not r.get("tls_verified", True)
+        ),
         "schemes": results,
     }
 
 
 def main():
     report = asyncio.run(run_freshness_audit())
-    print(f"Freshness Report: {report['fresh_count']}/{report['total_schemes']} fresh, {report['broken_count']} broken")
+    print(
+        f"Freshness Report: {report['fresh_count']}/{report['total_schemes']} fresh, {report['broken_count']} broken"
+    )
 
 
 if __name__ == "__main__":

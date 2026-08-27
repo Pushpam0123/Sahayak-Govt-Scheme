@@ -56,7 +56,9 @@ async def test_ingest_scheme_marks_existing_scheme_unverified_on_failed_fetch() 
     mock_scheme_result.scalars().first.return_value = existing_scheme
     mock_db.execute.return_value = mock_scheme_result
 
-    failed_result = FetchResult(status="failed", http_status=None, error="Connection refused")
+    failed_result = FetchResult(
+        status="failed", http_status=None, error="Connection refused"
+    )
 
     with patch("ingest.run.fetch_scheme_guidelines", return_value=failed_result):
         await ingest_scheme(mock_db, SCHEME_DATA)
@@ -68,7 +70,9 @@ async def test_ingest_scheme_marks_existing_scheme_unverified_on_failed_fetch() 
 
 
 @pytest.mark.asyncio
-async def test_ingest_scheme_upgrades_verified_at_on_idempotent_checksum_match() -> None:
+async def test_ingest_scheme_upgrades_verified_at_on_idempotent_checksum_match() -> (
+    None
+):
     """A document that was previously stored from a cached (unverified)
     fetch must be upgraded to verified once we confirm the identical bytes
     live - even though the checksum match means we skip re-chunking it."""
@@ -115,7 +119,9 @@ async def test_ingest_scheme_upgrades_verified_at_on_idempotent_checksum_match()
 
 
 @pytest.mark.asyncio
-async def test_ingest_scheme_never_downgrades_verified_at_on_idempotent_checksum_match() -> None:
+async def test_ingest_scheme_never_downgrades_verified_at_on_idempotent_checksum_match() -> (
+    None
+):
     """A document verified at T1 must keep that verified_at (and its
     fetch_status) if a later run on the identical bytes only manages a
     cached fetch with no provenance (e.g. the sidecar was lost). The bytes
@@ -152,7 +158,9 @@ async def test_ingest_scheme_never_downgrades_verified_at_on_idempotent_checksum
         fetched_at=None,
     )
 
-    with patch("ingest.run.fetch_scheme_guidelines", return_value=cached_no_sidecar_result):
+    with patch(
+        "ingest.run.fetch_scheme_guidelines", return_value=cached_no_sidecar_result
+    ):
         await ingest_scheme(mock_db, SCHEME_DATA, force=False)
 
     # verified_at and fetch_status are untouched - not downgraded.

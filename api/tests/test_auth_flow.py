@@ -42,6 +42,7 @@ def client(mock_db: AsyncMock):
 
 # --- Password hashing ---
 
+
 def test_password_hash_is_salted_and_verifies():
     password = "correct horse battery staple"
     first = hash_password(password)
@@ -72,6 +73,7 @@ def test_verify_password_returns_false_on_malformed_hash():
 
 
 # --- API keys ---
+
 
 def test_generate_api_key_is_unguessable_and_consistent():
     plaintext, prefix, key_hash = generate_api_key()
@@ -109,6 +111,7 @@ def test_user_response_schema_cannot_expose_password_hash():
 
 
 # --- JWT issuance and rejection ---
+
 
 def test_token_round_trip_preserves_claims():
     token = create_access_token({"sub": "user-123", "role": "admin"})
@@ -168,6 +171,7 @@ def test_token_without_subject_claim_is_rejected():
 
 
 # --- Route-level enforcement ---
+
 
 def test_me_without_credentials_is_401(client: TestClient):
     res = client.get("/api/v1/auth/me")

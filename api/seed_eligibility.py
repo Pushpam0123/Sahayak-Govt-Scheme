@@ -107,7 +107,9 @@ async def main() -> None:
             existing = res.scalars().first()
 
             if existing:
-                logger.info(f"Rules for scheme '{scheme_id}' already exist. Updating...")
+                logger.info(
+                    f"Rules for scheme '{scheme_id}' already exist. Updating..."
+                )
                 existing.rules_json = rules
                 existing.is_verified = True
                 existing.verified_by = "seed-harness"

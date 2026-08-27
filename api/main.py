@@ -22,8 +22,12 @@ app = FastAPI(
     title="Sahayak API",
     description="Backend API for Sahayak Government Scheme RAG Assistant",
     version="0.2.0",
-    docs_url="/docs" if settings.DEBUG or settings.ENVIRONMENT != "production" else None,
-    redoc_url="/redoc" if settings.DEBUG or settings.ENVIRONMENT != "production" else None,
+    docs_url="/docs"
+    if settings.DEBUG or settings.ENVIRONMENT != "production"
+    else None,
+    redoc_url="/redoc"
+    if settings.DEBUG or settings.ENVIRONMENT != "production"
+    else None,
 )
 
 
@@ -44,7 +48,9 @@ async def request_id_middleware(request: Request, call_next: Any) -> Any:
 
 # Application exception handler
 @app.exception_handler(SahayakError)
-async def sahayak_exception_handler(request: Request, exc: SahayakError) -> JSONResponse:
+async def sahayak_exception_handler(
+    request: Request, exc: SahayakError
+) -> JSONResponse:
     req_id = getattr(request.state, "request_id", uuid.uuid4().hex[:12])
     logger.error(
         "Application error [request_id=%s] %s %s: %s",

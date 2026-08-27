@@ -24,6 +24,7 @@ bearer_scheme = HTTPBearer(auto_error=False)
 
 # --- Cryptographic Helpers ---
 
+
 def hash_password(password: str) -> str:
     """Hashes a plaintext password using bcrypt with automatic salt."""
     salt = bcrypt.gensalt()
@@ -33,7 +34,9 @@ def hash_password(password: str) -> str:
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verifies a plaintext password against a bcrypt hash in constant time."""
     try:
-        return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
+        return bcrypt.checkpw(
+            plain_password.encode("utf-8"), hashed_password.encode("utf-8")
+        )
     except Exception:
         return False
 
@@ -57,7 +60,10 @@ def generate_api_key(prefix: str = "shk_live_") -> tuple[str, str, str]:
 
 # --- JWT Token Management ---
 
-def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
+
+def create_access_token(
+    data: Dict[str, Any], expires_delta: Optional[timedelta] = None
+) -> str:
     """Issues a signed JWT access token."""
     if not settings.JWT_SECRET:
         raise ValueError("JWT_SECRET is not configured.")
@@ -67,7 +73,9 @@ def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta]
         expires_delta or timedelta(minutes=settings.JWT_EXPIRE_MINUTES)
     )
     to_encode.update({"exp": expire, "iat": datetime.now(timezone.utc)})
-    token_str: str = jwt.encode(to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+    token_str: str = jwt.encode(
+        to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM
+    )
     return token_str
 
 
@@ -99,6 +107,7 @@ def decode_access_token(token: str) -> Dict[str, Any]:
 
 
 # --- Principal & Dependencies ---
+
 
 @dataclass
 class AuthPrincipal:
@@ -145,7 +154,9 @@ async def get_current_principal(
     - X-API-Key: shk_live_<key>
     """
     token_str = bearer.credentials if bearer else None
-    key_str = raw_api_key or (token_str if token_str and token_str.startswith("shk_") else None)
+    key_str = raw_api_key or (
+        token_str if token_str and token_str.startswith("shk_") else None
+    )
 
     # 1. API Key Auth Path
     if key_str:

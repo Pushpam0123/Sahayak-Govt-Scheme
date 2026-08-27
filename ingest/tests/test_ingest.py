@@ -7,10 +7,9 @@ from ingest.cleaner import clean_html_content
 from ingest.embedder import MockEmbedder
 
 FIXTURE_PATH = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    "fixtures",
-    "sample.html"
+    os.path.dirname(os.path.abspath(__file__)), "fixtures", "sample.html"
 )
+
 
 def test_html_cleaning() -> None:
     # Load fixture
@@ -29,13 +28,16 @@ def test_html_cleaning() -> None:
     assert "| Age | >= 18 |" in cleaned_text
     assert "| Income | <= 200000 |" in cleaned_text
 
+
 def test_chunking() -> None:
     # Prepare text
     with open(FIXTURE_PATH, "r", encoding="utf-8") as f:
         content = f.read()
 
     cleaned_text = clean_html_content(content)
-    chunks = chunk_document(cleaned_text, "PM-Test-Scheme", target_min_tokens=10, target_max_tokens=150)
+    chunks = chunk_document(
+        cleaned_text, "PM-Test-Scheme", target_min_tokens=10, target_max_tokens=150
+    )
 
     assert len(chunks) > 0
 
@@ -61,6 +63,7 @@ def test_chunking() -> None:
     assert "| Criteria | Limit |" in table_chunk["text"]
     assert "| Income | <= 200000 |" in table_chunk["text"]
 
+
 def test_mock_embedder() -> None:
     embedder = MockEmbedder()
 
@@ -83,5 +86,5 @@ def test_mock_embedder() -> None:
     assert v1 != v3
 
     # Check normalization (magnitude of unit vector is ~1.0)
-    mag = sum(x*x for x in v1) ** 0.5
+    mag = sum(x * x for x in v1) ** 0.5
     assert pytest.approx(mag, 0.001) == 1.0

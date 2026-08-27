@@ -10,11 +10,15 @@ from ingest.fetcher import (
     fetch_scheme_guidelines,
 )
 
-VALID_HTML_CONTENT = b"<html><body>" + b"Real guidelines content. " * 100 + b"</body></html>"
+VALID_HTML_CONTENT = (
+    b"<html><body>" + b"Real guidelines content. " * 100 + b"</body></html>"
+)
 VALID_PDF_CONTENT = b"%PDF-1.4\n" + b"0" * MIN_PDF_BYTES
 
 
-def _mock_response(status_code: int, content: bytes, content_type: str = "text/html; charset=utf-8"):
+def _mock_response(
+    status_code: int, content: bytes, content_type: str = "text/html; charset=utf-8"
+):
     response = MagicMock()
     response.status_code = status_code
     response.content = content
@@ -44,7 +48,9 @@ def _patched_client(response=None, side_effect=None):
 
 def test_fetch_failed_when_unreachable_and_no_cache() -> None:
     with _patched_client(side_effect=Exception("Connection refused")):
-        result = fetch_scheme_guidelines("some-scheme", "https://example.gov.in/guidelines.html")
+        result = fetch_scheme_guidelines(
+            "some-scheme", "https://example.gov.in/guidelines.html"
+        )
 
     assert isinstance(result, FetchResult)
     assert result.status == "failed"
@@ -56,14 +62,18 @@ def test_fetch_failed_when_unreachable_and_no_cache() -> None:
     assert result.error is not None
 
 
-def test_fetch_cached_when_network_fails_but_local_file_exists_no_sidecar(tmp_path) -> None:
+def test_fetch_cached_when_network_fails_but_local_file_exists_no_sidecar(
+    tmp_path,
+) -> None:
     scheme_id = "some-scheme"
     cached_path = os.path.join(str(tmp_path), f"{scheme_id}.html")
     with open(cached_path, "wb") as f:
         f.write(b"<html><body>Previously fetched guidelines</body></html>")
 
     with _patched_client(side_effect=Exception("Connection refused")):
-        result = fetch_scheme_guidelines(scheme_id, "https://example.gov.in/guidelines.html")
+        result = fetch_scheme_guidelines(
+            scheme_id, "https://example.gov.in/guidelines.html"
+        )
 
     assert result.status == "cached"
     assert result.file_path == cached_path
@@ -77,7 +87,9 @@ def test_fetch_success_returns_fetched_status(tmp_path) -> None:
     scheme_id = "some-scheme"
 
     with _patched_client(response=_mock_response(200, VALID_HTML_CONTENT)):
-        result = fetch_scheme_guidelines(scheme_id, "https://example.gov.in/guidelines.html")
+        result = fetch_scheme_guidelines(
+            scheme_id, "https://example.gov.in/guidelines.html"
+        )
 
     assert result.status == "fetched"
     assert result.file_path == os.path.join(str(tmp_path), f"{scheme_id}.html")
@@ -118,11 +130,15 @@ def test_cached_fallback_with_mismatched_source_url_is_not_verified(tmp_path) ->
     scheme_id = "some-scheme"
 
     with _patched_client(response=_mock_response(200, VALID_HTML_CONTENT)):
-        first = fetch_scheme_guidelines(scheme_id, "https://example.gov.in/old-guidelines.html")
+        first = fetch_scheme_guidelines(
+            scheme_id, "https://example.gov.in/old-guidelines.html"
+        )
     assert first.fetched_at is not None
 
     with _patched_client(side_effect=Exception("Connection refused")):
-        result = fetch_scheme_guidelines(scheme_id, "https://example.gov.in/new-guidelines.html")
+        result = fetch_scheme_guidelines(
+            scheme_id, "https://example.gov.in/new-guidelines.html"
+        )
 
     assert result.status == "cached"
     assert result.fetched_at is None
@@ -151,8 +167,12 @@ def test_cached_fallback_with_tampered_content_is_not_verified(tmp_path) -> None
 
 def test_undersized_pdf_response_is_rejected() -> None:
     small_pdf = b"%PDF-1.4\n" + b"0" * 100  # well under MIN_PDF_BYTES
-    with _patched_client(response=_mock_response(200, small_pdf, content_type="application/pdf")):
-        result = fetch_scheme_guidelines("some-scheme", "https://example.gov.in/guidelines.pdf")
+    with _patched_client(
+        response=_mock_response(200, small_pdf, content_type="application/pdf")
+    ):
+        result = fetch_scheme_guidelines(
+            "some-scheme", "https://example.gov.in/guidelines.pdf"
+        )
 
     assert result.status == "failed"
     assert result.file_path is None
@@ -162,7 +182,9 @@ def test_undersized_pdf_response_is_rejected() -> None:
 def test_undersized_html_response_is_rejected() -> None:
     small_html = b"<html>tiny</html>"  # well under MIN_HTML_BYTES
     with _patched_client(response=_mock_response(200, small_html)):
-        result = fetch_scheme_guidelines("some-scheme", "https://example.gov.in/guidelines.html")
+        result = fetch_scheme_guidelines(
+            "some-scheme", "https://example.gov.in/guidelines.html"
+        )
 
     assert result.status == "failed"
     assert result.file_path is None
@@ -171,8 +193,12 @@ def test_undersized_html_response_is_rejected() -> None:
 
 def test_html_url_with_non_html_content_type_is_rejected() -> None:
     content = VALID_HTML_CONTENT  # size is fine; content-type is not
-    with _patched_client(response=_mock_response(200, content, content_type="application/x-javascript")):
-        result = fetch_scheme_guidelines("some-scheme", "https://example.gov.in/guidelines.html")
+    with _patched_client(
+        response=_mock_response(200, content, content_type="application/x-javascript")
+    ):
+        result = fetch_scheme_guidelines(
+            "some-scheme", "https://example.gov.in/guidelines.html"
+        )
 
     assert result.status == "failed"
     assert result.file_path is None
@@ -181,8 +207,12 @@ def test_html_url_with_non_html_content_type_is_rejected() -> None:
 
 def test_pdf_without_magic_bytes_is_rejected_even_if_large() -> None:
     fake_pdf = b"NOT A PDF " * 2000  # large enough, but not a real PDF
-    with _patched_client(response=_mock_response(200, fake_pdf, content_type="application/pdf")):
-        result = fetch_scheme_guidelines("some-scheme", "https://example.gov.in/guidelines.pdf")
+    with _patched_client(
+        response=_mock_response(200, fake_pdf, content_type="application/pdf")
+    ):
+        result = fetch_scheme_guidelines(
+            "some-scheme", "https://example.gov.in/guidelines.pdf"
+        )
 
     assert result.status == "failed"
     assert "magic bytes" in (result.error or "")
@@ -200,8 +230,12 @@ TLS_ERROR = Exception(
 
 def test_default_fetch_verifies_tls() -> None:
     """A normal successful fetch verifies certificates and is marked as such."""
-    with _patched_client(response=_mock_response(200, VALID_HTML_CONTENT)) as mock_client_cls:
-        result = fetch_scheme_guidelines("some-scheme", "https://example.gov.in/guidelines.html")
+    with _patched_client(
+        response=_mock_response(200, VALID_HTML_CONTENT)
+    ) as mock_client_cls:
+        result = fetch_scheme_guidelines(
+            "some-scheme", "https://example.gov.in/guidelines.html"
+        )
 
     assert result.status == "fetched"
     assert result.tls_verified is True
@@ -214,18 +248,26 @@ def test_default_fetch_verifies_tls() -> None:
 def test_tls_error_without_opt_in_fails_and_never_retries_insecurely() -> None:
     with _patched_client(side_effect=TLS_ERROR):
         result = fetch_scheme_guidelines(
-            "some-scheme", "https://example.gov.in/guidelines.html", allow_insecure_fallback=False
+            "some-scheme",
+            "https://example.gov.in/guidelines.html",
+            allow_insecure_fallback=False,
         )
 
     assert result.status == "failed"
     assert result.tls_verified is True  # default; nothing was ever fetched
 
 
-def test_tls_error_with_opt_in_retries_insecurely_and_is_marked_unverified(tmp_path) -> None:
+def test_tls_error_with_opt_in_retries_insecurely_and_is_marked_unverified(
+    tmp_path,
+) -> None:
     scheme_id = "some-scheme"
-    with _patched_client(side_effect=[TLS_ERROR, _mock_response(200, VALID_HTML_CONTENT)]):
+    with _patched_client(
+        side_effect=[TLS_ERROR, _mock_response(200, VALID_HTML_CONTENT)]
+    ):
         result = fetch_scheme_guidelines(
-            scheme_id, "https://example.gov.in/guidelines.html", allow_insecure_fallback=True
+            scheme_id,
+            "https://example.gov.in/guidelines.html",
+            allow_insecure_fallback=True,
         )
 
     assert result.status == "fetched"
@@ -237,9 +279,13 @@ def test_non_tls_error_with_opt_in_does_not_trigger_insecure_retry() -> None:
     """The opt-in only covers TLS/certificate failures - a DNS failure, timeout,
     or connection refused must never trigger the insecure retry regardless of
     the flag."""
-    with _patched_client(side_effect=Exception("Connection refused")) as mock_client_cls:
+    with _patched_client(
+        side_effect=Exception("Connection refused")
+    ) as mock_client_cls:
         result = fetch_scheme_guidelines(
-            "some-scheme", "https://example.gov.in/guidelines.html", allow_insecure_fallback=True
+            "some-scheme",
+            "https://example.gov.in/guidelines.html",
+            allow_insecure_fallback=True,
         )
 
     assert result.status == "failed"
@@ -253,19 +299,27 @@ def test_cached_fallback_carries_tls_verified_through_sidecar() -> None:
     scheme_id = "some-scheme"
     source_url = "https://example.gov.in/guidelines.html"
 
-    with _patched_client(side_effect=[TLS_ERROR, _mock_response(200, VALID_HTML_CONTENT)]):
-        first = fetch_scheme_guidelines(scheme_id, source_url, allow_insecure_fallback=True)
+    with _patched_client(
+        side_effect=[TLS_ERROR, _mock_response(200, VALID_HTML_CONTENT)]
+    ):
+        first = fetch_scheme_guidelines(
+            scheme_id, source_url, allow_insecure_fallback=True
+        )
     assert first.tls_verified is False
 
     with _patched_client(side_effect=Exception("Connection refused")):
-        second = fetch_scheme_guidelines(scheme_id, source_url, allow_insecure_fallback=True)
+        second = fetch_scheme_guidelines(
+            scheme_id, source_url, allow_insecure_fallback=True
+        )
 
     assert second.status == "cached"
     assert second.fetched_at is not None
     assert second.tls_verified is False
 
 
-def test_old_sidecar_without_tls_verified_field_is_treated_as_unverified(tmp_path) -> None:
+def test_old_sidecar_without_tls_verified_field_is_treated_as_unverified(
+    tmp_path,
+) -> None:
     """A sidecar written before tls_verified existed carries no evidence either
     way - treated as False (unknown is not verified), not True."""
     scheme_id = "some-scheme"

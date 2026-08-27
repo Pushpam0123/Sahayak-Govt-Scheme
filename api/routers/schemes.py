@@ -17,7 +17,9 @@ async def list_schemes(
     state: Optional[str] = Query(None, description="Filter by state name or 'Central'"),
     category: Optional[str] = Query(None, description="Filter by category"),
     benefit_type: Optional[str] = Query(None, description="Filter by benefit type"),
-    status_filter: Optional[str] = Query("active", alias="status", description="Filter by status"),
+    status_filter: Optional[str] = Query(
+        "active", alias="status", description="Filter by status"
+    ),
     db: AsyncSession = Depends(get_db),
 ) -> List[Dict[str, Any]]:
     """Lists schemes with optional filters and rich citizen summary metadata."""
@@ -74,7 +76,9 @@ async def get_scheme_detail(
     docs = res_docs.scalars().all()
 
     # 3. Fetch eligibility rules if configured
-    stmt_rules = select(SchemeEligibilityRules).where(SchemeEligibilityRules.scheme_id == scheme_id)
+    stmt_rules = select(SchemeEligibilityRules).where(
+        SchemeEligibilityRules.scheme_id == scheme_id
+    )
     res_rules = await db.execute(stmt_rules)
     rules_obj = res_rules.scalars().first()
 
@@ -99,7 +103,9 @@ async def get_scheme_detail(
             "is_verified": rules_obj.is_verified if rules_obj else False,
             "rules": rules_obj.rules_json if rules_obj else None,
             "verified_by": rules_obj.verified_by if rules_obj else None,
-            "verified_at": rules_obj.verified_at.isoformat() if rules_obj and rules_obj.verified_at else None,
+            "verified_at": rules_obj.verified_at.isoformat()
+            if rules_obj and rules_obj.verified_at
+            else None,
         }
         if rules_obj
         else None,

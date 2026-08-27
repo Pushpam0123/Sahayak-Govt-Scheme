@@ -43,16 +43,22 @@ class VerifyRulesRequest(BaseModel):
 async def get_admin_stats(db: AsyncSession = Depends(get_db)) -> Dict[str, Any]:
     """Returns administrative dashboard stats."""
     schemes_count = await db.scalar(select(func.count(Scheme.id)))
-    active_schemes_count = await db.scalar(select(func.count(Scheme.id)).where(Scheme.status == "active"))
+    active_schemes_count = await db.scalar(
+        select(func.count(Scheme.id)).where(Scheme.status == "active")
+    )
     docs_count = await db.scalar(select(func.count(Document.id)))
     verified_docs_count = await db.scalar(
         select(func.count(Document.id)).where(Document.verified_at.is_not(None))
     )
     chunks_count = await db.scalar(select(func.count(Chunk.id)))
     qa_logs_count = await db.scalar(select(func.count(QALog.id)))
-    total_cost = await db.scalar(select(func.coalesce(func.sum(QALog.estimated_cost_usd), 0.0)))
+    total_cost = await db.scalar(
+        select(func.coalesce(func.sum(QALog.estimated_cost_usd), 0.0))
+    )
     unverified_rules_count = await db.scalar(
-        select(func.count(SchemeEligibilityRules.id)).where(SchemeEligibilityRules.is_verified.is_(False))
+        select(func.count(SchemeEligibilityRules.id)).where(
+            SchemeEligibilityRules.is_verified.is_(False)
+        )
     )
 
     return {
@@ -128,7 +134,9 @@ async def get_rules_verification_queue(
                 "category": scheme.category,
                 "rules_json": rule.rules_json,
                 "extracted_by": rule.extracted_by,
-                "extracted_at": rule.extracted_at.isoformat() if rule.extracted_at else None,
+                "extracted_at": rule.extracted_at.isoformat()
+                if rule.extracted_at
+                else None,
                 "is_verified": rule.is_verified,
                 "notes": rule.notes,
             }
@@ -143,7 +151,9 @@ async def verify_scheme_rules(
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
     """Approves and marks a scheme's eligibility rules as verified."""
-    stmt = select(SchemeEligibilityRules).where(SchemeEligibilityRules.scheme_id == scheme_id)
+    stmt = select(SchemeEligibilityRules).where(
+        SchemeEligibilityRules.scheme_id == scheme_id
+    )
     res = await db.execute(stmt)
     rule = res.scalars().first()
 
@@ -205,11 +215,15 @@ async def trigger_rule_extraction(
         )
 
     # Combine chunk texts
-    combined_text = "\n\n".join([f"[{c.heading_path or 'Section'}]: {c.text}" for c in chunks])
+    combined_text = "\n\n".join(
+        [f"[{c.heading_path or 'Section'}]: {c.text}" for c in chunks]
+    )
     extracted_rules = await extract_rules_from_chunk(combined_text)
 
     # Save to verification queue as unverified draft
-    stmt_rule = select(SchemeEligibilityRules).where(SchemeEligibilityRules.scheme_id == scheme_id)
+    stmt_rule = select(SchemeEligibilityRules).where(
+        SchemeEligibilityRules.scheme_id == scheme_id
+    )
     res_rule = await db.execute(stmt_rule)
     rule = res_rule.scalars().first()
 

@@ -48,9 +48,10 @@ def test_chat_uses_session_history(client: TestClient, mock_db: AsyncMock):
         tokens=15,
     )
 
-    with patch("api.services.chat.hybrid_search") as mock_hybrid_search, patch(
-        "api.services.chat.get_llm_client"
-    ) as mock_get_llm:
+    with (
+        patch("api.services.chat.hybrid_search") as mock_hybrid_search,
+        patch("api.services.chat.get_llm_client") as mock_get_llm,
+    ):
         mock_hybrid_search.return_value = [(mock_chunk, 0.05)]
 
         mock_llm_client = AsyncMock()
@@ -62,7 +63,10 @@ def test_chat_uses_session_history(client: TestClient, mock_db: AsyncMock):
 
         response = client.post(
             "/api/v1/chat",
-            json={"question": "What is the maximum age to join?", "session_id": "session-user-123"},
+            json={
+                "question": "What is the maximum age to join?",
+                "session_id": "session-user-123",
+            },
         )
         assert response.status_code == 200
 
@@ -73,6 +77,9 @@ def test_chat_uses_session_history(client: TestClient, mock_db: AsyncMock):
         assert messages_sent[0]["role"] == "user"
         assert messages_sent[0]["content"] == "What is the minimum pension under APY?"
         assert messages_sent[1]["role"] == "assistant"
-        assert messages_sent[1]["content"] == "Minimum guaranteed pension is Rs 1,000 per month. [1]"
+        assert (
+            messages_sent[1]["content"]
+            == "Minimum guaranteed pension is Rs 1,000 per month. [1]"
+        )
         assert messages_sent[2]["role"] == "user"
         assert messages_sent[2]["content"] == "What is the maximum age to join?"

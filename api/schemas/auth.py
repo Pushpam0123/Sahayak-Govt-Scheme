@@ -46,8 +46,12 @@ class UserResponse(BaseModel):
 
 
 class APIKeyCreateRequest(BaseModel):
-    name: str = Field(..., min_length=2, max_length=100, description="Friendly label for the API key")
-    org_id: Optional[uuid.UUID] = Field(None, description="Associated organization ID (if any)")
+    name: str = Field(
+        ..., min_length=2, max_length=100, description="Friendly label for the API key"
+    )
+    org_id: Optional[uuid.UUID] = Field(
+        None, description="Associated organization ID (if any)"
+    )
 
 
 class APIKeyCreateResponse(BaseModel):
@@ -56,7 +60,9 @@ class APIKeyCreateResponse(BaseModel):
     id: uuid.UUID
     name: str
     prefix: str
-    api_key: str = Field(..., description="Plaintext API key — displayed ONLY ONCE upon creation")
+    api_key: str = Field(
+        ..., description="Plaintext API key — displayed ONLY ONCE upon creation"
+    )
     org_id: Optional[uuid.UUID] = None
     created_at: datetime
 

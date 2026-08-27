@@ -19,7 +19,9 @@ def route_doc_not_verified():
 
 @err_router.get("/test/custom-error")
 def route_custom_error():
-    raise SahayakError("Custom error message", status_code=400, error_code="CUSTOM_BAD_REQUEST")
+    raise SahayakError(
+        "Custom error message", status_code=400, error_code="CUSTOM_BAD_REQUEST"
+    )
 
 
 app.include_router(err_router, prefix="/api/v1/test_errors")

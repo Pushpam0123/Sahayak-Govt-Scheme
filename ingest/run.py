@@ -21,7 +21,9 @@ from ingest.embedder import get_embedder
 from ingest.fetcher import FetchResult, fetch_scheme_guidelines
 
 logger = logging.getLogger("sahayak.ingest.run")
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
 
 
 def _naive_utc(dt: datetime | None) -> datetime | None:
@@ -40,12 +42,16 @@ def _naive_utc(dt: datetime | None) -> datetime | None:
         return dt.astimezone(timezone.utc).replace(tzinfo=None)
     return dt
 
+
 async def load_corpus_manifest(manifest_path: str = "ingest/corpus.yaml") -> list[dict]:
     with open(manifest_path, "r") as f:
         data = yaml.safe_load(f)
     return data.get("schemes", [])
 
-async def ingest_scheme(db: AsyncSession, scheme_data: dict, force: bool = False) -> None:
+
+async def ingest_scheme(
+    db: AsyncSession, scheme_data: dict, force: bool = False
+) -> None:
     scheme_id = scheme_data["id"]
     name = scheme_data["name"]
     state = scheme_data["state"]
@@ -145,7 +151,9 @@ async def ingest_scheme(db: AsyncSession, scheme_data: dict, force: bool = False
             existing_doc.fetch_status = fetch_result.status
             existing_doc.tls_verified = fetch_result.tls_verified
         existing_doc.content_sha256 = fetch_result.content_sha256
-        logger.info(f"Skipping scheme '{scheme_id}': Document matches checksum {checksum}")
+        logger.info(
+            f"Skipping scheme '{scheme_id}': Document matches checksum {checksum}"
+        )
         return
 
     logger.info(f"Ingesting scheme '{scheme_id}'...")
@@ -181,7 +189,7 @@ async def ingest_scheme(db: AsyncSession, scheme_data: dict, force: bool = False
             deadlines=deadlines,
             helpline=helpline,
             last_verified_at=_naive_utc(fetch_result.fetched_at),
-            status="active"
+            status="active",
         )
         db.add(db_scheme)
         await db.flush()
@@ -206,7 +214,9 @@ async def ingest_scheme(db: AsyncSession, scheme_data: dict, force: bool = False
 
     # 4. If document exists but checksum changed, delete the old document (cascade deletes old chunks)
     if existing_doc:
-        logger.info(f"Document checksum changed for '{scheme_id}'. Replacing old document.")
+        logger.info(
+            f"Document checksum changed for '{scheme_id}'. Replacing old document."
+        )
         await db.delete(existing_doc)
         await db.flush()
     else:
@@ -246,7 +256,9 @@ async def ingest_scheme(db: AsyncSession, scheme_data: dict, force: bool = False
     # 8. Generate Embeddings in batch
     embedder = get_embedder()
     texts = [(c["heading_path"] or "") + " " + c["text"] for c in chunks_data]
-    logger.info(f"Generating embeddings for {len(texts)} chunks of scheme '{scheme_id}'...")
+    logger.info(
+        f"Generating embeddings for {len(texts)} chunks of scheme '{scheme_id}'..."
+    )
     embeddings = embedder.embed_batch(texts)
 
     # 9. Persist Chunks
@@ -258,11 +270,14 @@ async def ingest_scheme(db: AsyncSession, scheme_data: dict, force: bool = False
             text=c["text"],
             tokens=c["tokens"],
             embedding=embeddings[i],
-            tsv=func.to_tsvector("english", c["text"])
+            tsv=func.to_tsvector("english", c["text"]),
         )
         db.add(db_chunk)
 
-    logger.info(f"Successfully ingested {len(chunks_data)} chunks for scheme '{scheme_id}'")
+    logger.info(
+        f"Successfully ingested {len(chunks_data)} chunks for scheme '{scheme_id}'"
+    )
+
 
 async def run_pipeline(scheme_id: str | None = None, force: bool = False) -> None:
     # Read manifest
@@ -286,13 +301,19 @@ async def run_pipeline(scheme_id: str | None = None, force: bool = False) -> Non
             logger.error(f"Ingestion pipeline failed: {str(e)}", exc_info=True)
             raise e
 
+
 def main():
     parser = argparse.ArgumentParser(description="Sahayak Welfare Scheme Ingestion CLI")
     parser.add_argument("--scheme", type=str, help="Specific scheme ID to ingest")
-    parser.add_argument("--force", action="store_true", help="Force ingestion regardless of checksum match")
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Force ingestion regardless of checksum match",
+    )
     args = parser.parse_args()
 
     asyncio.run(run_pipeline(scheme_id=args.scheme, force=args.force))
+
 
 if __name__ == "__main__":
     main()

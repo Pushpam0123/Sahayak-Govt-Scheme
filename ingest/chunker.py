@@ -3,10 +3,12 @@ import re
 
 logger = logging.getLogger("sahayak.ingest.chunker")
 
+
 def estimate_tokens(text: str) -> int:
     """Estimates token count. Standard proxy: 1 word ~ 1.3 tokens."""
     words = text.split()
     return int(len(words) * 1.3)
+
 
 def parse_heading(line: str) -> tuple[int, str] | None:
     """Checks if a line is a Markdown heading. Returns (level, text) or None."""
@@ -17,12 +19,19 @@ def parse_heading(line: str) -> tuple[int, str] | None:
         return level, title
     return None
 
+
 def make_heading_path(headers: list[str]) -> str:
     """Joins headers to create a heading path, e.g., 'Section 1 > Subsection A'."""
     active_headers = [h for h in headers if h]
     return " > ".join(active_headers)
 
-def chunk_document(document_text: str, scheme_name: str, target_min_tokens: int = 400, target_max_tokens: int = 800) -> list[dict]:
+
+def chunk_document(
+    document_text: str,
+    scheme_name: str,
+    target_min_tokens: int = 400,
+    target_max_tokens: int = 800,
+) -> list[dict]:
     """
     Splits document text into heading-aware chunks.
     Ensures tables are not split, and metadata contains heading path and token size.
@@ -52,12 +61,14 @@ def chunk_document(document_text: str, scheme_name: str, target_min_tokens: int 
         heading_path = make_heading_path(current_headers)
         tokens = estimate_tokens(chunk_text)
 
-        chunks.append({
-            "seq": chunk_seq,
-            "heading_path": heading_path,
-            "text": chunk_text,
-            "tokens": tokens
-        })
+        chunks.append(
+            {
+                "seq": chunk_seq,
+                "heading_path": heading_path,
+                "text": chunk_text,
+                "tokens": tokens,
+            }
+        )
         chunk_seq += 1
 
         # Reset buffer

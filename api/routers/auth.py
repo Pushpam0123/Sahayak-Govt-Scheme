@@ -91,7 +91,9 @@ async def register(
     await db.commit()
 
     # Re-fetch with relationships loaded
-    fetch_stmt = select(User).options(selectinload(User.organization)).where(User.id == user.id)
+    fetch_stmt = (
+        select(User).options(selectinload(User.organization)).where(User.id == user.id)
+    )
     fetch_res = await db.execute(fetch_stmt)
     created_user = fetch_res.scalars().first()
     if created_user is None:
@@ -202,7 +204,9 @@ async def create_new_api_key(
     db: AsyncSession = Depends(get_db),
 ) -> APIKeyCreateResponse:
     # Resolve organization ownership
-    org_id = req.org_id or (principal.organization.id if principal.organization else None)
+    org_id = req.org_id or (
+        principal.organization.id if principal.organization else None
+    )
 
     plaintext_key, key_prefix, key_hash = generate_api_key(prefix="shk_live_")
 

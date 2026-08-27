@@ -159,6 +159,7 @@ def test_match_profile_nsp_post_matric() -> None:
 # values come from wizards and third-party API clients in arbitrary casing.
 # A mismatch here produces a confident, wrong "ineligible".
 
+
 def test_gender_match_is_case_insensitive():
     rules = {"genders": ["Female"]}
     for supplied in ("Female", "female", "FEMALE", " female "):

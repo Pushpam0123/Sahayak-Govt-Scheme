@@ -84,7 +84,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self, request: Request, call_next: RequestResponseEndpoint
     ) -> Response:
         # Generate or preserve X-Request-ID
-        request_id = getattr(request.state, "request_id", None) or request.headers.get("X-Request-ID") or uuid.uuid4().hex[:12]
+        request_id = (
+            getattr(request.state, "request_id", None)
+            or request.headers.get("X-Request-ID")
+            or uuid.uuid4().hex[:12]
+        )
 
         client_key = self._get_client_identifier(request)
         redis_key = f"sahayak:ratelimit:{client_key}"
@@ -97,7 +101,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             async with r.pipeline(transaction=True) as pipe:
                 pipe.zremrangebyscore(redis_key, 0, window_start)
                 pipe.zcard(redis_key)
-                pipe.zadd(redis_key, {f"{current_time}:{uuid.uuid4().hex[:6]}": current_time})
+                pipe.zadd(
+                    redis_key, {f"{current_time}:{uuid.uuid4().hex[:6]}": current_time}
+                )
                 pipe.expire(redis_key, self.window_seconds + 10)
                 results = await pipe.execute()
 

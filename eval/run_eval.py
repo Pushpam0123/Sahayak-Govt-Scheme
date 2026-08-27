@@ -174,9 +174,7 @@ async def evaluate_strategy(
     return hits / len(in_corpus_cases)
 
 
-async def evaluate_faithfulness(
-    answer: str, retrieved_chunks: List[str]
-) -> float:
+async def evaluate_faithfulness(answer: str, retrieved_chunks: List[str]) -> float:
     """Invokes LLM-as-judge to verify if the answer is faithful to the context chunks.
 
     Returns 1.0 (faithful) or 0.0 (unfaithful).
@@ -274,7 +272,9 @@ async def main() -> None:
                 # full retrieved set, so read it back from the QA log written above.
                 qa_log_id = chat_res["id"]
                 qa_log = await db.get(QALog, qa_log_id)
-                ret_chunk_ids = set(qa_log.retrieved_chunk_ids or []) if qa_log else set()
+                ret_chunk_ids = (
+                    set(qa_log.retrieved_chunk_ids or []) if qa_log else set()
+                )
 
                 if gold_ids.intersection(ret_chunk_ids):
                     hybrid_hits += 1
@@ -285,7 +285,9 @@ async def main() -> None:
                 # If cited nothing, it's correct only if there were no gold chunk ids
                 precision = 1.0 if not gold_ids else 0.0
             else:
-                precision = len(cited_chunk_ids.intersection(gold_ids)) / len(cited_chunk_ids)
+                precision = len(cited_chunk_ids.intersection(gold_ids)) / len(
+                    cited_chunk_ids
+                )
             citation_precisions.append(precision)
 
             # C. Compute Faithfulness (LLM-as-judge)
@@ -310,8 +312,12 @@ async def main() -> None:
 
         in_corpus_count = sum(1 for c in synced_cases if c["gold_chunk_ids"])
         hybrid_recall = hybrid_hits / in_corpus_count if in_corpus_count > 0 else 0.0
-        avg_precision = sum(citation_precisions) / len(synced_cases) if synced_cases else 0.0
-        avg_faithfulness = sum(faithfulness_scores) / len(synced_cases) if synced_cases else 0.0
+        avg_precision = (
+            sum(citation_precisions) / len(synced_cases) if synced_cases else 0.0
+        )
+        avg_faithfulness = (
+            sum(faithfulness_scores) / len(synced_cases) if synced_cases else 0.0
+        )
         avg_groundedness = (
             supported_sentences / total_sentences if total_sentences > 0 else 1.0
         )

@@ -32,7 +32,9 @@ def test_get_rules_verification_queue(client: TestClient, mock_db: AsyncMock):
         is_verified=False,
         extracted_by="llm",
     )
-    mock_scheme = Scheme(id="pm-kisan", name="PM Kisan", state="Central", category="Agriculture")
+    mock_scheme = Scheme(
+        id="pm-kisan", name="PM Kisan", state="Central", category="Agriculture"
+    )
 
     mock_res = MagicMock()
     mock_res.all.return_value = [(mock_rule, mock_scheme)]

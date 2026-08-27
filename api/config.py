@@ -9,7 +9,8 @@ class Settings:
 
     # Database
     DATABASE_URL: str = os.getenv(
-        "DATABASE_URL", "postgresql+asyncpg://sahayak:sahayak_password@127.0.0.1:5433/sahayak"
+        "DATABASE_URL",
+        "postgresql+asyncpg://sahayak:sahayak_password@127.0.0.1:5433/sahayak",
     )
     DB_ECHO: bool = os.getenv("DB_ECHO", "false").lower() in ("true", "1", "yes")
     DB_POOL_SIZE: int = int(os.getenv("DB_POOL_SIZE", "10"))
@@ -17,7 +18,9 @@ class Settings:
 
     # Redis Cache & Rate Limiting
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
-    RATE_LIMIT_FALLBACK_OPEN: bool = os.getenv("RATE_LIMIT_FALLBACK_OPEN", "true").lower() in ("true", "1", "yes")
+    RATE_LIMIT_FALLBACK_OPEN: bool = os.getenv(
+        "RATE_LIMIT_FALLBACK_OPEN", "true"
+    ).lower() in ("true", "1", "yes")
 
     # CORS
     _raw_origins: str = os.getenv(
@@ -29,7 +32,9 @@ class Settings:
     def ALLOWED_ORIGINS(self) -> List[str]:
         if self._raw_origins.strip() == "*":
             return ["*"]
-        return [origin.strip() for origin in self._raw_origins.split(",") if origin.strip()]
+        return [
+            origin.strip() for origin in self._raw_origins.split(",") if origin.strip()
+        ]
 
     # Security & Auth (No insecure defaults — missing secrets fail startup loudly)
     ADMIN_TOKEN: str = os.getenv("ADMIN_TOKEN", "")
@@ -44,10 +49,18 @@ class Settings:
     EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "voyage-3-lite")
 
     # Token Pricing (Per Million Tokens in USD)
-    ANTHROPIC_INPUT_COST_PER_M: float = float(os.getenv("ANTHROPIC_INPUT_COST_PER_M", "0.80"))
-    ANTHROPIC_OUTPUT_COST_PER_M: float = float(os.getenv("ANTHROPIC_OUTPUT_COST_PER_M", "4.00"))
-    ANTHROPIC_CACHE_READ_COST_PER_M: float = float(os.getenv("ANTHROPIC_CACHE_READ_COST_PER_M", "0.08"))
-    ANTHROPIC_CACHE_WRITE_COST_PER_M: float = float(os.getenv("ANTHROPIC_CACHE_WRITE_COST_PER_M", "1.00"))
+    ANTHROPIC_INPUT_COST_PER_M: float = float(
+        os.getenv("ANTHROPIC_INPUT_COST_PER_M", "0.80")
+    )
+    ANTHROPIC_OUTPUT_COST_PER_M: float = float(
+        os.getenv("ANTHROPIC_OUTPUT_COST_PER_M", "4.00")
+    )
+    ANTHROPIC_CACHE_READ_COST_PER_M: float = float(
+        os.getenv("ANTHROPIC_CACHE_READ_COST_PER_M", "0.08")
+    )
+    ANTHROPIC_CACHE_WRITE_COST_PER_M: float = float(
+        os.getenv("ANTHROPIC_CACHE_WRITE_COST_PER_M", "1.00")
+    )
 
     # Rate Limiting Parameters
     RATE_LIMIT_REQUESTS: int = int(os.getenv("RATE_LIMIT_REQUESTS", "60"))

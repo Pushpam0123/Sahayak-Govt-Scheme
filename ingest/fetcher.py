@@ -180,7 +180,9 @@ def fetch_scheme_guidelines(
     response = None
 
     try:
-        logger.info(f"Attempting to download guidelines for {scheme_id} from {source_url} (TLS verified)")
+        logger.info(
+            f"Attempting to download guidelines for {scheme_id} from {source_url} (TLS verified)"
+        )
         with httpx.Client(timeout=20.0, follow_redirects=True, verify=True) as client:
             response = client.get(source_url)
             http_status = response.status_code
@@ -192,7 +194,9 @@ def fetch_scheme_guidelines(
                 "retrying insecurely per explicit scheme opt-in."
             )
             try:
-                with httpx.Client(timeout=20.0, follow_redirects=True, verify=False) as client:
+                with httpx.Client(
+                    timeout=20.0, follow_redirects=True, verify=False
+                ) as client:
                     response = client.get(source_url)
                     http_status = response.status_code
                     tls_verified = False
@@ -221,8 +225,7 @@ def fetch_scheme_guidelines(
             content_type = response.headers.get("content-type", "")
             if "text/html" not in content_type.lower():
                 error = (
-                    f"Response Content-Type '{content_type}' "
-                    "does not contain text/html"
+                    f"Response Content-Type '{content_type}' does not contain text/html"
                 )
             elif len(content) < MIN_HTML_BYTES:
                 error = (
@@ -240,7 +243,12 @@ def fetch_scheme_guidelines(
             content_sha256 = calculate_sha256(content)
             fetched_at = datetime.now(timezone.utc)
             _write_meta(
-                file_path, source_url, fetched_at, http_status, content_sha256, doc_type,
+                file_path,
+                source_url,
+                fetched_at,
+                http_status,
+                content_sha256,
+                doc_type,
                 tls_verified,
             )
             return FetchResult(
@@ -282,7 +290,9 @@ def fetch_scheme_guidelines(
             tls_verified=cached_tls_verified,
         )
 
-    logger.warning(f"No cached file available for {scheme_id}. Fetch failed with no fallback.")
+    logger.warning(
+        f"No cached file available for {scheme_id}. Fetch failed with no fallback."
+    )
     return FetchResult(
         status="failed",
         http_status=http_status,

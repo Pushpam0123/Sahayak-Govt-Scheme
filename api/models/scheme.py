@@ -34,9 +34,13 @@ class Scheme(Base):
 
     # Rich citizen fields (Phase 2)
     benefit_amount = Column(String, nullable=True)  # e.g., '₹6,000 / year'
-    benefit_type = Column(String, nullable=True)  # e.g., 'Direct Benefit Transfer (DBT)', 'Insurance', 'Pension'
+    benefit_type = Column(
+        String, nullable=True
+    )  # e.g., 'Direct Benefit Transfer (DBT)', 'Insurance', 'Pension'
     required_documents: Any = Column(JSONB, nullable=True)  # list of strings
-    application_mode = Column(String, nullable=True)  # 'online' | 'offline' | 'hybrid' | 'csc'
+    application_mode = Column(
+        String, nullable=True
+    )  # 'online' | 'offline' | 'hybrid' | 'csc'
     application_url = Column(String, nullable=True)
     deadlines = Column(String, nullable=True)  # e.g., 'Rolling'
     helpline = Column(String, nullable=True)
@@ -65,8 +69,12 @@ class Document(Base):
     source_url = Column(String, nullable=True)
     doc_type = Column(String, nullable=False)  # 'pdf' or 'html'
     lang = Column(String, default="en", nullable=False)  # 'en' or 'hi'
-    fetched_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
-    checksum = Column(String, nullable=False, unique=True)  # md5, for idempotency checks
+    fetched_at = Column(
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    checksum = Column(
+        String, nullable=False, unique=True
+    )  # md5, for idempotency checks
     fetch_status = Column(
         String, nullable=False, server_default="fetched"
     )  # 'fetched' | 'cached' | 'failed'

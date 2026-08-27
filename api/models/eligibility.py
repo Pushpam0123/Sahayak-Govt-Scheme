@@ -19,9 +19,13 @@ class SchemeEligibilityRules(Base):
     )
     rules_json: Any = Column(JSONB, nullable=False)
     is_verified: Any = Column(Boolean, default=False, nullable=False)
-    extracted_by = Column(String, default="llm", nullable=True)  # 'llm' | 'human' | 'seed'
+    extracted_by = Column(
+        String, default="llm", nullable=True
+    )  # 'llm' | 'human' | 'seed'
     extracted_at = Column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
     )
     verified_by = Column(String, nullable=True)
     verified_at = Column(DateTime(timezone=True), nullable=True)

@@ -63,7 +63,9 @@ class UpstreamServiceError(SahayakError):
             status_code=502,
             error_code="UPSTREAM_SERVICE_ERROR",
             details={"service": service},
-            internal_message=f"Upstream {service} failure: {internal_detail}" if internal_detail else None,
+            internal_message=f"Upstream {service} failure: {internal_detail}"
+            if internal_detail
+            else None,
         )
 
 
@@ -73,7 +75,9 @@ class DatabaseError(SahayakError):
             message="A database error occurred while processing your request.",
             status_code=500,
             error_code="DATABASE_ERROR",
-            internal_message=f"Database failure: {internal_detail}" if internal_detail else None,
+            internal_message=f"Database failure: {internal_detail}"
+            if internal_detail
+            else None,
         )
 
 

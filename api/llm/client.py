@@ -46,7 +46,9 @@ class ClaudeClient(BaseLLMClient):
     def __init__(self, api_key: str, chat_model: Optional[str] = None):
         self.client = anthropic.AsyncAnthropic(api_key=api_key)
         model_name = chat_model or os.getenv("ANTHROPIC_CHAT_MODEL")
-        self.model: str = model_name or settings.CHAT_MODEL or "claude-haiku-4-5-20251001"
+        self.model: str = (
+            model_name or settings.CHAT_MODEL or "claude-haiku-4-5-20251001"
+        )
         logger.info(f"Initialized ClaudeClient using model '{self.model}'")
 
     async def generate_response(
@@ -151,14 +153,14 @@ class MockClaudeClient(BaseLLMClient):
 
         # Check if this is a translation call
         is_translate_call = (
-            "translate" in system_prompt.lower()
-            and "english" in system_prompt.lower()
+            "translate" in system_prompt.lower() and "english" in system_prompt.lower()
         )
         if is_translate_call:
             user_msg = messages[0]["content"] if messages else ""
             clean_q = user_msg.replace("Document chunk text:\n\n", "").strip()
             clean_q = clean_q.split("\n")[0].strip()
             from api.services.translation import HINDI_TO_ENGLISH
+
             translated = HINDI_TO_ENGLISH.get(clean_q, clean_q)
             return {
                 "content": translated,

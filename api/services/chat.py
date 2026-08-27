@@ -194,9 +194,12 @@ async def get_grounded_answer(
                         "n": n,
                         "chunk_id": chunk.id,
                         "source_url": (
-                            doc.source_url if doc and doc.source_url else (scheme.official_url if scheme else "")
+                            doc.source_url
+                            if doc and doc.source_url
+                            else (scheme.official_url if scheme else "")
                         ),
-                        "heading_path": chunk.heading_path or (doc.title if doc else "Document"),
+                        "heading_path": chunk.heading_path
+                        or (doc.title if doc else "Document"),
                         "quote": (
                             chunk.text[:150] + "..."
                             if len(chunk.text) > 150
@@ -220,18 +223,20 @@ async def get_grounded_answer(
 
     # 9. Cost Accounting Calculation using centralized settings
     chat_cost = (
-        usage.get("input_tokens", 0) * (settings.ANTHROPIC_INPUT_COST_PER_M / 1_000_000.0)
+        usage.get("input_tokens", 0)
+        * (settings.ANTHROPIC_INPUT_COST_PER_M / 1_000_000.0)
     ) + (
-        usage.get("output_tokens", 0) * (settings.ANTHROPIC_OUTPUT_COST_PER_M / 1_000_000.0)
+        usage.get("output_tokens", 0)
+        * (settings.ANTHROPIC_OUTPUT_COST_PER_M / 1_000_000.0)
     )
-    groundedness_cost = (
-        groundedness_usage.get("input_tokens", 0) * (settings.ANTHROPIC_INPUT_COST_PER_M / 1_000_000.0)
-        + groundedness_usage.get("output_tokens", 0) * (settings.ANTHROPIC_OUTPUT_COST_PER_M / 1_000_000.0)
+    groundedness_cost = groundedness_usage.get("input_tokens", 0) * (
+        settings.ANTHROPIC_INPUT_COST_PER_M / 1_000_000.0
+    ) + groundedness_usage.get("output_tokens", 0) * (
+        settings.ANTHROPIC_OUTPUT_COST_PER_M / 1_000_000.0
     )
-    translation_cost = (
-        translation_input_tokens * (settings.ANTHROPIC_INPUT_COST_PER_M / 1_000_000.0)
-        + translation_output_tokens * (settings.ANTHROPIC_OUTPUT_COST_PER_M / 1_000_000.0)
-    )
+    translation_cost = translation_input_tokens * (
+        settings.ANTHROPIC_INPUT_COST_PER_M / 1_000_000.0
+    ) + translation_output_tokens * (settings.ANTHROPIC_OUTPUT_COST_PER_M / 1_000_000.0)
 
     total_cost = chat_cost + groundedness_cost + translation_cost
 
@@ -342,10 +347,15 @@ async def stream_grounded_answer(
                 "n": idx,
                 "chunk_id": chunk.id,
                 "source_url": (
-                    doc.source_url if doc and doc.source_url else (scheme.official_url if scheme else "")
+                    doc.source_url
+                    if doc and doc.source_url
+                    else (scheme.official_url if scheme else "")
                 ),
-                "heading_path": chunk.heading_path or (doc.title if doc else "Document"),
-                "quote": chunk.text[:150] + "..." if len(chunk.text) > 150 else chunk.text,
+                "heading_path": chunk.heading_path
+                or (doc.title if doc else "Document"),
+                "quote": chunk.text[:150] + "..."
+                if len(chunk.text) > 150
+                else chunk.text,
                 "tls_verified": doc.tls_verified if doc else True,
             }
         )
@@ -435,12 +445,20 @@ async def stream_grounded_answer(
     # 8. Token Accounting & QALog
     est_input_tokens = len(full_system_prompt.split()) + len(query.split()) + 50
     est_output_tokens = len(accumulated_text.split()) + 20
-    total_tokens_in = est_input_tokens + groundedness_usage.get("input_tokens", 0) + translation_input_tokens
-    total_tokens_out = est_output_tokens + groundedness_usage.get("output_tokens", 0) + translation_output_tokens
-
-    chat_cost = (est_input_tokens * settings.ANTHROPIC_INPUT_COST_PER_M / 1_000_000.0) + (
-        est_output_tokens * settings.ANTHROPIC_OUTPUT_COST_PER_M / 1_000_000.0
+    total_tokens_in = (
+        est_input_tokens
+        + groundedness_usage.get("input_tokens", 0)
+        + translation_input_tokens
     )
+    total_tokens_out = (
+        est_output_tokens
+        + groundedness_usage.get("output_tokens", 0)
+        + translation_output_tokens
+    )
+
+    chat_cost = (
+        est_input_tokens * settings.ANTHROPIC_INPUT_COST_PER_M / 1_000_000.0
+    ) + (est_output_tokens * settings.ANTHROPIC_OUTPUT_COST_PER_M / 1_000_000.0)
     total_cost = chat_cost
 
     qa_log = QALog(
