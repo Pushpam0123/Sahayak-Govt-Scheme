@@ -373,7 +373,7 @@ This required a scope change, because as originally written the two collide. A1 
 | --- | --- |
 | Sonnet (A) | `ingest/**` · `api/**` · `eval/**` · `EVALS.md` · `README.md` · `infra/migrations/**` |
 | gemini_agent (B) | `web/**` · `infra/Dockerfile.web` · the `web` service in `infra/docker-compose.yml` |
-| Opus | `PLAN.md` · `HANDOFF.md` · `agent_instruction.md` |
+| Opus | `PLAN.md` · `HANDOFF.md` |
 
 The UI portion of A1 moved into B. A now stops at **exposing `tls_verified` in the API response** — scheme detail and citation metadata — and B renders it. That field is the single contract between the two work orders, and B is instructed to treat it as optional so it can be built before A lands: absent or `true` renders nothing, explicit `false` renders a plain note that the source could not be certificate-verified.
 

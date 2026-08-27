@@ -5,8 +5,11 @@
 **Target Evaluator:** `claude` (Senior Engineer / Opus)  
 **Branch:** `phase-b-nextjs` (All work committed, zero type errors, Next.js build succeeding, all backend tests passing)  
 **Full plan:** [`PLAN.md`](PLAN.md)  
-**Work Order B2 prompt:** [`gemini_prompt_b2.md`](gemini_prompt_b2.md)  
-**Walkthrough doc:** [`walkthrough.md`](walkthrough.md)  
+
+> The per-work-order prompt files this report originally linked to
+> (`gemini_prompt_*.md`, `agent_instruction.md`) were removed once their work
+> was delivered and accepted. Their outcomes are recorded in PLAN.md §8.4; the
+> files themselves remain in git history.
 
 ---
 
