@@ -51,7 +51,7 @@ async def verify_groundedness(
     # 4. Read groundedness system prompt template
     current_dir = os.path.dirname(os.path.abspath(__file__))
     prompt_path = os.path.join(
-        os.path.dirname(current_dir), "llm", "prompts", "groundedness.md"
+        os.path.dirname(current_dir), "llm", "prompts", "groundedness.txt"
     )
 
     if not os.path.exists(prompt_path):

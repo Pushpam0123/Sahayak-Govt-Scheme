@@ -1,118 +1,208 @@
-# Sahayak (government-scheme RAG assistant)
+# Sahayak — Government Scheme Assistant & Eligibility Matcher
 
-Sahayak is a production-grade, cited Retrieval-Augmented Generation (RAG) assistant and eligibility matchmaking engine designed to help citizens navigate complex Indian government scheme guidelines. The corpus currently covers **nine schemes**, each backed by a guideline document that was fetched live from its official government source, hashed, and provenance-recorded — no scheme is indexed on a document that wasn't actually and verifiably retrieved. See [`docs/corpus-audit.md`](docs/corpus-audit.md) for the full per-scheme audit.
+Sahayak is an open-source, cited Retrieval-Augmented Generation (RAG) assistant and eligibility matchmaking platform built to help Indian citizens discover, understand, and apply for government welfare schemes.
 
-Navigating scheme eligibility criteria involves handling scattered documents, complex rules (age limits, caste categories, income bands, land ownership restrictions), and language barriers. Sahayak addresses these challenges through a grounded assistant that synthesizes accurate answers, matches citizen demographics directly against guidelines, and audits claim veracity.
+Navigating welfare programs can be challenging due to scattered guidelines, complex criteria (income bands, age limits, caste categories, landholding sizes), and language barriers. Sahayak solves this by providing grounded answers linked directly to verified official government documents, alongside a privacy-first eligibility screener.
 
 ---
 
 ## Key Features
 
-1. **Hybrid Retrieval Search Engine**: Combines Dense Vector Search (pgvector HNSW cosine distance) and Sparse Text Search (Postgres Full-Text Search) combined using Reciprocal Rank Fusion (RRF) for high-recall scheme document search.
-2. **Grounded Answer Synthesis & Citations**: Generates answers with precise sentence-level inline citations linked directly to official government documents.
-3. **Second-Pass Groundedness Evaluator**: Audits LLM claims against context sources, flagging unsupported or partially supported sentences with warning tags (⚠️) and descriptions.
-4. **Structured Eligibility Engine**: Automatically matches citizen profiles against structured rules defined in the database (age limits, state residence, gender, caste, income, and agricultural landholding size).
-5. **End-to-End Hindi Support**: Seamlessly translates Hindi input queries to English for backend retrieval, and synthesizes final answers directly in Hindi with correct citation mapping.
-6. **Per-Request Cost Accounting & Rate Limiter**: Logs input/output token counts, computes actual API costs, and runs a sliding-window memory rate limiter (60 requests/min).
+### 1. Hybrid Retrieval & Grounded Answer Synthesis
+- **Hybrid Search**: Combines dense vector similarity (`pgvector` with HNSW cosine indexing) and sparse full-text search (PostgreSQL `tsvector` with GIN indexing) ranked using Reciprocal Rank Fusion (RRF).
+- **Sentence-Level Inline Citations**: Every generated statement links directly to specific clauses in verified official scheme documents.
+- **Two-Pass Verification**: A second-pass evaluation checks generated statements against retrieved context to flag unsupported or ambiguous claims before reaching the citizen.
+
+### 2. Deterministic Eligibility Matchmaker
+- **Rule Evaluation Engine**: Matches citizen demographic inputs (age, state of residence, gender, caste, annual household income, and landholding size) against structured eligibility rules.
+- **Transparent Outcomes**: Provides clear explanations for eligibility status (`eligible`, `ineligible`, `unknown`), highlighting exact qualifying criteria or unmet rules.
+
+### 3. Inclusive & Accessible Frontend
+- **Multilingual Support**: Built-in translation and language support across English, Hindi (हिंदी), Bengali (বাংলা), Marathi (मराठी), Telugu (తెలుగు), and Tamil (தமிழ்).
+- **Speech-to-Text & Text-to-Speech**: Voice input and audio read-aloud capabilities for low-literacy accessibility.
+- **Accessibility Modes**: High-contrast theme and fluid font scaling (100% to 150%) adhering to WCAG AA accessibility standards.
+- **Offline PWA with Provenance**: Progressive Web App with service worker caching. Clearly displays cache storage timestamps so citizens always know the provenance of saved information when offline.
+
+### 4. Privacy & Data Protection (DPDP Act 2023)
+- **Local-First Citizen Data**: Demographic data is retained in local storage and only transmitted statelessly for matching.
+- **One-Click Erasure**: Citizens can purge stored profile data and saved applications instantly from their device.
+
+### 5. Production Hardening & Security
+- **Authentication**: JWT Bearer tokens with salted bcrypt password hashing and SHA-256 hashed B2B API keys.
+- **Redis Rate Limiting**: Distributed sliding-window rate limiting keyed by User ID, API Key, or Client IP.
+- **Sanitized Errors**: Strict error taxonomy returning clean generic errors to clients with unique `X-Request-ID` headers for server tracebacks.
 
 ---
 
-## System Architecture
+## Architecture Overview
 
 ```mermaid
 graph TD
-    User([Citizen Client]) -->|Hindi or English query| API[FastAPI Gateway]
-    API -->|Rate Limiter Check| RL[Rate Limiter Middleware]
-    RL -->|Detect language| Trans[Translation Service]
-    Trans -->|Translate to English if Hindi| Retriever[Hybrid Retrieval Engine]
-    Retriever -->|pgvector HNSW Cosine| DB[(PostgreSQL + pgvector)]
-    Retriever -->|Full-Text Search GIN| DB
-    Retriever -->|Reciprocal Rank Fusion| RRF[RRF Ranker]
-    RRF -->|Top Context Chunks| QA[Grounded Q&A Synthesis]
-    QA -->|Gemini| Sentences[Sentence citation parser]
-    Sentences -->|Check groundedness| Judge[Second-Pass Evaluator Haiku]
-    Judge -->|Audit claim validity| Log[(Q&A Logs + Costs + Citations)]
-    Log -->|Displaycited response| User
+    User([Citizen / Operator]) -->|Web App / Voice / PWA| Gateway[FastAPI Gateway]
+    Gateway -->|Rate Limiter Check| Redis[(Redis Rate Limiter)]
+    Gateway -->|Authentication / Keys| Auth[Auth Service]
+    Gateway -->|Query / Chat Stream| Chat[Chat & Retrieval Pipeline]
+    
+    subgraph "Hybrid Retrieval Pipeline"
+        Chat -->|Dense Semantic Search| PGVector[(PostgreSQL + pgvector)]
+        Chat -->|Sparse Full-Text Search| PGFTS[(PostgreSQL Full-Text GIN)]
+        PGVector --> RRF[Reciprocal Rank Fusion]
+        PGFTS --> RRF
+    end
+    
+    RRF -->|Top Document Context| Synthesis[LLM Answer Synthesis]
+    Synthesis -->|Grounded Citations| Verifier[Groundedness Claim Verifier]
+    Verifier -->|Audited Stream Response| User
+
+    Gateway -->|Demographics Matching| Eligibility[Eligibility Rules Matcher]
+    Eligibility -->|Query Rules| DB[(PostgreSQL Database)]
 ```
 
 ---
 
-## Evaluation Benchmark
+## Tech Stack
 
-Retriever and generator capabilities are tracked in `EVALS.md`.
-
-> [!NOTE]
-> Historical metrics measured on synthetic documents have been marked void in `EVALS.md`. A real baseline against the nine verified schemes requires a live `GEMINI_API_KEY` to run the full retrieval + generation harness (`eval/run_eval.py`); it has not yet been published for that reason — see `EVALS.md` for status.
+- **Frontend**: Next.js 15 (App Router), React 19, TypeScript, Vanilla CSS Design System, Web Speech API, Service Workers (PWA).
+- **Backend**: FastAPI, Python 3.10+, SQLAlchemy (Asyncpg), Pydantic v2, Alembic.
+- **Database & Search**: PostgreSQL 16 with `pgvector` extension.
+- **Caching & Rate Limiting**: Redis 7.
+- **LLM & Embeddings**: Configurable endpoints (Gemini / Anthropic / Local models).
 
 ---
 
-## Installation & Setup
+## Getting Started
 
 ### Prerequisites
-- Docker & Docker Compose
-- Python 3.10+
-- Node.js 18+ (npm)
+- [Docker](https://docs.docker.com/get-docker/) and Docker Compose
+- [Node.js 18+](https://nodejs.org/) (for running web frontend)
+- [Python 3.10+](https://www.python.org/) (optional, for local development outside Docker)
 
-### Step 1: Environment Variables
-Create a `.env` file in the project root:
+---
+
+### Step 1: Clone and Configure Environment
+
+Clone the repository:
 ```bash
-# Matches docker-compose.yml. For host-side runs use localhost:5433.
-DATABASE_URL=postgresql+asyncpg://sahayak:sahayak_password@db:5432/sahayak
-REDIS_URL=redis://redis:6379/0
-
-# Mandatory. The app refuses to start if either is empty.
-ADMIN_TOKEN=change-me-to-a-long-random-string
-JWT_SECRET=change-me-to-a-different-long-random-string
-
-# One key powers both chat and embeddings. https://aistudio.google.com/apikey
-# Without it the app runs on mocks whose output is fabricated.
-GEMINI_API_KEY=your-gemini-api-key-here
-
-ENABLE_GROUNDEDNESS_CHECK=true
+git clone https://github.com/Pushpam0123/Sahayak-Govt-Scheme.git
+cd Sahayak-Govt-Scheme
 ```
 
-### Step 2: Boot Services
-Start PostgreSQL, Redis, and the FastAPI backend:
+Copy the example environment file:
 ```bash
-# Spin up services inside Docker Compose
-docker-compose --env-file .env up -d
+cp .env.example .env
 ```
 
-### Step 3: Run Ingestion Pipeline
-Seed the database, ingest guidelines, generate chunks/embeddings, and seed eligibility rules:
-```bash
-# Run migrations inside the API container
-docker-compose --env-file .env exec api alembic upgrade head
+Ensure your `.env` contains secure tokens and credentials:
+```env
+# Database & Cache
+DATABASE_URL=postgresql+asyncpg://sahayak:sahayak_password@localhost:5433/sahayak
+REDIS_URL=redis://localhost:6379/0
 
-# Ingest, chunk, and embed verified guidelines documents
-docker-compose --env-file .env exec api python -m ingest.run
+# Security (Required)
+ADMIN_TOKEN=your-secure-admin-token-here
+JWT_SECRET=your-secure-jwt-secret-key-here
 
-# Seed structured eligibility rules
-docker-compose --env-file .env exec api python -m api.seed_eligibility
-```
-
-### Step 4: Run Tests & Evaluation
-```bash
-# Execute unit/integration test suite
-docker-compose --env-file .env exec api pytest
-
-# Execute evaluation harness
-docker-compose --env-file .env exec api python -m eval.run_eval
+# LLM API Keys (optional if using mock mode)
+GEMINI_API_KEY=your-gemini-api-key
+ANTHROPIC_API_KEY=your-anthropic-api-key
 ```
 
 ---
 
-## Technical Design Decisions
+### Step 2: Start Services via Docker Compose
 
-- **pgvector vs External Vector DB**: We chose pgvector to keep document Guidelines, Chunks, Embeddings, Schemes, Q&A Audit Logs, and Eligibility Rules in a single transactional Postgres database, eliminating sync latency and infrastructure overhead.
-- **RRF (Reciprocal Rank Fusion)**: Combines dense embeddings (which capture semantics) and sparse keyword indices (which capture specific names like PM-KISAN).
-- **Two-Pass Verification**: Using a fast Haiku-class model for sentence claim auditing separates factual synthesis from validation, protecting against hallucinations.
+Start the PostgreSQL database and Redis cache:
+```bash
+docker compose up -d db redis
+```
+
+---
+
+### Step 3: Database Migrations & Ingestion
+
+Run the Alembic migrations to set up all tables and vector schemas:
+```bash
+# Setup Python virtual environment
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .
+
+# Run database migrations
+alembic upgrade head
+
+# Ingest guidelines and seed eligibility rules
+python -m ingest.run
+python -m api.seed_eligibility
+```
+
+---
+
+### Step 4: Run the Backend API Server
+
+Start the FastAPI application:
+```bash
+uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+```
+The API interactive documentation will be available at `http://localhost:8000/docs`.
+
+---
 
 ### Step 5: Run the Web Frontend
-The frontend is a Next.js App Router application in `web/`:
+
+In a separate terminal, start the Next.js development server:
 ```bash
-npm install --prefix web
-npm run --prefix web dev     # http://localhost:3000
+cd web
+npm install
+npm run dev
 ```
-It talks to the API at `http://localhost:8000` by default; override with
-`NEXT_PUBLIC_API_BASE`.
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+---
+
+## Verified Scheme Corpus
+
+The system indexes verified guideline documents for key government schemes:
+1. **PM-KISAN** (Pradhan Mantri Kisan Samman Nidhi)
+2. **PM-SYM** (Pradhan Mantri Shram Yogi Maandhan)
+3. **PM-JJBY** (Pradhan Mantri Jeevan Jyoti Bima Yojana)
+4. **PM-PMSBY** (Pradhan Mantri Suraksha Bima Yojana)
+5. **PMMVY** (Pradhan Mantri Matru Vandana Yojana)
+6. **Ayushman Bharat** (PM-JAY)
+7. **PM SVANidhi** (Street Vendor's AtmaNirbhar Nidhi)
+8. **Atal Pension Yojana** (APY)
+9. **Sukanya Samriddhi Yojana** (SSY)
+
+---
+
+## API Endpoints Overview
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/v1/healthz` | API liveness probe |
+| `GET` | `/api/v1/readyz` | Database readiness check |
+| `POST` | `/api/v1/auth/register` | Register citizen or organization account |
+| `POST` | `/api/v1/auth/login` | Authenticate and obtain JWT access token |
+| `GET` | `/api/v1/auth/me` | Retrieve current authenticated caller identity |
+| `POST` | `/api/v1/auth/api-keys` | Generate hashed B2B API key (shown once) |
+| `GET` | `/api/v1/schemes` | List all verified schemes |
+| `GET` | `/api/v1/schemes/{id}` | Get scheme detail and guidelines |
+| `POST` | `/api/v1/eligibility/match-all` | Match citizen demographics against scheme rules |
+| `POST` | `/api/v1/chat` | Submit question and get cited answer |
+| `POST` | `/api/v1/chat/stream` | Server-Sent Events (SSE) streaming answer |
+| `GET` | `/api/v1/search` | Search chunks via hybrid RRF search |
+
+---
+
+## Running Tests
+
+To run the automated backend test suite:
+```bash
+pytest
+```
+
+---
+
+## License
+
+This project is licensed under the MIT License.

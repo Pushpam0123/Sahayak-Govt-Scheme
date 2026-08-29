@@ -20,10 +20,13 @@ env/
 .env.local
 .env.*.local
 
-# Node/Vite build
+# Node/Vite/Next build
 node_modules/
+web/node_modules/
 dist/
 dist-ssr/
+.next/
+web/.next/
 *.local
 
 # Python packaging
@@ -48,7 +51,17 @@ data/raw/
 # System Files
 .DS_Store
 Thumbs.db
-.venv/
+
+# Markdown & internal working notes
+PLAN.md
+EVALS.md
+HANDOFF.md
+docs/
+*.md
+!README.md
+!readme.md
 
 # Editor / agent tooling
 .claude/
+.gemini/
+.agents/

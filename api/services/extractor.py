@@ -17,7 +17,7 @@ async def extract_rules_from_chunk(chunk_text: str) -> Dict[str, Any]:
     # 1. Read prompt template
     current_dir = os.path.dirname(os.path.abspath(__file__))
     prompt_path = os.path.join(
-        os.path.dirname(current_dir), "llm", "prompts", "extract_rules.md"
+        os.path.dirname(current_dir), "llm", "prompts", "extract_rules.txt"
     )
 
     default_rules = {

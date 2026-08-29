@@ -101,7 +101,7 @@ async def get_grounded_answer(
     # 4. Read prompt template
     current_dir = os.path.dirname(os.path.abspath(__file__))
     prompt_path = os.path.join(
-        os.path.dirname(current_dir), "llm", "prompts", "answer.md"
+        os.path.dirname(current_dir), "llm", "prompts", "answer.txt"
     )
 
     with open(prompt_path, "r", encoding="utf-8") as f:
@@ -362,7 +362,7 @@ async def stream_grounded_answer(
     # 5. Read prompt template
     current_dir = os.path.dirname(os.path.abspath(__file__))
     prompt_path = os.path.join(
-        os.path.dirname(current_dir), "llm", "prompts", "answer.md"
+        os.path.dirname(current_dir), "llm", "prompts", "answer.txt"
     )
     with open(prompt_path, "r", encoding="utf-8") as f:
         system_prompt = f.read()

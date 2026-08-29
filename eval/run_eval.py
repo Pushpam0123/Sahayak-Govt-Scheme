@@ -179,7 +179,7 @@ async def evaluate_faithfulness(answer: str, retrieved_chunks: List[str]) -> flo
 
     Returns 1.0 (faithful) or 0.0 (unfaithful).
     """
-    rubric_path = "eval/rubrics/faithfulness.md"
+    rubric_path = "eval/rubrics/faithfulness.txt"
     if not os.path.exists(rubric_path):
         logger.warning(f"Rubric file {rubric_path} not found. Defaulting to 1.0.")
         return 1.0
